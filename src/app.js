@@ -1,3 +1,4 @@
+import { MobileDock } from "./mobile-dock.js";
 import { ToolPicker } from "./tool-picker.js";
 import { LevelEditor } from "./level-editor.js";
 import { EditHistory } from "./history.js";
@@ -35,7 +36,7 @@ import { icon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
-let autosaveTimer, toolPicker;
+let autosaveTimer, toolPicker, mobileDock;
 $("palette").querySelector("h1 span").textContent = materials.length - 1;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
@@ -108,7 +109,7 @@ function syncHistory() {
 }
 function travelHistory(direction) {
   if (!(direction === "undo" ? history.past : history.future).length) return;
-  input.pointers.clear();
+  input.cancel();
   selection.cancel();
   setPaused(true);
   const name = history[direction]($("world-name").textContent);
@@ -228,13 +229,14 @@ function updateToolProperties() {
 function setTool(value) {
   const tool = typeof value === "boolean" ? (value ? "erase" : "paint") : value;
   if (state.tool !== tool) {
-    input.pointers.clear();
+    input.cancel();
     selection.cancel();
   }
   state.tool = tool;
   state.erase = tool === "erase";
   $("brush-tool").value = tool;
   toolPicker?.sync(tool);
+  mobileDock?.toolChanged(tool);
   selection.visible = tool === "select";
   inspector.setActive(tool === "inspect");
   if (tool === "inspect") inspector.follow(hover);
@@ -249,7 +251,7 @@ function setTool(value) {
     materials[state.material].name;
 }
 function deselect() {
-  input.pointers.clear();
+  input.cancel();
   selection.clear();
   if (hover) input.hover(hover);
 }
@@ -299,9 +301,10 @@ for (const [value, name] of brushTools) {
 }
 $("brush-tool").addEventListener("change", (e) => {
   setTool(e.target.value);
-  if (innerWidth <= 700) $("palette").classList.remove("open");
+  if (mobileDock?.media.matches) $("palette").classList.remove("open");
 });
 toolPicker = new ToolPicker($("brush-tool"), brushTools);
+mobileDock = new MobileDock(document.querySelector(".toolbox"));
 function selectMaterial(id) {
   state.material = id;
   setTool(false);
@@ -340,7 +343,7 @@ function renderMaterials() {
     b.innerHTML = `<span class="swatch"></span><span class="material-name">${m.name}</span>`;
     b.addEventListener("click", () => {
       selectMaterial(m.id);
-      if (window.innerWidth <= 700) $("palette").classList.remove("open");
+      if (mobileDock?.media.matches) $("palette").classList.remove("open");
     });
     $("materials").append(b);
   }
@@ -424,14 +427,34 @@ $("redo-btn").addEventListener("click", redo);
 $("debug-btn").addEventListener("click", () =>
   settings.set("debug", !settings.get("debug")),
 );
+$("exit-focus-btn").addEventListener("click", () =>
+  $("fullscreen-btn").click(),
+);
+$("reset-view-btn").addEventListener("click", () => renderer.resetView());
+$("zoom-in-btn").addEventListener("click", () => zoomCenter(1.3));
+$("zoom-out-btn").addEventListener("click", () => zoomCenter(1 / 1.3));
+$("zoom-fit-btn").addEventListener("click", () => renderer.resetView());
+function zoomCenter(factor) {
+  const box = $("world").getBoundingClientRect();
+  renderer.zoomAt(factor, box.left + box.width / 2, box.top + box.height / 2);
+}
 $("fullscreen-btn").addEventListener("click", async () => {
+  const focus = () => {
+    const active = mobileDock.toggleFocus();
+    $("fullscreen-btn").setAttribute(
+      "aria-label",
+      active ? "Exit canvas focus" : "Fullscreen simulation",
+    );
+  };
+  if (mobileDock.media.matches || !$("canvas-wrap").requestFullscreen) {
+    focus();
+    return;
+  }
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
-    else if ($("canvas-wrap").requestFullscreen)
-      await $("canvas-wrap").requestFullscreen();
-    else toast("Fullscreen is unavailable in this browser.");
+    else await $("canvas-wrap").requestFullscreen();
   } catch {
-    toast("Fullscreen is unavailable in this browser.");
+    focus();
   }
 });
 $("palette-toggle").addEventListener("click", () =>
@@ -481,7 +504,7 @@ $("inspect-zoom").addEventListener("change", (e) => {
   inspector.nextUpdate = 0;
 });
 function openDialog(id) {
-  input.pointers.clear();
+  input.cancel();
   selection.cancel();
   const dialog = $(id);
   dialogPrevious.set(dialog, state.paused);
@@ -567,7 +590,7 @@ const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
   close: closeDialog,
   remember,
   refresh: () => {
-    input.pointers.clear();
+    input.cancel();
     resetSelection();
     setTool("paint");
     inspector.point = null;
@@ -787,19 +810,27 @@ const shortcutHandlers = {
   export: () => $("export-btn").click(),
   search: () => {
     setTool("paint");
-    if (innerWidth <= 700) $("palette").classList.add("open");
+    if (mobileDock?.media.matches) $("palette").classList.add("open");
     $("search").focus();
   },
   sand: () => selectMaterial(M.Sand),
   water: () => selectMaterial(M.Water),
   fire: () => selectMaterial(M.Fire),
   escape: () => {
+    input.cancel();
+    if (document.body.classList.contains("canvas-focus"))
+      mobileDock.toggleFocus();
     if (selection.placing || selection.dragging) selection.cancel();
     else if (state.tool === "select") deselect();
     $("palette").classList.remove("open");
   },
 };
 window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && renderer.gesture) {
+    e.preventDefault();
+    input.cancel();
+    return;
+  }
   if (
     e.target.closest("input,select,textarea,[contenteditable]") ||
     document.querySelector("dialog[open]")
@@ -909,7 +940,7 @@ function storeAuto() {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     storeAuto();
-    input.pointers.clear();
+    input.cancel();
     selection.cancel();
   }
   lastTime = performance.now();
@@ -975,6 +1006,7 @@ window.sandlab = {
   selection,
   settings,
   levelEditor,
+  mobileDock,
   loadPreset: (id) => {
     remember();
     loadPreset(world, id);

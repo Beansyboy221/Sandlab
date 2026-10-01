@@ -1,3 +1,4 @@
+import { stampGesture } from "./drawing-gesture.js";
 import { M, materials } from "./sim/materials.js";
 import { applyTool, dragBrush } from "./sim/tools.js";
 const fanDirections = {
@@ -22,6 +23,7 @@ export class Input {
     onRead,
   ) {
     this.canvas = canvas;
+    canvas.tabIndex = 0;
     this.renderer = renderer;
     this.world = world;
     this.state = state;
@@ -32,10 +34,21 @@ export class Input {
     this.selection = selection;
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     canvas.addEventListener("pointerdown", (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        canvas.setPointerCapture(e.pointerId);
+        this.pointers.set(e.pointerId, {
+          pan: true,
+          clientX: e.clientX,
+          clientY: e.clientY,
+        });
+        return;
+      }
       if (e.button !== 0 && e.button !== 2) return;
       const selecting = state.tool === "select";
       if (selecting && this.pointers.size) return;
       e.preventDefault();
+      canvas.focus({ preventScroll: true });
       canvas.setPointerCapture(e.pointerId);
       const point = renderer.point(e.clientX, e.clientY);
       if (readTools.has(state.tool)) {
@@ -45,7 +58,12 @@ export class Input {
         this.hover(point);
         return;
       }
-      if (!selecting && !this.pointers.size) this.onStroke();
+      const geometric =
+        !selecting &&
+        (state.tool === "paint" || state.tool === "erase") &&
+        (e.shiftKey || e.ctrlKey);
+      if (geometric && this.pointers.size) return;
+      if (!selecting && !geometric && !this.pointers.size) this.onStroke();
       this.pointers.set(e.pointerId, {
         ...point,
         erase:
@@ -54,6 +72,19 @@ export class Input {
         dx: 1,
         dy: 0,
       });
+      if (geometric) {
+        const gesture = {
+          start: this.bounded(point),
+          end: this.bounded(point),
+          kind: e.ctrlKey ? state.shape : "line",
+          radius: state.radius,
+          erase: e.button === 2 || state.erase,
+        };
+        this.pointers.get(e.pointerId).gesture = gesture;
+        renderer.gesture = gesture;
+        renderer.cursor = null;
+        return;
+      }
       if (selecting) {
         if (e.button === 2 && selection.placing) selection.cancel();
         else
@@ -75,7 +106,24 @@ export class Input {
     canvas.addEventListener("pointermove", (e) => {
       const point = renderer.point(e.clientX, e.clientY),
         last = this.pointers.get(e.pointerId);
+      if (last?.pan) {
+        const box = canvas.getBoundingClientRect(),
+          ratio = canvas.width / box.width;
+        renderer.center.x -=
+          ((e.clientX - last.clientX) * ratio) / renderer.viewport.scale;
+        renderer.center.y -=
+          ((e.clientY - last.clientY) * ratio) / renderer.viewport.scale;
+        renderer.updateViewport();
+        last.clientX = e.clientX;
+        last.clientY = e.clientY;
+        return;
+      }
       this.hover(point, last?.selecting && last.erase, e.shiftKey);
+      if (last?.gesture) {
+        last.gesture.end = this.bounded(point);
+        renderer.cursor = null;
+        return;
+      }
       if (last?.readOnly) {
         if (last.readOnly === "inspect") onRead?.("inspect", point);
         this.pointers.set(e.pointerId, { ...last, ...point });
@@ -101,6 +149,29 @@ export class Input {
     });
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
       canvas.addEventListener(type, (e) => {
+        const gesture = this.pointers.get(e.pointerId)?.gesture;
+        if (gesture) {
+          if (type === "pointerup") {
+            gesture.end = this.bounded(renderer.point(e.clientX, e.clientY));
+            this.onStroke();
+            const dx = gesture.end.x - gesture.start.x,
+              dy = gesture.end.y - gesture.start.y;
+            if (state.material === M.Lightning && !gesture.erase)
+              this.paint(gesture.end, gesture.end, false, dx, dy, true);
+            else {
+              const radius = state.radius;
+              state.radius = gesture.radius;
+              try {
+                stampGesture(gesture, gesture.radius, (x, y) =>
+                  this.paint({ x, y }, { x, y }, gesture.erase, dx, dy),
+                );
+              } finally {
+                state.radius = radius;
+              }
+            }
+          }
+          renderer.gesture = null;
+        }
         if (this.pointers.get(e.pointerId)?.selecting) {
           if (type === "pointerup") {
             if (selection.dragging)
@@ -126,10 +197,28 @@ export class Input {
       "wheel",
       (e) => {
         e.preventDefault();
-        state.setRadius(state.radius + (e.deltaY < 0 ? 1 : -1));
+        if (e.ctrlKey)
+          renderer.zoomAt(
+            Math.exp(-Math.max(-100, Math.min(100, e.deltaY)) * 0.005),
+            e.clientX,
+            e.clientY,
+          );
+        else if (e.deltaY)
+          state.setRadius(state.radius + (e.deltaY < 0 ? 1 : -1));
+        this.hover(renderer.point(e.clientX, e.clientY));
       },
       { passive: false },
     );
+  }
+  bounded(point) {
+    return {
+      x: Math.max(0, Math.min(this.world.width - 1, Math.floor(point.x))),
+      y: Math.max(0, Math.min(this.world.height - 1, Math.floor(point.y))),
+    };
+  }
+  cancel() {
+    this.pointers.clear();
+    this.renderer.gesture = null;
   }
   hover(point, erasing = false, refine = false) {
     if (readTools.has(this.state.tool)) {
@@ -183,6 +272,9 @@ export class Input {
     this.onHover(point);
   }
   paint(a, b, erase, dx = 1, dy = 0, immediate = false) {
+    // Renderer points measure from cell edges; engine brush centers are integer cells.
+    a = { x: a.x - 0.5, y: a.y - 0.5 };
+    b = { x: b.x - 0.5, y: b.y - 0.5 };
     const tool = erase ? "erase" : this.state.tool || "paint";
     if (tool === "paint" && this.state.material === M.Lightning) {
       const now = performance.now();
@@ -261,8 +353,9 @@ export class Input {
     }
   }
   update() {
+    if (!this.pointers.size) this.renderer.gesture = null;
     for (const point of this.pointers.values())
-      if (!point.selecting && !point.readOnly)
+      if (!point.selecting && !point.readOnly && !point.gesture && !point.pan)
         this.paint(point, point, point.erase, point.dx, point.dy);
   }
 }

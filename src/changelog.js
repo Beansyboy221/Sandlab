@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.3.0",
+    date: "2026-10-01",
+    title: "Drawing and canvas space",
+    changes: [
+      "Shift-drag previews a straight line. Control-drag previews a circle or rectangle outline using the current brush shape; release to draw, or Escape to cancel.",
+      "Scroll adjusts brush size. Control-scroll zooms around the pointer; middle-drag pans and Fit resets the view.",
+      "Phones now prioritize the canvas with a compact bottom dock. Swipe up or tap Controls for brush, history, tool properties, and zoom controls.",
+      "Canvas focus works on iPhone Safari without requiring browser fullscreen. The material browser still opens with its slide animation, including in landscape.",
+    ],
+  },
+  {
     version: "1.2.2",
     date: "2026-10-01",
     title: "Mobile toolbar",

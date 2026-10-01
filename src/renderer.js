@@ -1,3 +1,4 @@
+import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
 import { Bloom } from "./bloom.js";
 import { materials, M } from "./sim/materials.js";
@@ -38,6 +39,10 @@ export class Renderer {
     this.background = "";
     this.glow = new Bloom();
     this.cursor = null;
+    this.zoom = 1;
+    this.center = { x: world.width / 2, y: world.height / 2 };
+    this.cameraWidth = world.width;
+    this.cameraHeight = world.height;
     this.selectionOverlay = new SelectionOverlay();
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
@@ -49,20 +54,61 @@ export class Renderer {
     this.canvas.width = Math.round(box.width * dpr);
     this.canvas.height = Math.round(box.height * dpr);
     this.context.imageSmoothingEnabled = false;
-    const scale = Math.min(
-      this.canvas.width / this.world.width,
-      this.canvas.height / this.world.height,
-    );
+    if (
+      this.cameraWidth !== this.world.width ||
+      this.cameraHeight !== this.world.height
+    ) {
+      this.cameraWidth = this.world.width;
+      this.cameraHeight = this.world.height;
+      this.zoom = 1;
+      this.center = { x: this.world.width / 2, y: this.world.height / 2 };
+    }
+    this.updateViewport();
+  }
+  updateViewport() {
+    const scale =
+      this.zoom *
+      Math.min(
+        this.canvas.width / this.world.width,
+        this.canvas.height / this.world.height,
+      );
     this.viewport = {
-      x: (this.canvas.width - this.world.width * scale) / 2,
-      y: (this.canvas.height - this.world.height * scale) / 2,
+      x: this.canvas.width / 2 - this.center.x * scale,
+      y: this.canvas.height / 2 - this.center.y * scale,
       scale,
     };
+  }
+  zoomAt(factor, clientX, clientY) {
+    const anchor = this.point(clientX, clientY),
+      box = this.canvas.getBoundingClientRect(),
+      ratio = this.canvas.width / box.width;
+    this.zoom = Math.max(1, Math.min(12, this.zoom * factor));
+    this.updateViewport();
+    this.center = {
+      x:
+        anchor.x -
+        ((clientX - box.left) * ratio - this.canvas.width / 2) /
+          this.viewport.scale,
+      y:
+        anchor.y -
+        ((clientY - box.top) * ratio - this.canvas.height / 2) /
+          this.viewport.scale,
+    };
+    if (this.zoom === 1)
+      this.center = { x: this.world.width / 2, y: this.world.height / 2 };
+    this.updateViewport();
+  }
+  resetView() {
+    this.zoom = 1;
+    this.center = { x: this.world.width / 2, y: this.world.height / 2 };
+    this.updateViewport();
   }
   point(clientX, clientY) {
     const b = this.canvas.getBoundingClientRect(),
       dpr = Math.min(this.displayQuality, window.devicePixelRatio || 1);
     if (
+      this.cameraWidth !== this.world.width ||
+      this.cameraHeight !== this.world.height ||
       this.canvas.width !== Math.round(b.width * dpr) ||
       this.canvas.height !== Math.round(b.height * dpr)
     )
@@ -217,6 +263,7 @@ export class Renderer {
       c.stroke();
     }
     this.selectionOverlay.draw(c, v, this.world, this.selection);
+    drawGesturePreview(c, v, this.world, this.gesture);
     if (this.cursor && this.brushOutline) {
       const { x, y, radius, shape, erase, selection } = this.cursor;
       c.strokeStyle = erase ? "#ef9292" : selection ? "#98d8ef" : "#f6e3bd";

@@ -17,7 +17,7 @@ async function copyModules(source, destination) {
 }
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
-for (const file of ["index.html", "style.css"])
+for (const file of ["index.html", "style.css", "mobile.css"])
   await copyFile(file, `dist/${file}`);
 await copyModules("src", "dist/src");
 console.log("Static Sandlab build ready.");

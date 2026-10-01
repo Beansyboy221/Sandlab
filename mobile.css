@@ -1,0 +1,271 @@
+.controls-toggle,
+.camera-controls {
+  display: none;
+}
+.mobile-layout .topbar {
+  height: 48px;
+  padding: 0 max(8px, env(safe-area-inset-right)) 0
+    max(8px, env(safe-area-inset-left));
+}
+.mobile-layout .workspace {
+  display: flex;
+  height: calc(100dvh - 48px);
+  padding: 4px;
+}
+.mobile-layout .play-area {
+  width: 100%;
+  min-width: 0;
+}
+.mobile-layout .world-topline {
+  height: 30px;
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+.mobile-layout .topline-right {
+  gap: 1px;
+  font-size: 9px;
+}
+.mobile-layout #world-name {
+  max-width: 30vw;
+}
+.mobile-layout .world-type,
+.mobile-layout .statusbar,
+.mobile-layout .canvas-tip {
+  display: none;
+}
+.mobile-layout .canvas-wrap {
+  margin-bottom: calc(90px + env(safe-area-inset-bottom));
+  border-radius: 6px;
+  min-height: 100px;
+}
+.mobile-layout .toolbox {
+  position: fixed;
+  z-index: 20;
+  left: max(4px, env(safe-area-inset-left));
+  right: max(4px, env(safe-area-inset-right));
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  min-height: 0;
+  max-height: min(65dvh, 430px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 6px calc(6px + env(safe-area-inset-bottom));
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -8px 30px #0005;
+  transition: max-height 0.2s;
+}
+.mobile-layout .controls-toggle {
+  display: block;
+  flex: 0 0 100%;
+  min-height: 36px;
+  font-size: 11px;
+  color: var(--muted);
+  touch-action: none;
+}
+.mobile-layout .toolbox:not(.expanded) .play-controls {
+  flex: none;
+}
+.mobile-layout .toolbox:not(.expanded) .draw-controls {
+  flex: 1;
+  min-width: 0;
+}
+.mobile-layout .toolbox:not(.expanded) .tool-picker-toggle {
+  width: 100%;
+}
+.mobile-layout .toolbox:not(.expanded) .utility-controls {
+  display: contents;
+}
+.mobile-layout .toolbox:not(.expanded) .mobile-material {
+  display: flex;
+  flex: 1;
+  min-width: 90px;
+  max-width: 160px;
+  margin: 0;
+  min-height: 44px;
+  font-size: 11px;
+  padding: 6px;
+  gap: 6px;
+}
+.mobile-layout
+  .toolbox:not(.expanded)
+  .mobile-material
+  > span:not([data-icon]) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-layout .toolbox:not(.expanded) .brush-control,
+.mobile-layout .toolbox:not(.expanded) .tool-divider,
+.mobile-layout .toolbox:not(.expanded) #shape-btn,
+.mobile-layout .toolbox:not(.expanded) #step-btn,
+.mobile-layout .toolbox:not(.expanded) .speed-control,
+.mobile-layout .toolbox:not(.expanded) #undo-btn,
+.mobile-layout .toolbox:not(.expanded) #redo-btn,
+.mobile-layout .toolbox:not(.expanded) #clear-btn,
+.mobile-layout .toolbox:not(.expanded) .view-control,
+.mobile-layout .toolbox:not(.expanded) #tool-properties,
+.mobile-layout .toolbox:not(.expanded) #deselect-selection {
+  display: none;
+}
+.mobile-layout .toolbox .play-button,
+.mobile-layout .toolbox .icon-button {
+  width: 44px;
+  height: 44px;
+}
+.mobile-layout .toolbox.expanded .camera-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 4px;
+}
+.mobile-layout .toolbox.expanded .utility-controls {
+  width: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mobile-layout .toolbox.expanded[data-tool="paint"] .utility-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 44px) minmax(44px, 1fr) minmax(90px, 1.4fr);
+}
+.mobile-layout .toolbox.expanded .view-control {
+  position: static;
+  margin: 0;
+  min-width: 0;
+}
+.mobile-layout .toolbox.expanded .view-control select {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  text-overflow: ellipsis;
+}
+.mobile-layout .toolbox.expanded .brush-control {
+  flex: 1;
+  min-width: 48px;
+}
+.mobile-layout .toolbox.expanded .mobile-material {
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  display: flex;
+  padding: 6px;
+  gap: 6px;
+}
+.mobile-layout .toolbox.expanded .mobile-material > span:not([data-icon]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-layout .toolbox.expanded .mobile-material i {
+  flex: none;
+}
+.mobile-layout .palette {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  height: 100dvh;
+  border-radius: 0;
+  pointer-events: none;
+  transform: translateY(105%);
+  transition: transform 0.22s;
+  padding: max(12px, env(safe-area-inset-top)) 16px
+    max(12px, env(safe-area-inset-bottom));
+}
+.mobile-layout .palette.open {
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.mobile-layout .mobile-only {
+  display: flex;
+}
+.mobile-layout .material-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+.mobile-layout .category-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.mobile-layout .palette-heading {
+  margin-bottom: 12px;
+}
+.mobile-layout .material-name {
+  font-size: 10px;
+}
+.mobile-layout .material {
+  min-height: 56px;
+}
+.mobile-layout .toolbox .view-control {
+  display: none;
+}
+.mobile-layout .toolbox.expanded[data-tool="paint"] .view-control {
+  display: flex;
+}
+.tool-picker-menu {
+  z-index: 70;
+}
+.canvas-focus .topbar,
+.canvas-focus .world-topline {
+  display: none;
+}
+.canvas-focus .workspace {
+  height: 100dvh;
+  padding-top: 0;
+}
+.mobile-layout.canvas-focus .canvas-wrap {
+  border: 0;
+  border-radius: 0;
+}
+
+#exit-focus-btn {
+  display: none;
+}
+.canvas-focus #exit-focus-btn {
+  display: flex;
+}
+.canvas-focus:not(.mobile-layout) .camera-controls {
+  display: flex;
+}
+.mobile-layout .header-actions .icon-button,
+.mobile-layout .header-actions .quiet-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 5px;
+}
+.mobile-layout .brand {
+  font-size: 22px;
+  gap: 4px;
+}
+.mobile-layout .save-label {
+  display: none;
+}
+.mobile-layout .header-actions {
+  gap: 0;
+}
+.mobile-layout .controls-toggle {
+  min-height: 44px;
+}
+.mobile-layout .canvas-wrap {
+  margin-bottom: calc(98px + env(safe-area-inset-bottom));
+}
+.mobile-layout .toolbox.expanded .tool-divider {
+  display: none;
+}
+.mobile-layout .toolbox:not(.expanded) {
+  max-height: calc(98px + env(safe-area-inset-bottom));
+}
+.mobile-layout .controls-toggle {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}

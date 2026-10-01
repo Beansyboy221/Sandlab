@@ -28,6 +28,8 @@ def init(context):
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('http://sandlab.test/')
     page.wait_for_function('() => (window.sandlab !== undefined)')
+    if page.locator('body').evaluate("e=>e.classList.contains('mobile-layout')"):
+        page.locator('#controls-toggle').click()
     return page, errors
 
 with sync_playwright() as p:
@@ -141,7 +143,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 10
+    assert page.locator('.changelog-release').count() == 11
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')

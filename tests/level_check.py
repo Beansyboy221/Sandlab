@@ -20,6 +20,8 @@ def init(browser, width, height, touch=False):
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.goto('http://sandlab.test/')
     page.wait_for_function('() => !!window.sandlab')
+    if page.locator('body').evaluate("e=>e.classList.contains('mobile-layout')"):
+        page.locator('#controls-toggle').click()
     page.locator('#play-btn').click()
     return context,page,errors
 
@@ -34,6 +36,7 @@ def point(page,x,y):
     return page.evaluate('''([x,y])=>{const editor=sandlab.levelEditor, b=editor.preview.getBoundingClientRect(), ratio=editor.preview.width/b.width, v=editor.viewport;return {x:b.x+(v.x+x*v.scale)/ratio,y:b.y+(v.y+y*v.scale)/ratio};}''',[x,y])
 
 def verify(page,name,width,height,border,background):
+    page.wait_for_function("expected => {const w=sandlab.world;return JSON.stringify([w.name,w.width,w.height,w.border,w.background])===JSON.stringify(expected)}",arg=[name,width,height,border,background])
     actual=page.evaluate('''()=>{const w=sandlab.world;return [w.name,w.width,w.height,w.border,w.background];}''')
     assert actual == [name,width,height,border,background], (actual,page.locator('#level-error').inner_text(),page.locator('#level-dialog').get_attribute('open'))
     assert page.locator('#world-name').inner_text()==name

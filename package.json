@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,8 @@
     "test:inspection": "python3 tests/inspection_check.py",
     "test:security": "python3 tests/security_check.py",
     "test:levels": "python3 tests/level_check.py",
-    "test:energy": "python3 tests/energy_check.py"
+    "test:energy": "python3 tests/energy_check.py",
+    "test:drawing": "python3 tests/drawing_check.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"
