@@ -92,7 +92,7 @@ with sync_playwright() as p:
     # Rebinding, conflict handling, modifier dispatch, toolbar hints, persistence, reset.
     page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
     page.locator('#binding-pause-1').click(); page.keyboard.press('b')
-    assert 'Already assigned to Paint' in page.locator('.binding-status').inner_text()
+    assert 'Already assigned to Draw' in page.locator('.binding-status').inner_text()
     page.keyboard.press('k')
     assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'k'")
     page.locator('#binding-undo-0').click(); page.keyboard.press('Control+u')

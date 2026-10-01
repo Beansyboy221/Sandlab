@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.2.1",
+    date: "2026-10-01",
+    title: "Tool names",
+    changes: [
+      "Renamed Paint to Draw, Magnifier to Inspect, and Eyedropper to Copy in the tool picker and keyboard settings.",
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-10-01",
     title: "Energy and imagination",

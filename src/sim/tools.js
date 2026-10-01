@@ -1,14 +1,14 @@
 import { materials, M } from "./materials.js";
 export const brushTools = [
-  ["paint", "Paint", "brush"],
+  ["paint", "Draw", "brush"],
   ["erase", "Erase", "eraser"],
   ["warm", "Warm", "warm"],
   ["cool", "Cool", "cool"],
   ["fan", "Fan", "fan"],
   ["grab", "Grab", "hand"],
   ["select", "Select", "select"],
-  ["inspect", "Magnifier", "search"],
-  ["eyedropper", "Eyedropper", "eyedropper"],
+  ["inspect", "Inspect", "search"],
+  ["eyedropper", "Copy", "eyedropper"],
   ["pressure", "Pressure", "pressure"],
   ["vacuum", "Vacuum", "vacuum"],
   ["squeeze", "Squeeze", "squeeze"],

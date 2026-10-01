@@ -12,7 +12,7 @@ Open **http://localhost:3000**. The development server uses Python 3. For deploy
 
 ## Play
 
-Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Magnifier (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Eyedropper (`I`) picks a material and returns to Paint without changing the world. Scroll over the canvas or use `[` / `]` to resize the brush. Multiple fingers can paint simultaneously. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
+Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Scroll over the canvas or use `[` / `]` to resize the brush. Multiple fingers can paint simultaneously. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
 
 - `Space`: pause or resume; `.`: one simulation step.
 - `B` / `E`: draw or erase; `1` / `2` / `3`: sand, water, fire.
@@ -109,7 +109,7 @@ Drag from any selected cell, including empty selected cells, to move the selecte
 
 Selecting pauses the world so the copied region stays still. Copy captures all particle state; Paste shows a preview, then a click or tap places it. Empty clipboard cells stay transparent. Existing particles are protected unless Replace is enabled. Use `Ctrl/⌘ C`, `Ctrl/⌘ V`, and `Escape` to copy, paste, and cancel placement. Tapping Paste again also cancels the preview on touch devices. Undo restores a pasted world. The in-game clipboard stays local to the current session and supports repeat placements.
 
-The materials button appears only for Paint. Other tools expose their controls on the drawing toolbar: heat/cooling/force strength, fan direction, whether Grab/Erase includes solids, and selection copy/paste controls.
+The materials button appears only for Draw. Other tools expose their controls on the drawing toolbar: heat/cooling/force strength, fan direction, whether Grab/Erase includes solids, and selection copy/paste controls.
 
 ## Settings
 

@@ -36,7 +36,7 @@ with sync_playwright() as p:
     page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('Enter')
     assert page.evaluate('sandlab.state.tool')=='warm'
     assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Warm'
-    page.keyboard.press('b');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Paint'
+    page.keyboard.press('b');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Draw'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('f');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='fan'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()

@@ -141,7 +141,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 8
+    assert page.locator('.changelog-release').count() == 9
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
