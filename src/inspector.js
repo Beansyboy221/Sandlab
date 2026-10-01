@@ -1,0 +1,156 @@
+import { materials, M } from "./sim/materials.js";
+
+export function cellAt(world, point) {
+  if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))
+    return null;
+  const x = Math.floor(point.x),
+    y = Math.floor(point.y);
+  if (x < 0 || y < 0 || x >= world.width || y >= world.height) return null;
+  const index = y * world.width + x;
+  return { x, y, index, material: materials[world.cells[index]] };
+}
+export function cellProperties(world, point) {
+  const cell = cellAt(world, point);
+  if (!cell) return null;
+  const { x, y, index: i, material: m } = cell,
+    life = world.life[i];
+  const rows = [
+    ["Temperature", `${world.temp[i].toFixed(1)}°C`],
+    [
+      m.ignitionDelay
+        ? "Ignition timer"
+        : m.burn && life
+          ? "Burn remaining"
+          : "Lifetime",
+      life
+        ? `${life} ticks`
+        : m.id === 0
+          ? "—"
+          : m.lifetime
+            ? "Expired"
+            : m.ignitionDelay || m.burn
+              ? "Inactive"
+              : "Persistent",
+    ],
+    ["Charge", world.charge[i] ? `${world.charge[i]} ticks` : "None"],
+    ["Pressure", world.fields.pressure[world.fields.index(x, y)].toFixed(2)],
+  ];
+  if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
+  if (world.moisture[i] || [M.Plant, M.Seed, M.Dirt, M.Mud].includes(m.id))
+    rows.push(["Moisture", `${Math.round((world.moisture[i] / 255) * 100)}%`]);
+  if (world.nutrition[i])
+    rows.push(["Nutrients", `${world.nutrition[i]} / 255`]);
+  if (m.id === M.Plant) rows.push(["Growth depth", String(world.growth[i])]);
+  if (m.id === M.Sponge)
+    rows.push([
+      "Absorbed",
+      world.storedAmount[i]
+        ? `${materials[world.storedLiquid[i]].name} · ${world.storedAmount[i]} / 48`
+        : "Empty · 0 / 48",
+    ]);
+  if (world.clone[i]) rows.push(["Clones", materials[world.clone[i]].name]);
+  if (m.id === M.Ice && world.residue[i])
+    rows.push(["Frozen from", materials[world.residue[i]].name]);
+  return { ...cell, rows };
+}
+
+export class Inspector {
+  constructor(panel, world, renderer) {
+    this.panel = panel;
+    this.world = world;
+    this.renderer = renderer;
+    this.title = panel.querySelector("h3");
+    this.location = panel.querySelector(".inspection-location");
+    this.list = panel.querySelector("dl");
+    this.lens = panel.querySelector("canvas");
+    this.context = this.lens.getContext("2d", { alpha: false });
+    this.rows = new Map();
+    this.point = null;
+    this.active = false;
+    this.pinned = false;
+    this.zoom = 8;
+    this.nextUpdate = 0;
+  }
+  setActive(active) {
+    if (active !== this.active) {
+      this.point = null;
+      this.pinned = false;
+    }
+    this.active = active;
+    if (!active) this.panel.hidden = true;
+  }
+  follow(point) {
+    if (!this.active || this.pinned) return;
+    this.point = point;
+    if (!cellAt(this.world, point)) this.panel.hidden = true;
+  }
+  sample(point) {
+    if (!this.active || !cellAt(this.world, point)) return;
+    this.point = { x: Math.floor(point.x), y: Math.floor(point.y) };
+    this.pinned = true;
+    this.nextUpdate = 0;
+  }
+  update(now) {
+    if (!this.active || now < this.nextUpdate) return;
+    this.nextUpdate = now + 100;
+    const data = cellProperties(this.world, this.point);
+    if (!data) {
+      this.panel.hidden = true;
+      return;
+    }
+    this.panel.hidden = false;
+    this.title.textContent = data.material.name;
+    this.location.textContent = `${data.material.category === "none" ? "Empty" : data.material.category} · ${data.x}, ${data.y} · ${this.pinned ? "Held cell" : "Live"}`;
+    for (const row of this.rows.values()) row.hidden = true;
+    for (const [name, value] of data.rows) {
+      let row = this.rows.get(name);
+      if (!row) {
+        row = document.createElement("div");
+        const label = document.createElement("dt"),
+          output = document.createElement("dd");
+        label.textContent = name;
+        row.append(label, output);
+        this.list.append(row);
+        this.rows.set(name, row);
+      }
+      row.hidden = false;
+      row.lastChild.textContent = value;
+    }
+    this.drawLens(data.x, data.y);
+  }
+  drawLens(x, y) {
+    const ctx = this.context,
+      size = this.lens.width,
+      scale = this.zoom * 2,
+      span = size / scale,
+      left = x - Math.floor(span / 2),
+      top = y - Math.floor(span / 2),
+      sx = Math.max(0, left),
+      sy = Math.max(0, top),
+      width = Math.min(this.world.width, left + span) - sx,
+      height = Math.min(this.world.height, top + span) - sy;
+    ctx.fillStyle = "#0b1317";
+    ctx.fillRect(0, 0, size, size);
+    ctx.imageSmoothingEnabled = false;
+    // Clip source bounds explicitly so edge cells keep their position in the lens.
+    ctx.drawImage(
+      this.renderer.buffer,
+      sx,
+      sy,
+      width,
+      height,
+      (sx - left) * scale,
+      (sy - top) * scale,
+      width * scale,
+      height * scale,
+    );
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#edf3d9";
+    ctx.strokeRect(
+      (x - left) * scale + 1,
+      (y - top) * scale + 1,
+      scale - 2,
+      scale - 2,
+    );
+  }
+}

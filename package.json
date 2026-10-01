@@ -1,0 +1,20 @@
+{
+  "name": "sandlab",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 3000 --bind 0.0.0.0",
+    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js",
+    "bench": "node tests/benchmark.js",
+    "test:browser": "python3 tests/browser_check.py",
+    "format": "prettier --write \"src/**/*.js\" \"tests/*.js\" index.html style.css README.md",
+    "build": "node scripts/build.mjs",
+    "test:experiments": "python3 tests/experiments_check.py",
+    "test:inspection": "python3 tests/inspection_check.py",
+    "test:security": "python3 tests/security_check.py"
+  },
+  "devDependencies": {
+    "prettier": "3.9.9"
+  }
+}

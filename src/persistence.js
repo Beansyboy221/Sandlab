@@ -1,0 +1,269 @@
+import { particleStateFields } from "./sim/particle-state.js";
+import { World } from "./sim/world.js";
+import { absorbable } from "./sim/absorption.js";
+import { materials, M } from "./sim/materials.js";
+const KEY = "sandlab.saves.v1",
+  AUTO = "sandlab.autosave.v1";
+const arrays = particleStateFields;
+export function snapshot(world, typed = false) {
+  return {
+    version: 1,
+    width: world.width,
+    height: world.height,
+    seed: world.seed,
+    tick: world.tick,
+    activity: Array.from(world.motionStamp),
+    arrays: Object.fromEntries(
+      arrays.map((key) => [
+        key,
+        typed ? world[key].slice() : Array.from(world[key]),
+      ]),
+    ),
+    pressure: typed
+      ? world.fields.pressure.slice()
+      : Array.from(world.fields.pressure),
+  };
+}
+function validateDimensions(data) {
+  if (
+    !data ||
+    data.version !== 1 ||
+    !Number.isInteger(data.width) ||
+    !Number.isInteger(data.height) ||
+    data.width < 8 ||
+    data.height < 8 ||
+    data.width > 512 ||
+    data.height > 512 ||
+    data.width * data.height > 200000
+  )
+    throw Error("This file uses an unsupported world size or format.");
+}
+export function validateSnapshot(data) {
+  validateDimensions(data);
+  if (
+    (data.seed !== undefined &&
+      (!Number.isInteger(data.seed) ||
+        data.seed < 0 ||
+        data.seed > 4294967295)) ||
+    (data.tick !== undefined &&
+      (!Number.isSafeInteger(data.tick) || data.tick < 0))
+  )
+    throw Error("Invalid simulation clock or seed.");
+  const length = data.width * data.height;
+  for (const key of arrays) {
+    const values =
+      data.arrays?.[key] ??
+      ([
+        "chargedAt",
+        "moisture",
+        "nutrition",
+        "growth",
+        "storedLiquid",
+        "storedAmount",
+      ].includes(key)
+        ? new Uint32Array(length)
+        : undefined);
+    if (
+      !(Array.isArray(values) || ArrayBuffer.isView(values)) ||
+      values.length !== length ||
+      values.some((v) => !Number.isFinite(v))
+    )
+      throw Error("This save is incomplete or damaged.");
+  }
+  for (const key of arrays) {
+    const values = data.arrays[key];
+    if (!values) continue;
+    const maximum =
+      key === "temp"
+        ? 100000
+        : key === "chargedAt"
+          ? 4294967295
+          : key === "life"
+            ? 65535
+            : key === "storedAmount"
+              ? 48
+              : ["cells", "clone", "residue", "storedLiquid"].includes(key)
+                ? materials.length - 1
+                : 255;
+    const minimum = key === "temp" ? -273 : 0;
+    if (
+      values.some(
+        (v) =>
+          v < minimum ||
+          v > maximum ||
+          (key !== "temp" && !Number.isInteger(v)),
+      )
+    )
+      throw Error("This save contains invalid particle data.");
+  }
+  for (let i = 0; i < length; i++) {
+    const amount = data.arrays.storedAmount?.[i] || 0,
+      type = data.arrays.storedLiquid?.[i] || 0;
+    if (
+      (amount && (data.arrays.cells[i] !== M.Sponge || !absorbable(type))) ||
+      (!amount && type)
+    )
+      throw Error("Invalid sponge contents.");
+  }
+  if (
+    data.arrays.cells.some(
+      (v) => v < 0 || v >= materials.length || !Number.isInteger(v),
+    )
+  )
+    throw Error("This save contains an unknown material.");
+  if (
+    data.pressure &&
+    (!(Array.isArray(data.pressure) || ArrayBuffer.isView(data.pressure)) ||
+      data.pressure.length !==
+        Math.ceil(data.width / 4) * Math.ceil(data.height / 4) ||
+      data.pressure.some((v) => !Number.isFinite(v) || Math.abs(v) > 80))
+  )
+    throw Error("Invalid pressure data.");
+  const chunkCount = Math.ceil(data.width / 16) * Math.ceil(data.height / 16);
+  if (
+    data.activity &&
+    (!Array.isArray(data.activity) ||
+      data.activity.length !== chunkCount ||
+      data.activity.some(
+        (v) => !Number.isInteger(v) || v < 0 || v > 4294967295,
+      ))
+  )
+    throw Error("Invalid activity data.");
+}
+export function restore(world, data) {
+  validateSnapshot(data);
+  // Validate the complete payload before replacing a live world or allocating its grid.
+  if (world.width !== data.width || world.height !== data.height)
+    Object.assign(world, new World(data.width, data.height));
+  else world.clear();
+  for (const key of arrays)
+    world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
+  world.seed = data.seed >>> 0 || 17421;
+  world.tick = Number.isSafeInteger(data.tick) ? data.tick : 0;
+  for (let i = 0; i < world.length; i++)
+    if (world.cells[i]) {
+      world.count++;
+      world.chunks[world.chunk(i)]++;
+    }
+  if (data.pressure) world.fields.pressure.set(data.pressure);
+  if (data.activity) world.motionStamp.set(data.activity);
+  else world.motionStamp.fill(world.tick + 1);
+}
+// Run-length encoding compresses empty cells and walls without a library or network service.
+export function pack(data) {
+  const result = { ...data, encoding: "rle", arrays: {} };
+  for (const key of arrays) {
+    const source = data.arrays[key],
+      runs = [];
+    let last = source[0],
+      count = 1;
+    for (let i = 1; i <= source.length; i++) {
+      if (i < source.length && source[i] === last && count < 65535) count++;
+      else {
+        runs.push(count, last);
+        last = source[i];
+        count = 1;
+      }
+    }
+    result.arrays[key] = runs;
+  }
+  return result;
+}
+export function unpack(data) {
+  validateDimensions(data);
+  if (data.encoding === undefined) return data;
+  if (data.encoding !== "rle") throw Error("Unsupported save encoding.");
+  const output = { ...data, arrays: {} };
+  for (const key of arrays) {
+    const runs =
+      data.arrays?.[key] ??
+      ([
+        "chargedAt",
+        "moisture",
+        "nutrition",
+        "growth",
+        "storedLiquid",
+        "storedAmount",
+      ].includes(key)
+        ? [data.width * data.height, 0]
+        : undefined);
+    if (
+      !Array.isArray(runs) ||
+      runs.length % 2 ||
+      runs.length > data.width * data.height * 2
+    )
+      throw Error("Invalid compressed save.");
+    const values = [];
+    for (let i = 0; i < runs.length; i += 2) {
+      if (
+        !Number.isFinite(runs[i + 1]) ||
+        !Number.isInteger(runs[i]) ||
+        runs[i] < 1 ||
+        values.length + runs[i] > data.width * data.height
+      )
+        throw Error("Invalid compressed save.");
+      for (let n = 0; n < runs[i]; n++) values.push(runs[i + 1]);
+    }
+    if (values.length !== data.width * data.height)
+      throw Error("Incomplete compressed save.");
+    output.arrays[key] = values;
+  }
+  return output;
+}
+// Only locally generated PNG previews are accepted; saves cannot request remote images or SVG.
+export function safeThumbnail(value) {
+  return typeof value === "string" &&
+    value.length <= 500000 &&
+    /^data:image\/png;base64,[A-Za-z0-9+/]+={0,2}$/.test(value)
+    ? value
+    : "";
+}
+export function getSaves() {
+  try {
+    const data = JSON.parse(localStorage.getItem(KEY) || "[]");
+    return Array.isArray(data)
+      ? data
+          .filter((s) => s && typeof s.name === "string" && s.data)
+          .slice(0, 8)
+          .map((s) => ({
+            ...s,
+            name: s.name.slice(0, 120),
+            thumbnail: safeThumbnail(s.thumbnail),
+          }))
+      : [];
+  } catch {
+    return [];
+  }
+}
+export function saveWorld(world, name, thumbnail) {
+  const saves = getSaves();
+  if (saves.length >= 8)
+    throw Error(
+      "You have eight saved worlds. Export or delete a saved copy to make room.",
+    );
+  saves.unshift({
+    id: Date.now(),
+    name,
+    date: new Date().toISOString(),
+    thumbnail,
+    data: pack(snapshot(world)),
+  });
+  localStorage.setItem(KEY, JSON.stringify(saves));
+  return saves;
+}
+export function deleteSave(id) {
+  localStorage.setItem(
+    KEY,
+    JSON.stringify(getSaves().filter((s) => s.id !== id)),
+  );
+}
+export function autosave(world) {
+  localStorage.setItem(AUTO, JSON.stringify(pack(snapshot(world))));
+}
+export function getAutosave() {
+  try {
+    return unpack(JSON.parse(localStorage.getItem(AUTO)));
+  } catch {
+    return null;
+  }
+}

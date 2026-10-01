@@ -1,0 +1,125 @@
+import { arcGap } from "./sparks.js";
+import { reactExplosive } from "./ignition.js";
+import { M, materials } from "./materials.js";
+import { reactContact, oxidize, dissolveOrganic } from "./chemistry.js";
+import { changePhase } from "./phase-changes.js";
+import { absorb } from "./absorption.js";
+import { grow } from "./biology.js";
+import { weather } from "./weather.js";
+import { burnFuel, reactFire } from "./combustion.js";
+
+export function react(world, i, x, y) {
+  const { cells: c, temp: t, life: l, charge: q, cooldown: cd } = world;
+  const id = c[i],
+    m = materials[id];
+  if (cd[i]) cd[i]--;
+  if (q[i] && world.chargedAt[i] !== world.tick) {
+    if (q[i] === 6 && m.conductive) arcGap(world, i, x, y);
+    q[i]--;
+    t[i] += 1.5;
+    world.eachNeighbor(x, y, (j) => {
+      if (materials[c[j]].conductive && !cd[j]) {
+        q[j] = 6;
+        cd[j] = 18;
+        world.chargedAt[j] = world.tick;
+      }
+    });
+  }
+  // Contact chemistry precedes phase changes, so a hot water-reactive metal
+  // still reacts with water before that water flashes into steam.
+  if (reactContact(world, i, x, y) || changePhase(world, i, x, y, m)) return;
+  if (m.oxidizeTo) {
+    oxidize(world, i, x, y, m);
+    if (c[i] !== id) return;
+  }
+  if (m.corrodesOrganic) {
+    dissolveOrganic(world, i, x, y);
+    if (c[i] !== id) return;
+  }
+  if (m.explosive && reactExplosive(world, i, x, y, m)) return;
+  if (id === M.Sponge) absorb(world, i, x, y);
+  if (m.burn && (!m.explosive || m.deflagrates)) {
+    burnFuel(world, i, x, y, m);
+    if (c[i] !== id || l[i] || t[i] >= m.ignite) return;
+  }
+  if (id === M.Lightning || id === M.Storm || id === M.Cloud) {
+    weather(world, i, x, y);
+    return;
+  }
+  if (id === M.Plant || id === M.Seed || id === M.Dirt || id === M.Mud)
+    grow(world, i, x, y);
+  if (id === M.Fire) {
+    reactFire(world, i, x, y);
+    return;
+  }
+  if (id === M.Plasma || id === M.Spark) {
+    if (!l[i] || --l[i] === 0) {
+      world.set(i, world.residue[i] || 0, 120);
+      return;
+    }
+    if (id === M.Plasma) t[i] = 5000;
+    let wetSpark = false;
+    world.eachNeighbor(x, y, (j) => {
+      if (materials[c[j]].waterLike) {
+        t[j] += id === M.Plasma ? 200 : 30;
+        if (id === M.Spark) {
+          wetSpark = true;
+          if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
+            q[j] = 6;
+            cd[j] = 18;
+            world.chargedAt[j] = world.tick;
+          }
+        }
+      } else if (
+        id === M.Spark &&
+        !world.residue[i] &&
+        materials[c[j]].conductive &&
+        !cd[j]
+      ) {
+        q[j] = 6;
+        cd[j] = 18;
+        world.chargedAt[j] = world.tick;
+      } else if (materials[c[j]].ignite) t[j] += id === M.Plasma ? 200 : 30;
+    });
+    if (wetSpark) {
+      world.set(i, world.residue[i] || 0, 100);
+      return;
+    }
+  } else if (m.lifetime && l[i] && --l[i] === 0) world.set(i, 0);
+  if (m.heatSource) {
+    t[i] = m.temperature;
+    world.eachNeighbor(x, y, (j) => {
+      if (c[j]) t[j] += (t[i] - t[j]) * 0.12;
+    });
+  } else if (id === M.Acid || m.corrosive) {
+    if (world.random() < 0.2)
+      world.eachNeighbor(x, y, (j) => {
+        const n = materials[c[j]];
+        if (
+          c[j] &&
+          n.category !== "gas" &&
+          c[j] !== id &&
+          n.category !== "energy" &&
+          world.random() > n.resistance
+        ) {
+          world.set(j, 0);
+          if (world.random() < 0.06) world.set(i, m.corrosive ? 0 : M.Water);
+        }
+      });
+  } else if (id === M.Void)
+    world.eachNeighbor(x, y, (j) => {
+      if (c[j] && c[j] !== M.Void) world.set(j, 0);
+    });
+  else if (id === M.Clone) {
+    world.eachNeighbor(x, y, (j) => {
+      if (
+        !world.clone[i] &&
+        c[j] &&
+        ["powder", "liquid", "gas"].includes(materials[c[j]].category)
+      )
+        world.clone[i] = c[j];
+      if (!c[j] && world.clone[i] && world.random() < 0.3)
+        world.set(j, world.clone[i]);
+    });
+  }
+}
