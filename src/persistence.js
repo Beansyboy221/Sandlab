@@ -1,3 +1,8 @@
+import {
+  defaultLevel,
+  validateLevelMetadata,
+  applyLevelMetadata,
+} from "./level-properties.js";
 import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
 import { absorbable } from "./sim/absorption.js";
@@ -8,6 +13,11 @@ const arrays = particleStateFields;
 export function snapshot(world, typed = false) {
   return {
     version: 1,
+    level: {
+      name: world.name,
+      border: world.border,
+      background: world.background,
+    },
     width: world.width,
     height: world.height,
     seed: world.seed,
@@ -40,6 +50,7 @@ function validateDimensions(data) {
 }
 export function validateSnapshot(data) {
   validateDimensions(data);
+  if (data.level !== undefined) validateLevelMetadata(data.level);
   if (
     (data.seed !== undefined &&
       (!Number.isInteger(data.seed) ||
@@ -136,6 +147,8 @@ export function restore(world, data) {
   if (world.width !== data.width || world.height !== data.height)
     Object.assign(world, new World(data.width, data.height));
   else world.clear();
+  applyLevelMetadata(world, data.level ?? defaultLevel);
+  world.lastStrikeTick = -1;
   for (const key of arrays)
     world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
   world.seed = data.seed >>> 0 || 17421;
@@ -171,6 +184,7 @@ export function pack(data) {
 }
 export function unpack(data) {
   validateDimensions(data);
+  if (data.level !== undefined) validateLevelMetadata(data.level);
   if (data.encoding === undefined) return data;
   if (data.encoding !== "rle") throw Error("Unsupported save encoding.");
   const output = { ...data, arrays: {} };

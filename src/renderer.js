@@ -35,6 +35,7 @@ export class Renderer {
     this.bloomIntensity = 1;
     this.displayQuality = 2;
     this.brushOutline = true;
+    this.background = "";
     this.glow = new Bloom();
     this.cursor = null;
     this.selectionOverlay = new SelectionOverlay();
@@ -83,6 +84,13 @@ export class Renderer {
       this.data = this.ctx.createImageData(this.world.width, this.world.height);
       this.resize();
     }
+    if (this.background !== this.world.background) {
+      this.background = this.world.background;
+      this.backgroundRGB = [1, 3, 5].map((start) =>
+        parseInt(this.background.slice(start, start + 2), 16),
+      );
+    }
+    const [bgR, bgG, bgB] = this.backgroundRGB;
     const { cells, temp, life, variant, charge, fields, width, height, tick } =
         this.world,
       p = this.data.data;
@@ -93,9 +101,9 @@ export class Renderer {
         o = i * 4,
         x = i % width,
         y = (i / width) | 0;
-      let r = 17,
-        g = 27,
-        b = 32;
+      let r = bgR,
+        g = bgG,
+        b = bgB;
       if (id) {
         const base = thermal
           ? heatColors[Math.max(0, Math.min(1600, Math.round(temp[i]) + 100))]
@@ -125,9 +133,9 @@ export class Renderer {
             id === M.Smoke ||
             materials[id].category === "gas"
           ) {
-            r = r * 0.67 + 17 * 0.33;
-            g = g * 0.67 + 27 * 0.33;
-            b = b * 0.67 + 32 * 0.33;
+            r = r * 0.67 + bgR * 0.33;
+            g = g * 0.67 + bgG * 0.33;
+            b = b * 0.67 + bgB * 0.33;
           }
           if (
             (id === M.Dirt || id === M.Mud || id === M.Plant) &&
@@ -167,9 +175,10 @@ export class Renderer {
           }
         }
       } else if (x % 20 === 0 && y % 20 === 0) {
-        r = 33;
-        g = 45;
-        b = 49;
+        const dot = bgR + bgG + bgB > 400 ? -13 : 13;
+        r += dot;
+        g += dot;
+        b += dot;
       }
       if (pressure) {
         const force = fields.pressure[fields.index(x, y)],

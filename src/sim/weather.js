@@ -3,40 +3,39 @@ export function strike(w, x, y) {
   // Trace once per tick; painted lightning cannot multiply into an unbounded storm.
   if (w.lastStrikeTick === w.tick) return;
   w.lastStrikeTick = w.tick;
-  for (let row = y; row < w.height; row++) {
-    let target = x,
+  const loop = w.border === "looping";
+  // A looping bolt traces at most one world height, including any wrapped rows.
+  for (let step = 0; step < w.height; step++) {
+    const row = loop ? (y + step) % w.height : y + step;
+    if (row >= w.height) break;
+    let direction = 0,
       best = Infinity;
     for (let dx = -8; dx <= 8; dx++)
       for (let dy = 1; dy <= 8; dy++) {
-        const nx = x + dx,
-          ny = row + dy;
-        if (nx < 0 || nx >= w.width || ny >= w.height) continue;
-        if (
-          materials[w.cells[ny * w.width + nx]].conductive &&
-          Math.abs(dx) + dy < best
-        ) {
+        const i = w.index(x + dx, row + dy);
+        if (i < 0) continue;
+        if (materials[w.cells[i]].conductive && Math.abs(dx) + dy < best) {
           best = Math.abs(dx) + dy;
-          target = nx;
+          direction = Math.sign(dx);
         }
       }
     const previous = x;
-    x = Math.max(
-      0,
-      Math.min(
-        w.width - 1,
-        x +
-          (best < Infinity
-            ? Math.sign(target - x)
-            : w.random() < 0.3
-              ? w.random() < 0.5
-                ? -1
-                : 1
-              : 0),
-      ),
-    );
-    // Connect bends horizontally so the bolt has no diagonal gaps.
-    for (let nx = Math.min(previous, x); nx <= Math.max(previous, x); nx++) {
-      const i = row * w.width + nx,
+    const next =
+      x +
+      (best < Infinity
+        ? direction
+        : w.random() < 0.3
+          ? w.random() < 0.5
+            ? -1
+            : 1
+          : 0);
+    x = loop
+      ? (next + w.width) % w.width
+      : Math.max(0, Math.min(w.width - 1, next));
+    // Connect the two cells of a bend without drawing across a wrapped seam.
+    for (let bend = 0; bend < (previous === x ? 1 : 2); bend++) {
+      const nx = bend ? x : previous,
+        i = row * w.width + nx,
         id = w.cells[i],
         m = materials[id];
       if (
@@ -60,7 +59,8 @@ export function strike(w, x, y) {
   }
 }
 export function weather(w, i, x, y) {
-  const id = w.cells[i];
+  const id = w.cells[i],
+    below = w.index(x, y + 1);
   if (id === M.Lightning) {
     if (!w.clone[i]) strike(w, x, y);
     if (w.cells[i] === M.Lightning && (!w.life[i] || --w.life[i] === 0))
@@ -68,15 +68,15 @@ export function weather(w, i, x, y) {
   } else if (id === M.Storm) {
     if (!w.life[i]) w.life[i] = 240 + Math.floor(w.random() * 180);
     if (--w.life[i] === 0) strike(w, x, y + 1);
-    if (y < w.height - 1 && !w.cells[i + w.width] && w.random() < 0.04)
-      w.set(i + w.width, M.Cloud);
+    if (below >= 0 && !w.cells[below] && w.random() < 0.04)
+      w.set(below, M.Cloud);
   } else {
     if (!w.life[i] || --w.life[i] === 0) {
       w.set(i, 0);
       return;
     }
-    if (y < w.height - 1 && !w.cells[i + w.width] && w.random() < 0.008) {
-      w.set(i + w.width, M.Water);
+    if (below >= 0 && !w.cells[below] && w.random() < 0.008) {
+      w.set(below, M.Water);
       w.life[i] = Math.max(1, w.life[i] - 25);
     }
   }

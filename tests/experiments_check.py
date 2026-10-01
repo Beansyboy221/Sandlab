@@ -19,9 +19,6 @@ with sync_playwright() as p:
     page.goto('http://sandlab.test/')
     page.wait_for_function('() => (window.sandlab !== undefined)')
     page.evaluate('sandlab.state.paused=true')
-    page.locator('#experiments-btn').click()
-    page.screenshot(path=str(ARTIFACTS/'experiments.png'))
-    page.keyboard.press('Escape')
     for id in ['storm','garden','foundry','phase','acid','firebreak','absorption','reactions','pottery']:
         page.evaluate('''id=>{sandlab.loadPreset(id);for(let n=0;n<180;n++)sandlab.world.step();sandlab.renderer.draw();}''',id)
         page.locator('#world').screenshot(path=str(ARTIFACTS/f'preset-{id}.png'))

@@ -4,14 +4,19 @@ export function changePhase(w, i, x, y, m) {
   if (m.dry !== undefined && temperature > m.dry) {
     // The dissolved/wet particle separates into vapor and dry material only when
     // vapor has space to escape; sealed vessels retain their contents.
-    let vent = -1;
-    if (y > 0 && !w.cells[i - w.width]) vent = i - w.width;
-    else if (x > 0 && !w.cells[i - 1]) vent = i - 1;
-    else if (x < w.width - 1 && !w.cells[i + 1]) vent = i + 1;
-    else if (y < w.height - 1 && !w.cells[i + w.width]) vent = i + w.width;
-    if (vent >= 0) {
+    let vent = -1,
+      open = false;
+    for (const [dx, dy] of vents) {
+      const j = w.index(x + dx, y + dy);
+      if (j >= 0 ? !w.cells[j] : w.border === "void") {
+        vent = j;
+        open = true;
+        break;
+      }
+    }
+    if (open) {
       w.set(i, m.dryTo, temperature);
-      w.set(vent, M.Steam, Math.max(120, temperature));
+      if (vent >= 0) w.set(vent, M.Steam, Math.max(120, temperature));
       w.fields.add(x, y, 1.5);
       return true;
     }
@@ -42,3 +47,10 @@ export function changePhase(w, i, x, y, m) {
   if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;
   return true;
 }
+
+const vents = [
+  [0, -1],
+  [-1, 0],
+  [1, 0],
+  [0, 1],
+];

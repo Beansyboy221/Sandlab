@@ -29,27 +29,19 @@ export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
         sy = cy + oy,
         tx = sx + dx,
         ty = sy + dy;
-      if (
-        sx < 0 ||
-        sx >= w.width ||
-        sy < 0 ||
-        sy >= w.height ||
-        tx < 0 ||
-        tx >= w.width ||
-        ty < 0 ||
-        ty >= w.height
-      )
-        continue;
+      if (sx < 0 || sx >= w.width || sy < 0 || sy >= w.height) continue;
       const i = sy * w.width + sx,
-        j = ty * w.width + tx,
+        j = w.index(tx, ty),
         m = materials[w.cells[i]];
       if (
         m.id &&
         m.category !== "special" &&
         (solids || m.movable) &&
-        !w.cells[j]
-      )
-        w.swap(i, j);
+        (j < 0 ? w.border === "void" : !w.cells[j])
+      ) {
+        if (j < 0) w.set(i, 0);
+        else w.swap(i, j);
+      }
     }
 }
 export function applyTool(

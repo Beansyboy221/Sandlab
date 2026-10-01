@@ -132,12 +132,12 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '71 materials · 14 experiments'
+    assert page.locator('#app-content-count').inner_text() == '71 materials'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 6
+    assert page.locator('.changelog-release').count() == 7
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -173,10 +173,8 @@ with sync_playwright() as p:
     page.locator('#import-file').set_input_files(str(export))
     page.wait_for_function('() => (!document.getElementById("saves-dialog").open)')
     assert page.evaluate('sandlab.world.count') == saved_count
-    page.locator('#experiments-btn').click()
-    assert page.locator('.preset-card').count() == 14
-    assert page.locator('.preset-card').filter(has_text='Terrarium').count() == 0
-    page.locator('.preset-card').filter(has_text='Density column').click()
+    assert page.locator('#experiments-btn, #experiments-dialog').count() == 0
+    page.evaluate("sandlab.loadPreset('chemistry')")
     assert page.locator('#world-name').inner_text() == 'Density column'
     before=page.evaluate('sandlab.world.count')
     page.set_viewport_size({'width':820,'height':600})

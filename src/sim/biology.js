@@ -4,7 +4,9 @@ const porous = (id) =>
 export function grow(w, i, x, y) {
   const id = w.cells[i],
     moisture = w.moisture,
-    nutrition = w.nutrition;
+    nutrition = w.nutrition,
+    above = w.index(x, y - 1),
+    below = w.index(x, y + 1);
   if ((i + w.tick) % 4 === 0)
     w.eachNeighbor(x, y, (j) => {
       if (
@@ -42,8 +44,8 @@ export function grow(w, i, x, y) {
         moisture[i] >= 32 &&
         w.temp[i] >= 5 &&
         w.temp[i] <= 45 &&
-        y > 0 &&
-        !w.cells[i - w.width] &&
+        above >= 0 &&
+        !w.cells[above] &&
         w.random() < 0.06
       ) {
         w.set(j, M.Oxygen, w.temp[j]);
@@ -62,8 +64,7 @@ export function grow(w, i, x, y) {
     });
   if ((i + w.tick) % 128 === 0 && moisture[i]) moisture[i]--;
   if (w.temp[i] < 5 || w.temp[i] > 45) return;
-  if (id === M.Seed && y < w.height - 1) {
-    const below = i + w.width;
+  if (id === M.Seed && below >= 0) {
     if (
       (w.cells[below] === M.Dirt || w.cells[below] === M.Mud) &&
       moisture[below] > 24 &&
@@ -81,12 +82,12 @@ export function grow(w, i, x, y) {
     id === M.Plant &&
     moisture[i] >= 32 &&
     w.growth[i] < 22 &&
-    y > 0 &&
+    above >= 0 &&
     w.random() < 0.05 + (nutrition[i] ? 0.04 : 0)
   ) {
     const dx = w.random() < 0.7 ? 0 : w.random() < 0.5 ? -1 : 1;
-    if (x + dx < 0 || x + dx >= w.width) return;
-    const j = i - w.width + dx;
+    const j = w.index(x + dx, y - 1);
+    if (j < 0) return;
     if (!w.cells[j]) {
       const share = (moisture[i] - 8) >> 1,
         depth = w.growth[i] + 1;

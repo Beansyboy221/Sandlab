@@ -64,11 +64,15 @@ function contact(w, i, j, row, x, y) {
 export function reactContact(w, i, x, y) {
   const row = contacts[w.cells[i]];
   if (!row) return false;
+  const left = w.index(x - 1, y),
+    right = w.index(x + 1, y),
+    above = w.index(x, y - 1),
+    below = w.index(x, y + 1);
   return (
-    (x > 0 && contact(w, i, i - 1, row, x, y)) ||
-    (x < w.width - 1 && contact(w, i, i + 1, row, x, y)) ||
-    (y > 0 && contact(w, i, i - w.width, row, x, y)) ||
-    (y < w.height - 1 && contact(w, i, i + w.width, row, x, y))
+    (left >= 0 && contact(w, i, left, row, x, y)) ||
+    (right >= 0 && contact(w, i, right, row, x, y)) ||
+    (above >= 0 && contact(w, i, above, row, x, y)) ||
+    (below >= 0 && contact(w, i, below, row, x, y))
   );
 }
 export function oxidize(w, i, x, y, material) {

@@ -111,6 +111,8 @@ export const presets = [
   },
 ];
 export function loadPreset(world, id) {
+  world.name =
+    presets.find((preset) => preset.id === id)?.name || "Untitled canvas";
   if (!presets.some((preset) => preset.id === id))
     throw Error("Unknown experiment.");
   world.clear();
@@ -171,6 +173,11 @@ export function loadPreset(world, id) {
       rect(Math.round(w * 0.24 + n * w * 0.13), h - 22, 8, 14, "TNT");
     rect(0, h - 8, w, 8, "Ceramic");
     line(w * 0.12, h - 9, w * 0.85, h - 9, "Gunpowder", 0);
+    // Two layers keep this fixture connected when reflected pressure lifts grains.
+    for (let x = Math.round(w * 0.12) + 2; x < w * 0.85; x++) {
+      const i = (h - 10) * w + x;
+      if (!world.cells[i]) world.set(i, M.Gunpowder);
+    }
     world.brush(w * 0.12, h - 10, 1, M.Fire, "circle", true);
   }
 }

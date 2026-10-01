@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 71 materials, a responsive canvas, local worlds, and fourteen ready-to-play experiments. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 71 materials, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -16,34 +16,41 @@ Choose an element and drag to paint. The tool picker on the drawing toolbar offe
 
 - `Space`: pause or resume; `.`: one simulation step.
 - `B` / `E`: draw or erase; `1` / `2` / `3`: sand, water, fire.
-- `Ctrl/⌘ Z`: restore the world before the last stroke or experiment change.
+- `Ctrl/⌘ Z`: restore the world before the last stroke or canvas change.
 - `/`: search materials; `G`: grid overlay.
 - Natural, Temperature, and Pressure views expose different systems.
 - Settings → Keyboard lets you replace or clear any shortcut, with two bindings per action, conflict detection, and a keyboard-only reset. The question mark menu shows the app version, changelog, and local storage information.
 
 Try oil over water, sand in a density column, cement with water, an acid bath in glass, ice next to a heater, metal touched by a spark, or TNT connected to a fuse. Seeds germinate on moist soil. Plants share moisture through roots and stems, grow upward, and stop growing outside suitable temperatures. Lightning seeks nearby conductors, heats its impact point, and energizes wires. Storm sources emit clouds and periodic strikes; clouds release rain. Clone learns an adjacent movable material. Fans push to the right; voids drain their surroundings. Wax melts and solidifies for casting experiments.
 
-New phone worlds use a 200 × 300 grid; larger screens use 320 × 200. Rotating or resizing a window preserves the world. Imported saves retain their original dimensions.
+New phone worlds use a 200 × 300 grid; larger screens use 320 × 200. Rotating or resizing a window preserves the world. Imported saves retain their original dimensions and canvas properties.
+
+The plus button creates a canvas with a name, X/Y pixel dimensions, border type, and background color. Use the sliders button beside the canvas size to edit these properties. Solid borders contain particles, looping borders connect opposite edges for movement and interactions, and void borders drain outgoing particles. Sizes range from 8 to 512 pixels per axis, up to 200,000 cells total.
+
+When resizing, drag the gold rectangle in the preview, enter exact X/Y offsets, or use arrow keys (Shift moves ten pixels). Shrinking places a crop window over the original canvas; expanding places the original particles inside the larger canvas. Mixed changes crop one axis and expand the other. Mint outlines show the new bounds and dim particles show what will be removed. The preview does not change the live canvas until you apply it. Undo and Redo restore dimensions, properties, and complete particle state.
 
 ## Saves
 
-My worlds stores up to eight named worlds on the current device. Autosave captures the current experiment every 30 seconds and when the tab is hidden. Compressed `.sandlab` exports include temperature, pressure, electrical state, lifetimes, chunk activity, and the random seed. Files can be imported across devices. Import validation finishes before changing the live grid. LocalStorage capacity varies by browser; export files provide independent backups. Reaching eight saves does **not** evict an existing world.
+My worlds stores up to eight named worlds on the current device. Autosave captures the current experiment every 30 seconds and when the tab is hidden. Compressed `.sandlab` exports include canvas properties, temperature, pressure, electrical state, lifetimes, chunk activity, and the random seed. Files can be imported across devices. Import validation finishes before changing the live grid. LocalStorage capacity varies by browser; export files provide independent backups. Reaching eight saves does **not** evict an existing world.
 
 ## Architecture
 
-| Module                 | Responsibility                                                                    |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `src/sim/materials.js` | Stable material IDs, colors, physical properties, phase rules                     |
-| `src/sim/world.js`     | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
-| `src/sim/reactions.js` | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
-| `src/sim/fields.js`    | Coarse pressure diffusion and decay                                               |
-| `src/renderer.js`      | Canvas rendering, thermal palette, viewport, brush preview                        |
-| `src/inspector.js`     | Read-only live cell properties and magnified rendering                            |
-| `src/shortcuts.js`     | Validated shortcut catalogue, bindings, and key dispatch                          |
-| `src/input.js`         | Pointer capture, continuous strokes, multitouch, wheel control                    |
-| `src/persistence.js`   | Validated snapshots, RLE encoding, device storage                                 |
-| `src/presets.js`       | Parameterized example worlds                                                      |
-| `src/app.js`           | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
+| Module                    | Responsibility                                                                    |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `src/sim/materials.js`    | Stable material IDs, colors, physical properties, phase rules                     |
+| `src/sim/world.js`        | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
+| `src/sim/reactions.js`    | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
+| `src/sim/fields.js`       | Coarse pressure diffusion and decay                                               |
+| `src/renderer.js`         | Canvas rendering, thermal palette, viewport, brush preview                        |
+| `src/inspector.js`        | Read-only live cell properties and magnified rendering                            |
+| `src/shortcuts.js`        | Validated shortcut catalogue, bindings, and key dispatch                          |
+| `src/input.js`            | Pointer capture, continuous strokes, multitouch, wheel control                    |
+| `src/persistence.js`      | Validated snapshots, RLE encoding, device storage                                 |
+| `src/level.js`            | Canvas creation and positioned resizing without losing particle state             |
+| `src/level-editor.js`     | Canvas properties dialog and touch/keyboard placement preview                     |
+| `src/level-properties.js` | Validated canvas metadata and dimensions                                          |
+| `src/presets.js`          | Internal simulation fixtures                                                      |
+| `src/app.js`              | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
 
 The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a coarse gameplay field, rather than a full fluid solver.
 
@@ -57,14 +64,17 @@ To add a material, append its definition to the registry. **Never reorder existi
 npm test
 npm run bench
 npm run test:browser
+npm run test:levels
 npm run test:experiments
+npm run test:inspection
+npm run test:security
 ```
 
-Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, presets, export/import, local saves, mobile layouts, rotation, and simultaneous touch pointers. Screenshots are written to `tests/artifacts/`.
+Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, and simultaneous touch pointers. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
 
-Bloom-enabled Chromium rendering measured **1.85 ms/frame** on a flame scene (2.3 ms at the 95th percentile). These measurements include particle rendering and the glow effect.
+Bloom-enabled Chromium rendering measured **1.87 ms/frame** on a flame scene (2.2 ms at the 95th percentile). These measurements include particle rendering and the glow effect.
 
-Engine benchmark observations in this workspace: about **1.8 ms/tick** for the 15,818-particle starter world, **10.1 ms/tick** for 54,400 settled liquid particles, and **7.2 ms/tick** for 43,305 powder particles. Chromium rendered the starter scene at **60 FPS**. These are development-environment measurements, not device-independent guarantees. The optional FPS panel shows live frame rate and simulation cost.
+Engine benchmark observations in this workspace: about **12.6 ms/tick** for 54,400 settled liquid particles, **10.4 ms/tick** for 43,305 powder particles, and **4.3 ms/tick** for 17,699 particles on burning surfaces. Chromium rendered the starter scene at **60 FPS**. These are development-environment measurements, not device-independent guarantees. The optional FPS panel shows live frame rate and simulation cost.
 
 `npm install` installs only the development formatter. `npm run format` formats the source; runtime code has no npm dependencies.
 
@@ -84,7 +94,7 @@ Burning fuels retain their material and use the particle lifetime field as a rem
 
 ## Absorbent solids
 
-Sponge stores up to 48 cells of water, brine, oil, or fuel per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and fuel can burn, while stored water protects the sponge as it evaporates. Acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Try the Sponge laboratory preset.
+Sponge stores up to 48 cells of water, brine, oil, or fuel per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and fuel can burn, while stored water protects the sponge as it evaporates. Acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Wet a sponge with different liquids, then warm or squeeze it to release the stored contents.
 
 ## Selection and copying
 
@@ -106,7 +116,7 @@ The palette contains 71 materials. Copper conducts heat and electricity and melt
 
 Acid or vinegar plus baking soda releases carbon dioxide. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form acid. Rubber insulates electricity and heat but burns.
 
-Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into nutrient water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Nutrient water works with sponges, retains nutrition through freezing, and dries back into fertilizer. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Try Reaction bench and Pottery kiln for clean starter experiments.
+Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into nutrient water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Nutrient water works with sponges, retains nutrition through freezing, and dries back into fertilizer. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Combine these materials to explore reactions and ceramic firing.
 
 ## Edit history, shortcuts, and changelog
 

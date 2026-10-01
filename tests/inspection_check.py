@@ -96,7 +96,10 @@ with sync_playwright() as p:
     assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'k'")
     page.locator('#binding-undo-0').click(); page.keyboard.press('Control+u')
     page.screenshot(path=str(ARTIFACTS/'keyboard-desktop.png'))
-    page.locator('#settings-dialog .dialog-close').click()
+    # Closing and pressing a binding in the same task must not race the queued close event.
+    page.evaluate("""()=>{document.querySelector('#settings-dialog .dialog-close').click();document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'k',bubbles:true}));}""")
+    assert not page.evaluate('sandlab.state.paused')
+    page.keyboard.press('k'); assert page.evaluate('sandlab.state.paused')
     page.keyboard.press('p'); assert page.evaluate('sandlab.state.paused')
     page.keyboard.press('k'); assert not page.evaluate('sandlab.state.paused')
     page.keyboard.press('k'); assert page.evaluate('sandlab.state.paused')

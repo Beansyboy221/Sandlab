@@ -1,3 +1,4 @@
+import { LevelEditor } from "./level-editor.js";
 import { EditHistory } from "./history.js";
 import {
   shortcutAction,
@@ -15,7 +16,7 @@ import { World } from "./sim/world.js";
 import { materials, M, categories } from "./sim/materials.js";
 import { Renderer } from "./renderer.js";
 import { Input } from "./input.js";
-import { presets, loadPreset } from "./presets.js";
+import { loadPreset } from "./presets.js";
 import {
   snapshot,
   validateSnapshot,
@@ -106,7 +107,8 @@ function travelHistory(direction) {
   setPaused(true);
   const name = history[direction]($("world-name").textContent);
   resetSelection();
-  $("world-name").textContent = name;
+  world.name = name || world.name;
+  syncLevelDisplay();
   syncHistory();
   toast(direction === "undo" ? "Edit undone" : "Edit redone");
   hasChanged = true;
@@ -453,14 +455,21 @@ function openDialog(id) {
   setPaused(true);
   dialog.showModal();
 }
+function closeDialog(dialog) {
+  dialog.close();
+  // The native close event is queued; restore now so a quick shortcut cannot
+  // be overwritten by that event after the menu has already disappeared.
+  if (!document.querySelector("dialog[open]"))
+    setPaused(dialogPrevious.get(dialog) ?? false);
+  lastTime = performance.now();
+}
 for (const dialog of document.querySelectorAll("dialog")) {
   dialog
     .querySelectorAll(".dialog-close")
-    .forEach((b) => b.addEventListener("click", () => dialog.close()));
-  dialog.addEventListener("close", () => {
-    if (!document.querySelector("dialog[open]"))
-      setPaused(dialogPrevious.get(dialog) ?? false);
-    lastTime = performance.now();
+    .forEach((b) => b.addEventListener("click", () => closeDialog(dialog)));
+  dialog.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    closeDialog(dialog);
   });
   dialog.addEventListener("click", (e) => {
     if (e.target === dialog) {
@@ -471,7 +480,7 @@ for (const dialog of document.querySelectorAll("dialog")) {
         e.clientY < r.top ||
         e.clientY > r.bottom
       )
-        dialog.close();
+        closeDialog(dialog);
     }
   });
 }
@@ -480,8 +489,7 @@ $("settings-btn").addEventListener("click", () =>
 );
 $("about-btn").addEventListener("click", () => openDialog("about-dialog"));
 $("app-version").textContent = `Version ${changelog[0].version}`;
-$("app-content-count").textContent =
-  `${materials.length - 1} materials · ${presets.length} experiments`;
+$("app-content-count").textContent = `${materials.length - 1} materials`;
 for (const release of changelog) {
   const section = document.createElement("section"),
     heading = document.createElement("h3"),
@@ -501,7 +509,7 @@ for (const release of changelog) {
 }
 $("changelog-btn").addEventListener("click", () => {
   const previous = dialogPrevious.get($("about-dialog"));
-  $("about-dialog").close();
+  closeDialog($("about-dialog"));
   openDialog("changelog-dialog");
   dialogPrevious.set($("changelog-dialog"), previous);
 });
@@ -510,46 +518,34 @@ $("confirm-clear").addEventListener("click", () => {
   remember();
   world.clear();
   resetSelection();
-  $("world-name").textContent = "Empty world";
-  $("clear-dialog").close();
+  syncLevelDisplay();
+  closeDialog($("clear-dialog"));
   toast("World cleared");
 });
-let previewsReady = false;
-$("experiments-btn").addEventListener("click", () => {
-  if (!previewsReady) {
-    renderPresets();
-    previewsReady = true;
-  }
-  openDialog("experiments-dialog");
-});
-function renderPresets() {
-  // Tiny previews use the same engine and renderer, so each card depicts the actual experiment.
-  for (const preset of presets) {
-    const pw = new World(320, 200);
-    loadPreset(pw, preset.id);
-    const pc = document.createElement("canvas");
-    pc.style.cssText = "position:fixed;width:320px;height:200px;left:-9999px";
-    document.body.append(pc);
-    const pr = new Renderer(pc, pw);
-    pr.resize();
-    pr.draw();
-    const image = pc.toDataURL();
-    pr.resizeObserver.disconnect();
-    pc.remove();
-    const b = document.createElement("button");
-    b.className = "preset-card";
-    b.innerHTML = `<img class="preset-art" src="${image}" alt="${preset.name} experiment preview"><div class="preset-copy"><small>${preset.tag}</small><h3>${preset.name}</h3><p>${preset.subtitle}</p></div>`;
-    b.addEventListener("click", () => {
-      remember();
-      loadPreset(world, preset.id);
-      resetSelection();
-      $("world-name").textContent = preset.name;
-      $("experiments-dialog").close();
-      toast(`${preset.name} loaded`);
-    });
-    $("presets").append(b);
-  }
+function syncLevelDisplay() {
+  $("world-name").textContent = world.name;
+  $("world-resolution").textContent = `${world.width} × ${world.height}`;
+  document.querySelector(".world-type").textContent =
+    ` / ${world.border.toUpperCase()}`;
+  renderer.draw();
 }
+const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
+  open: openDialog,
+  close: closeDialog,
+  remember,
+  refresh: () => {
+    input.pointers.clear();
+    resetSelection();
+    setTool("paint");
+    inspector.point = null;
+    syncLevelDisplay();
+    hasChanged = true;
+  },
+});
+$("new-canvas-btn").addEventListener("click", () => levelEditor.show());
+$("level-properties-btn").addEventListener("click", () =>
+  levelEditor.show(true),
+);
 function renderSaves() {
   const saves = getSaves();
   $("save-list").replaceChildren();
@@ -589,8 +585,9 @@ function renderSaves() {
         remember();
         restore(world, data);
         resetSelection();
-        $("world-name").textContent = save.name;
-        $("saves-dialog").close();
+        world.name = data.level?.name || save.name;
+        syncLevelDisplay();
+        closeDialog($("saves-dialog"));
         toast("World loaded");
       } catch (e) {
         toast(e.message);
@@ -614,7 +611,7 @@ $("confirm-delete-save").addEventListener("click", () => {
   try {
     deleteSave(pendingDelete);
     renderSaves();
-    $("delete-save-dialog").close();
+    closeDialog($("delete-save-dialog"));
     toast("Saved copy deleted");
   } catch {
     toast("Could not update local storage. Please try again.");
@@ -670,8 +667,9 @@ $("import-file").addEventListener("change", async (e) => {
     remember();
     restore(world, data);
     resetSelection();
-    $("world-name").textContent = file.name.replace(/\.(sandlab|json)$/, "");
-    $("saves-dialog").close();
+    world.name = data.level?.name || file.name.replace(/\.(sandlab|json)$/, "");
+    syncLevelDisplay();
+    closeDialog($("saves-dialog"));
     toast("World imported");
   } catch (error) {
     toast(error.message || "Could not read this file.");
@@ -850,7 +848,7 @@ const saved = settings.get("restoreLast") ? getAutosave() : null;
 if (saved) {
   try {
     restore(world, saved);
-    $("world-name").textContent = "Your last world";
+    if (!saved.level) world.name = "Your last world";
     toast("Welcome back. Your last world is restored.");
   } catch {
     loadPreset(world, "blank");
@@ -858,7 +856,7 @@ if (saved) {
 } else loadPreset(world, "blank");
 selectMaterial(M.Sand);
 $("particle-count").textContent = `${world.count.toLocaleString()} particles`;
-$("world-resolution").textContent = `${world.width} × ${world.height}`;
+syncLevelDisplay();
 if (matchMedia("(pointer: coarse)").matches)
   $("canvas-tip").innerHTML =
     `${icon("pointer")} Drag to draw <span class="tip-dot">·</span> Select eraser to delete`;
@@ -943,14 +941,17 @@ window.sandlab = {
   inspector,
   selection,
   settings,
+  levelEditor,
   loadPreset: (id) => {
     remember();
     loadPreset(world, id);
     resetSelection();
+    syncLevelDisplay();
   },
   snapshot: () => snapshot(world),
   restore: (data) => {
     restore(world, data);
     resetSelection();
+    syncLevelDisplay();
   },
 };

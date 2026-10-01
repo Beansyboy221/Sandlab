@@ -30,8 +30,14 @@
         ><span>sandlab<span class="brand-dot">.</span></span></a
       >
       <nav class="header-actions" aria-label="World actions">
-        <button id="experiments-btn" class="quiet-button">
-          <span data-icon="flask"></span><span>Experiments</span>
+        <button
+          id="new-canvas-btn"
+          class="icon-button"
+          aria-label="New canvas"
+          aria-haspopup="dialog"
+          title="New canvas"
+        >
+          <span data-icon="plus"></span>
         </button>
         <button id="save-btn" class="quiet-button">
           <span data-icon="folder"></span
@@ -67,6 +73,15 @@
           </div>
           <div class="topline-right">
             <span id="world-resolution">320 × 200</span>
+            <button
+              id="level-properties-btn"
+              class="icon-button small"
+              aria-label="Canvas properties"
+              aria-haspopup="dialog"
+              title="Canvas properties"
+            >
+              <span data-icon="sliders"></span>
+            </button>
             <button
               id="fullscreen-btn"
               class="icon-button small"
@@ -365,19 +380,115 @@
         </button>
       </footer>
     </dialog>
-    <dialog id="experiments-dialog" aria-labelledby="experiments-heading">
+    <dialog
+      id="level-dialog"
+      class="level-dialog"
+      aria-labelledby="level-heading"
+    >
       <div class="dialog-heading">
-        <div>
-          <h2 id="experiments-heading">Experiments</h2>
-        </div>
-        <button class="icon-button dialog-close" aria-label="Close experiments">
+        <h2 id="level-heading">New canvas</h2>
+        <button
+          class="icon-button dialog-close"
+          aria-label="Close canvas properties"
+        >
           <span data-icon="close"></span>
         </button>
       </div>
-      <p class="dialog-intro">
-        Loading an experiment replaces the canvas; you can undo it.
-      </p>
-      <div class="preset-grid" id="presets"></div>
+      <form id="level-form" novalidate>
+        <div id="level-fields" class="level-fields">
+          <label
+            >Name<input
+              id="level-name"
+              type="text"
+              maxlength="120"
+              autocomplete="off"
+              required
+          /></label>
+          <div class="level-dimensions">
+            <label
+              >X · width in pixels<input
+                id="level-width"
+                type="number"
+                min="8"
+                max="512"
+                step="1"
+                inputmode="numeric"
+                required /></label
+            ><label
+              >Y · height in pixels<input
+                id="level-height"
+                type="number"
+                min="8"
+                max="512"
+                step="1"
+                inputmode="numeric"
+                required
+            /></label>
+          </div>
+          <p class="settings-note">
+            8–512 pixels per axis · up to 200,000 pixels total
+          </p>
+          <label
+            >Border type<select id="level-border">
+              <option value="solid">Solid</option>
+              <option value="looping">Looping</option>
+              <option value="void">Void</option>
+            </select></label
+          >
+          <p class="settings-note">
+            Solid blocks the edges. Looping connects opposite edges. Void lets
+            particles leave.
+          </p>
+          <label class="level-color"
+            >Background color<input
+              id="level-background"
+              type="color"
+              value="#111b20"
+          /></label>
+          <p id="level-note" class="settings-note"></p>
+        </div>
+        <div id="resize-panel" hidden>
+          <p class="settings-note">
+            Drag the gold rectangle to place the kept area. Mint outlines the
+            new canvas; dim particles will be cropped.
+          </p>
+          <canvas
+            id="resize-preview"
+            tabindex="0"
+            aria-label="Resize placement preview. Drag to position, or use arrow keys."
+          ></canvas>
+          <div class="resize-offsets">
+            <label
+              >X offset<input
+                id="resize-x"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric" /></label
+            ><label
+              >Y offset<input
+                id="resize-y"
+                type="number"
+                min="0"
+                step="1"
+                inputmode="numeric" /></label
+            ><button id="resize-center" type="button" class="quiet-button">
+              Center
+            </button>
+          </div>
+          <p id="resize-summary" class="settings-note" role="status"></p>
+          <button id="resize-back" type="button" class="quiet-button">
+            Back to properties
+          </button>
+        </div>
+        <p id="level-error" class="level-error" role="alert"></p>
+        <div class="confirm-actions">
+          <button type="button" class="quiet-button dialog-close">Cancel</button
+          ><button id="level-submit" class="primary-button" type="submit">
+            Create canvas
+          </button>
+        </div>
+      </form>
     </dialog>
     <dialog id="saves-dialog" aria-labelledby="saves-heading">
       <div class="dialog-heading">

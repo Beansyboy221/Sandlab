@@ -5,8 +5,8 @@ export function emitSpark(world, i, x, y, residue = 0) {
   const direction = Math.floor(world.random() * 3);
   const nx = x + (direction === 0 ? -1 : direction === 1 ? 1 : 0),
     ny = y - (direction === 2 ? 1 : 0);
-  if (nx < 0 || nx >= world.width || ny < 0) return false;
-  const j = ny * world.width + nx;
+  const j = world.index(nx, ny);
+  if (j < 0) return false;
   if (world.cells[j]) return false;
   world.set(
     j,
@@ -23,9 +23,9 @@ export function arcGap(world, i, x, y) {
   for (const [dx, dy] of directions) {
     const nx = x + dx * 2,
       ny = y + dy * 2;
-    if (nx < 0 || nx >= world.width || ny < 0 || ny >= world.height) continue;
-    const gap = i + dy * world.width + dx,
-      target = i + dy * world.width * 2 + dx * 2;
+    const gap = world.index(x + dx, y + dy),
+      target = world.index(nx, ny);
+    if (gap < 0 || target < 0) continue;
     if (
       !world.cells[gap] &&
       materials[world.cells[target]].conductive &&

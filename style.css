@@ -28,6 +28,7 @@ select {
   font: inherit;
 }
 button {
+  touch-action: manipulation;
   cursor: pointer;
   color: inherit;
   border: 0;
@@ -753,51 +754,6 @@ dialog::backdrop {
   color: #91a6af;
   margin: 16px 0 23px;
 }
-.preset-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.preset-card {
-  border: 1px solid #35454b;
-  border-radius: 8px;
-  background: #202c32;
-  padding: 0;
-  overflow: hidden;
-  text-align: left;
-}
-.preset-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-.preset-art {
-  height: 95px;
-  width: 100%;
-  object-fit: contain;
-  image-rendering: pixelated;
-  display: block;
-  background: #111b20;
-}
-.preset-copy {
-  padding: 15px;
-}
-.preset-copy small {
-  font-size: 7px;
-  letter-spacing: 1.2px;
-  color: var(--accent);
-}
-.preset-copy h3 {
-  font:
-    500 15px "Space Grotesk",
-    sans-serif;
-  margin: 7px 0;
-}
-.preset-copy p {
-  font-size: 10px;
-  color: #8fa5ad;
-  margin: 0;
-  line-height: 1.5;
-}
 .save-form {
   display: flex;
   gap: 8px;
@@ -1291,18 +1247,6 @@ dialog::backdrop {
   }
   .save-form button {
     font-size: 11px;
-  }
-  .preset-art {
-    height: 75px;
-  }
-  .preset-copy {
-    padding: 12px;
-  }
-  .preset-copy h3 {
-    font-size: 13px;
-  }
-  .preset-copy p {
-    font-size: 9px;
   }
 }
 @media (max-width: 390px) {
@@ -1836,11 +1780,6 @@ dialog::backdrop {
     min-height: 44px;
   }
 }
-@media (max-width: 390px) {
-  #experiments-btn > span:last-child {
-    display: none;
-  }
-}
 
 .changelog-release + .changelog-release {
   border-top: 1px solid var(--line);
@@ -2018,5 +1957,110 @@ dialog::backdrop {
   #inspection-properties .property-button,
   #inspect-zoom {
     min-height: 44px;
+  }
+}
+
+#new-canvas-btn,
+#level-properties-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+.world-topline > div:first-child {
+  min-width: 0;
+}
+#world-name {
+  display: inline-block;
+  max-width: min(34vw, 300px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.level-dialog {
+  width: 560px;
+}
+.level-fields {
+  margin-top: 20px;
+}
+.level-fields label,
+.resize-offsets label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.level-fields input:not([type="color"]),
+.level-fields select,
+.resize-offsets input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 8px 12px;
+  margin: 0;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.level-dimensions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+.level-color {
+  margin-top: 18px;
+}
+.level-color input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg);
+  padding: 4px;
+  cursor: pointer;
+}
+.level-error {
+  min-height: 18px;
+  margin: 12px 0 0;
+  color: #eea39c;
+  font-size: 12px;
+}
+#resize-preview {
+  user-select: none;
+  -webkit-user-select: none;
+  display: block;
+  width: 100%;
+  height: clamp(160px, 32dvh, 320px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  touch-action: none;
+  cursor: move;
+}
+.resize-offsets {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 12px;
+}
+#resize-back,
+#resize-center {
+  min-height: 44px;
+}
+@media (max-width: 700px) {
+  .level-dialog {
+    padding: 18px;
+  }
+  .level-dialog .dialog-close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .level-dimensions {
+    gap: 12px;
+  }
+  .resize-offsets {
+    gap: 8px;
   }
 }

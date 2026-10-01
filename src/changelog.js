@@ -1,5 +1,17 @@
 export const changelog = [
   {
+    version: "1.1.0",
+    date: "2026-10-01",
+    title: "Canvas creation and resizing",
+    changes: [
+      "Replaced Experiments with a plus button for creating named canvases with custom pixel dimensions, borders, and background colors.",
+      "Canvas properties can be edited beside the canvas size. Resizing includes a draggable placement preview for cropping or adding space.",
+      "Solid borders contain particles, looping borders connect opposite edges, and void borders let particles escape. Reactions, heat, and pressure follow the border type.",
+      "Canvas properties and complete particle state survive saves, exports, autosave, undo, and redo.",
+      "Fixed a timing issue that could override pause shortcuts pressed immediately after closing a menu.",
+    ],
+  },
+  {
     version: "1.0.1",
     date: "2026-10-01",
     title: "About Sandlab",
