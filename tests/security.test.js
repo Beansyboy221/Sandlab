@@ -118,6 +118,7 @@ test("build excludes hidden and unrelated files and refuses source symlinks", ()
     for (const name of [
       "index.html",
       "style.css",
+      "mobile.css",
       "src/app.js",
       "src/.env",
       "src/unrelated.exe",
