@@ -1,0 +1,7 @@
+node_modules/
+tests/artifacts/
+tests/*.png
+*.log
+dist/
+__pycache__/
+.DS_Store
