@@ -202,8 +202,17 @@
               aria-label="Clear world"
               title="Clear world"
             >
-              <span data-icon="trash"></span></button
-            ><button
+              <span data-icon="trash"></span>
+            </button>
+            <div class="view-control">
+              <span data-icon="layers"></span
+              ><select id="view" aria-label="Visualization mode">
+                <option value="normal">Natural view</option>
+                <option value="heat">Temperature</option>
+                <option value="pressure">Pressure</option>
+              </select>
+            </div>
+            <button
               id="palette-toggle"
               class="mobile-material"
               aria-label="Open material palette"
@@ -289,14 +298,6 @@
                 </select></label
               >
             </div>
-          </div>
-          <div class="view-control">
-            <span data-icon="layers"></span
-            ><select id="view" aria-label="Visualization mode">
-              <option value="normal">Natural view</option>
-              <option value="heat">Temperature</option>
-              <option value="pressure">Pressure</option>
-            </select>
           </div>
         </div>
         <footer class="statusbar">

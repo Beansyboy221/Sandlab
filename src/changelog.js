@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.2.2",
+    date: "2026-10-01",
+    title: "Mobile toolbar",
+    changes: [
+      "Fixed the Natural view switch overlapping Trash on mobile. Undo, Redo, Trash, visualization, and materials now share an aligned row with distinct touch targets.",
+    ],
+  },
+  {
     version: "1.2.1",
     date: "2026-10-01",
     title: "Tool names",
