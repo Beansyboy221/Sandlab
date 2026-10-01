@@ -143,7 +143,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 11
+    assert page.locator('.changelog-release').count() == 12
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -402,6 +402,7 @@ with sync_playwright() as p:
     phone.set_viewport_size({'width':390,'height':844})
     phone.wait_for_timeout(150)
     assert phone.evaluate('sandlab.state.paused')
+    if phone.locator('#controls-toggle').get_attribute('aria-expanded')=='false': phone.locator('#controls-toggle').tap()
     assert phone.locator('#view').is_visible()
     phone.screenshot(path=str(ARTIFACTS / 'mobile.png'))
     assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')

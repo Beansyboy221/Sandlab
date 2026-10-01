@@ -23,6 +23,7 @@ def init(browser, width, height, touch=False):
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.goto('http://sandlab.test/')
     page.wait_for_function('() => !!window.sandlab')
+    if page.locator('#mobile-exit-focus').is_visible(): page.locator('#mobile-exit-focus').tap()
     page.locator('#play-btn').click()
     page.evaluate('''() => {
       sandlab.world.clear();

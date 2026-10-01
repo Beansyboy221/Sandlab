@@ -63,15 +63,17 @@ with sync_playwright() as p:
         if width<=700:
             a=page.locator('#clear-btn').bounding_box();b=page.locator('#view').bounding_box()
             assert a['x']+a['width']<=b['x']
-        page.locator('#fullscreen-btn').tap();page.wait_for_function('() => document.body.classList.contains("canvas-focus")')
-        page.locator('#controls-toggle').tap();page.locator('#exit-focus-btn').tap();page.wait_for_function('() => !document.body.classList.contains("canvas-focus")')
+        if not page.evaluate('document.body.classList.contains("canvas-focus")'): page.locator('#fullscreen-btn').tap()
+        page.wait_for_function('() => document.body.classList.contains("canvas-focus")')
+        page.locator('#mobile-exit-focus').tap();page.wait_for_function('() => !document.body.classList.contains("canvas-focus")')
         page.locator('#palette-toggle').tap();page.get_by_role('button',name='Water',exact=True).tap()
         assert not page.locator('#palette').evaluate('e=>e.classList.contains("open")')
         page.locator('#controls-toggle').tap()
         h=page.locator('#controls-toggle').bounding_box();session=c.new_cdp_session(page)
         x=h['x']+h['width']/2;y=h['y']+h['height']/2
         session.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y,'id':1}]})
-        session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x,'y':y-50,'id':1}]})
+        side=page.evaluate('document.body.classList.contains("dock-side")')
+        session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x-50 if side else x,'y':y if side else y-50,'id':1}]})
         session.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
         assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='true'
         page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'drawing-mobile-{width}.png'))

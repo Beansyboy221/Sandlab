@@ -269,3 +269,145 @@
   background: var(--panel);
   z-index: 1;
 }
+
+/* One row when collapsed; the grip remains a full-size touch target. */
+.mobile-layout .toolbox {
+  padding-top: 6px;
+}
+.mobile-layout .toolbox:not(.expanded) {
+  max-height: calc(58px + env(safe-area-inset-bottom));
+  flex-wrap: nowrap;
+}
+.mobile-layout .controls-toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+.dock-grip {
+  display: block;
+  width: 24px;
+  height: 4px;
+  border-radius: 4px;
+  background: #73848e;
+}
+.mobile-layout .toolbox.expanded .controls-toggle {
+  flex-basis: 100%;
+}
+.mobile-layout .toolbox:not(.expanded) .tool-picker-toggle {
+  min-width: 72px;
+  padding: 0 5px;
+  gap: 4px;
+}
+.mobile-layout .toolbox:not(.expanded) .mobile-material {
+  min-width: 82px;
+}
+.mobile-layout .canvas-wrap {
+  margin-bottom: calc(58px + env(safe-area-inset-bottom));
+}
+#mobile-exit-focus {
+  display: none;
+}
+.mobile-layout.canvas-focus #mobile-exit-focus {
+  position: fixed;
+  display: grid;
+  place-items: center;
+  z-index: 40;
+  top: max(6px, env(safe-area-inset-top));
+  right: max(6px, env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #192227ee;
+  box-shadow: 0 2px 12px #0005;
+}
+.mobile-layout.dock-side .canvas-wrap {
+  margin-bottom: 0;
+  margin-right: calc(132px + env(safe-area-inset-right));
+}
+.mobile-layout.dock-side .toolbox {
+  left: auto;
+  right: max(4px, env(safe-area-inset-right));
+  top: max(58px, calc(env(safe-area-inset-top) + 52px));
+  bottom: max(4px, env(safe-area-inset-bottom));
+  width: 124px;
+  max-height: none;
+  border-radius: 12px;
+  padding: 6px;
+  align-content: flex-start;
+  flex-wrap: wrap;
+  transition: width 0.2s;
+}
+.mobile-layout.dock-side .toolbox:not(.expanded) .controls-toggle {
+  flex-basis: 100%;
+}
+.mobile-layout.dock-side .toolbox:not(.expanded) .play-controls {
+  width: 100%;
+  justify-content: center;
+}
+.mobile-layout.dock-side .toolbox:not(.expanded) .draw-controls {
+  flex: 0 0 100%;
+}
+.mobile-layout.dock-side .toolbox:not(.expanded) .mobile-material {
+  flex: 0 0 100%;
+  max-width: none;
+}
+.mobile-layout.dock-side .dock-grip {
+  width: 4px;
+  height: 24px;
+}
+.mobile-layout.dock-side .toolbox.expanded {
+  width: var(--side-panel-width);
+}
+.mobile-layout.dock-side .toolbox.expanded .utility-controls {
+  display: flex;
+  flex-wrap: wrap;
+}
+.mobile-layout.dock-side .toolbox.expanded .utility-controls .view-control {
+  flex: 1;
+  min-width: 78px;
+}
+.mobile-layout.dock-side .toolbox.expanded .mobile-material {
+  flex: 1;
+  min-width: 100px;
+}
+.mobile-layout.dock-side .toolbox.expanded .camera-controls {
+  flex-wrap: wrap;
+}
+.mobile-layout.dock-side .toolbox.expanded .tool-properties {
+  flex: 1;
+  min-width: 0;
+  margin-left: 0;
+}
+.mobile-layout.dock-side .toolbox.expanded .property-group {
+  flex-wrap: wrap;
+}
+.mobile-layout .mobile-material {
+  border: 1px solid #aa995754;
+  background: #aa995710;
+  color: #e4cd9b;
+  border-radius: 6px;
+}
+.mobile-layout .mobile-material i {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  background: var(--sand);
+  border-radius: 2px;
+}
+.mobile-layout .mobile-material svg {
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  flex: none;
+}
+.mobile-layout.dock-side:not(.canvas-focus) .toolbox {
+  top: max(88px, calc(env(safe-area-inset-top) + 82px));
+}
+.mobile-layout .workspace {
+  padding-left: max(4px, env(safe-area-inset-left));
+  padding-right: max(4px, env(safe-area-inset-right));
+}

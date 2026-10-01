@@ -20,6 +20,7 @@ def init(browser, width, height, touch=False):
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.goto('http://sandlab.test/')
     page.wait_for_function('() => !!window.sandlab')
+    if page.locator('#mobile-exit-focus').is_visible(): page.locator('#mobile-exit-focus').tap()
     if page.locator('body').evaluate("e=>e.classList.contains('mobile-layout')"):
         page.locator('#controls-toggle').click()
     page.locator('#play-btn').click()
@@ -133,6 +134,8 @@ with sync_playwright() as p:
     verify(page,'Phone crop',32,24,'looping','#081820')
     assert page.evaluate('sandlab.world.cells[9*32+11]===3')
     page.set_viewport_size({'width':844,'height':390})
+    page.wait_for_timeout(200)
+    if page.locator('#mobile-exit-focus').is_visible(): page.locator('#mobile-exit-focus').tap()
     page.locator('#level-properties-btn').tap()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.locator('#level-background').scroll_into_view_if_needed()

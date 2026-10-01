@@ -304,7 +304,11 @@ $("brush-tool").addEventListener("change", (e) => {
   if (mobileDock?.media.matches) $("palette").classList.remove("open");
 });
 toolPicker = new ToolPicker($("brush-tool"), brushTools);
-mobileDock = new MobileDock(document.querySelector(".toolbox"));
+mobileDock = new MobileDock(
+  document.querySelector(".toolbox"),
+  world,
+  renderer,
+);
 function selectMaterial(id) {
   state.material = id;
   setTool(false);
@@ -579,6 +583,7 @@ $("confirm-clear").addEventListener("click", () => {
   toast("World cleared");
 });
 function syncLevelDisplay() {
+  mobileDock?.layout();
   $("world-name").textContent = world.name;
   $("world-resolution").textContent = `${world.width} × ${world.height}`;
   document.querySelector(".world-type").textContent =

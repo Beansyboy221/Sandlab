@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.3.1",
+    date: "2026-10-01",
+    title: "Phone rotation and fullscreen",
+    changes: [
+      "Replaced the Controls caption with a grip and reduced the collapsed mobile dock to one row.",
+      "Fullscreen now has an always-visible exit button on mobile.",
+      "Rotating a phone into landscape refits the canvas and enters canvas focus. Tall canvases align left; the panel uses the side or bottom according to which fits the canvas best.",
+      "Side panels expand with a horizontal swipe, bottom panels with an upward swipe. Rotation preserves particles and returns to the portrait layout when turned upright.",
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-10-01",
     title: "Drawing and canvas space",

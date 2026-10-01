@@ -73,7 +73,10 @@ export class Renderer {
         this.canvas.height / this.world.height,
       );
     this.viewport = {
-      x: this.canvas.width / 2 - this.center.x * scale,
+      x:
+        this.alignLeft && this.zoom === 1
+          ? 0
+          : this.canvas.width / 2 - this.center.x * scale,
       y: this.canvas.height / 2 - this.center.y * scale,
       scale,
     };
