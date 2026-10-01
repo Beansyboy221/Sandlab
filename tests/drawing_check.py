@@ -62,7 +62,7 @@ with sync_playwright() as p:
         page.locator('#zoom-fit-btn').tap();assert page.evaluate('sandlab.renderer.zoom')==1
         if width<=700:
             a=page.locator('#clear-btn').bounding_box();b=page.locator('#view').bounding_box()
-            assert a['x']+a['width']<=b['x']
+            assert a['y']+a['height']<=b['y'] or a['x']+a['width']<=b['x']
         if not page.evaluate('document.body.classList.contains("canvas-focus")'): page.locator('#fullscreen-btn').tap()
         page.wait_for_function('() => document.body.classList.contains("canvas-focus")')
         page.locator('#mobile-exit-focus').tap();page.wait_for_function('() => !document.body.classList.contains("canvas-focus")')

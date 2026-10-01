@@ -133,7 +133,8 @@
           </div>
         </div>
         <div class="toolbox">
-          <div class="play-controls">
+          <div class="play-controls" role="group" aria-label="Playback">
+            <span class="control-caption" aria-hidden="true">Playback</span>
             <button
               id="play-btn"
               class="play-button"
@@ -158,8 +159,39 @@
               </select>
             </div>
           </div>
+
+          <div class="edit-controls" role="group" aria-label="Edit">
+            <span class="control-caption" aria-hidden="true">Edit</span
+            ><button
+              id="undo-btn"
+              class="icon-button"
+              aria-label="Undo last edit"
+              title="Undo (Ctrl/⌘ Z)"
+              disabled
+            >
+              <span data-icon="undo"></span></button
+            ><button
+              id="redo-btn"
+              class="icon-button"
+              aria-label="Redo last edit"
+              title="Redo (Ctrl/⌘ Shift Z or Ctrl Y)"
+              disabled
+            >
+              <span data-icon="redo"></span></button
+            ><button
+              id="clear-btn"
+              class="icon-button"
+              aria-label="Clear world"
+              title="Clear world"
+            >
+              <span data-icon="trash"></span>
+            </button>
+          </div>
           <div class="tool-divider"></div>
-          <div class="draw-controls">
+          <div class="draw-controls" role="group" aria-label="Tool and brush">
+            <span class="control-caption" aria-hidden="true"
+              >Tool &amp; brush</span
+            >
             <select
               id="brush-tool"
               class="brush-tool"
@@ -188,46 +220,17 @@
             />
           </div>
           <div class="tool-divider second-divider"></div>
-          <div class="utility-controls">
-            <button
-              id="undo-btn"
-              class="icon-button"
-              aria-label="Undo last edit"
-              title="Undo (Ctrl/⌘ Z)"
-              disabled
-            >
-              <span data-icon="undo"></span></button
+          <div class="material-controls" role="group" aria-label="Material">
+            <span class="control-caption" aria-hidden="true">Material</span
             ><button
-              id="redo-btn"
-              class="icon-button"
-              aria-label="Redo last edit"
-              title="Redo (Ctrl/⌘ Shift Z or Ctrl Y)"
-              disabled
-            >
-              <span data-icon="redo"></span></button
-            ><button
-              id="clear-btn"
-              class="icon-button"
-              aria-label="Clear world"
-              title="Clear world"
-            >
-              <span data-icon="trash"></span>
-            </button>
-            <div class="view-control">
-              <span data-icon="layers"></span
-              ><select id="view" aria-label="Visualization mode">
-                <option value="normal">Natural view</option>
-                <option value="heat">Temperature</option>
-                <option value="pressure">Pressure</option>
-              </select>
-            </div>
-            <button
               id="palette-toggle"
               class="mobile-material"
               aria-label="Open material palette"
             >
               <i></i><span>Sand</span><span data-icon="chevron"></span>
             </button>
+          </div>
+          <div class="utility-controls">
             <button
               id="deselect-selection"
               class="property-button"
@@ -308,7 +311,16 @@
               >
             </div>
           </div>
-          <div class="camera-controls" aria-label="Canvas zoom">
+          <div class="camera-controls" role="group" aria-label="View">
+            <span class="control-caption" aria-hidden="true">View</span>
+            <div class="view-control">
+              <span data-icon="layers"></span
+              ><select id="view" aria-label="Visualization mode">
+                <option value="normal">Natural view</option>
+                <option value="heat">Temperature</option>
+                <option value="pressure">Pressure</option>
+              </select>
+            </div>
             <button id="exit-focus-btn" class="property-button">
               Exit focus
             </button>

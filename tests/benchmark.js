@@ -36,3 +36,8 @@ measure("Absorption laboratory", (w) => loadPreset(w, "absorption"));
 
 measure("Reaction bench", (w) => loadPreset(w, "reactions"));
 measure("Pottery kiln", (w) => loadPreset(w, "pottery"));
+measure("Elastic bodies", (w) => {
+  for (let y = 15; y < 85; y++)
+    for (let x = 90; x < 170; x++) w.set(y * w.width + x, M.Rubber);
+  for (let x = 0; x < w.width; x++) w.set(185 * w.width + x, M.Stone);
+});

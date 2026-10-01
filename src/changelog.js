@@ -1,5 +1,18 @@
 export const changelog = [
   {
+    version: "1.4.0",
+    date: "2026-10-01",
+    title: "Elastics and bubbles",
+    changes: [
+      "Rope, rubber, and jelly keep permanent spring connections from their drawn shape. They bend, stretch, react to gravity and pressure, and can be moved with Grab. Drawing against a solid anchors the attached end; erasing its support releases it.",
+      "Added soap, soapy water, and bubbles. Soap dissolves into water, agitation or warming makes bubbles, and bubbles rise through liquids and pop under heat, pressure, or with age.",
+      "Each substance has one palette entry. Alternate phases still exist in the simulation; Draw temperature lets you create hot, molten, gaseous, or frozen forms. Copy picks the substance and its sampled temperature.",
+      "Reorganized the palette by behavior, including Elastics, Life, Explosives, Devices, and Fiction. Ordinary solids remain rigid.",
+      "Mobile controls now group Playback and Edit at the top, followed by Tool & brush, material or tool properties, and View. Mobile material tiles have equal widths and heights.",
+      "Elastic links survive save/load, undo/redo, moving selections, and canvas resizing; copied selections receive independent links. Older saves remain compatible.",
+    ],
+  },
+  {
     version: "1.3.1",
     date: "2026-10-01",
     title: "Phone rotation and fullscreen",

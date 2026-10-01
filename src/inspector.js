@@ -48,6 +48,20 @@ export function cellProperties(world, point) {
         ? `${materials[world.storedLiquid[i]].name} · ${world.storedAmount[i]} / 48`
         : "Empty · 0 / 48",
     ]);
+  if (m.elasticity) {
+    let connections = 0;
+    for (const j of world.elastic.locations.values())
+      for (const bonds of world.elastic.bonds)
+        if (
+          (j === i && world.elastic.locations.has(bonds[j])) ||
+          bonds[j] === world.elasticId[i]
+        )
+          connections++;
+    rows.push(
+      ["Elastic links", String(connections)],
+      ["Anchored", world.elasticAnchor[i] ? "Yes" : "No"],
+    );
+  }
   if (m.ray)
     rows.push([
       "Direction",

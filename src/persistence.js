@@ -1,3 +1,4 @@
+import { elasticFields, elasticFloatFields } from "./sim/elasticity.js";
 import {
   defaultLevel,
   validateLevelMetadata,
@@ -65,6 +66,7 @@ export function validateSnapshot(data) {
     const values =
       data.arrays?.[key] ??
       ([
+        ...elasticFields,
         "heading",
         "chargedAt",
         "moisture",
@@ -88,29 +90,50 @@ export function validateSnapshot(data) {
     const maximum =
       key === "temp"
         ? 100000
-        : key === "heading"
-          ? 7
-          : key === "chargedAt"
-            ? 4294967295
-            : key === "life"
-              ? 65535
-              : key === "storedAmount"
-                ? 48
-                : ["cells", "clone", "residue", "storedLiquid"].includes(key)
-                  ? materials.length - 1
-                  : 255;
-    const minimum = key === "temp" ? -273 : 0;
+        : elasticFloatFields.includes(key)
+          ? key.startsWith("offset")
+            ? 0.5
+            : 2
+          : key === "elasticAnchor"
+            ? 15
+            : key === "heading"
+              ? 7
+              : key === "chargedAt" ||
+                  ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
+                    key,
+                  )
+                ? 4294967295
+                : key === "life"
+                  ? 65535
+                  : key === "storedAmount"
+                    ? 48
+                    : ["cells", "clone", "residue", "storedLiquid"].includes(
+                          key,
+                        )
+                      ? materials.length - 1
+                      : 255;
+    const minimum =
+      key === "temp" ? -273 : elasticFloatFields.includes(key) ? -maximum : 0;
     if (
       values.some(
         (v) =>
           v < minimum ||
           v > maximum ||
-          (key !== "temp" && !Number.isInteger(v)),
+          (key !== "temp" &&
+            !elasticFloatFields.includes(key) &&
+            !Number.isInteger(v)),
       )
     )
       throw Error("This save contains invalid particle data.");
   }
+  const elasticIds = new Set();
   for (let i = 0; i < length; i++) {
+    const id = data.arrays.elasticId?.[i];
+    if (id) {
+      if (!materials[data.arrays.cells[i]]?.elasticity || elasticIds.has(id))
+        throw Error("Invalid elastic particle identity.");
+      elasticIds.add(id);
+    }
     const amount = data.arrays.storedAmount?.[i] || 0,
       type = data.arrays.storedLiquid?.[i] || 0;
     if (
@@ -161,6 +184,7 @@ export function restore(world, data) {
       world.count++;
       world.chunks[world.chunk(i)]++;
     }
+  world.elastic.rebuild(world);
   if (data.pressure) world.fields.pressure.set(data.pressure);
   if (data.activity) world.motionStamp.set(data.activity);
   else world.motionStamp.fill(world.tick + 1);
@@ -195,6 +219,7 @@ export function unpack(data) {
     const runs =
       data.arrays?.[key] ??
       ([
+        ...elasticFields,
         "heading",
         "chargedAt",
         "moisture",

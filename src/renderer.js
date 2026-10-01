@@ -1,3 +1,4 @@
+import { drawElasticBodies, drawBubbles } from "./sim/elastic-renderer.js";
 import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
 import { Bloom } from "./bloom.js";
@@ -244,6 +245,10 @@ export class Renderer {
       p[o + 3] = 255;
     }
     this.ctx.putImageData(this.data, 0, 0);
+    if (this.mode === "normal") {
+      drawElasticBodies(this.ctx, this.world);
+      drawBubbles(this.ctx, this.world);
+    }
     const c = this.context,
       v = this.viewport;
     c.fillStyle = "#10191e";

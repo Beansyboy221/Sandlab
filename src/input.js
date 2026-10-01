@@ -291,6 +291,9 @@ export class Input {
         M.Lightning,
         this.state.shape,
         this.state.replace,
+        1,
+        0,
+        this.state.paintTemperature,
       );
       return;
     }
@@ -349,6 +352,7 @@ export class Input {
         this.state.replace,
         dx,
         dy,
+        this.state.paintTemperature,
       );
     }
   }

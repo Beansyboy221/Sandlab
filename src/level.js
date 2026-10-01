@@ -54,6 +54,7 @@ export function resizeLevel(world, properties, x, y) {
         resized.fields.pressure[fy * resized.fields.width + fx] =
           world.fields.pressure[world.fields.index(sx, sy)];
     }
+  resized.elastic.rebuild(resized);
   resized.motionStamp.fill(resized.tick + 1);
   return resized;
 }

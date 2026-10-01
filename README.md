@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 85 materials, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 79 palette substances and 90 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -117,7 +117,7 @@ The gear in the top-right opens Rendering, Simulation, Brush, Storage, Keyboard,
 
 ## Chemistry and new materials
 
-The palette contains 85 materials. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Metal and metal dust rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to metal.
+The palette contains 79 substances, with 90 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Metal and metal dust rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to metal.
 
 Acid or vinegar plus baking soda releases carbon dioxide. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form acid. Rubber insulates electricity and heat but burns.
 
@@ -150,3 +150,11 @@ The Fiction filter groups six experimental substances. Dragonfire heats nearby m
 Ray travel, transparent-volume scanning, new emissions, and fission/annihilation events have fixed work limits. No interaction starts recursive simulation work or creates an unbounded list of effects. All effects remain local to the browser and use the existing bloom renderer.
 
 On phones, the canvas occupies most of the available screen. The bottom dock keeps Play, the tool picker, and materials reachable. Swipe up or tap the grip to expand brush settings, undo/redo, tool properties, and zoom buttons. In landscape, the dock moves to the side when that gives the canvas more room; swipe left to expand a side dock. Tall canvases align left. Rotation refits the view without changing particles. The Fullscreen button uses canvas focus on mobile, so it works without iPhone Safari's browser fullscreen API; tap the visible × button in the top-right corner to exit focus. Browser address bars remain controlled by Safari. Adding Sandlab to the Home Screen offers a separate app window.
+
+Elastic materials
+
+Rope, Rubber, and Jelly use connected springs rather than granular movement. Draw a thin rope or a jelly body; use Grab to stretch it. Drawing its end against a rigid solid creates an anchor. Erase that support to release it. Strained links can tear, and heat/combustion/corrosion still apply. Only the Elastics group has this behavior.
+
+Soap dissolves in water. Warm or agitate Soapy water with Pressure to produce bubbles. Bubbles rise through liquids, drain faster in open air, and pop under heat or strong pressure. The mobile material grid uses equal 76-pixel rows and equal column widths.
+
+Each substance appears once in the palette. Use Draw temperature (°C) to create its frozen, gaseous, or molten phase; searching an alternate name finds its parent substance. Copy samples both the substance and temperature.

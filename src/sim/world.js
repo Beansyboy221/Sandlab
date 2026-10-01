@@ -1,3 +1,5 @@
+import { drawingPhase } from "./material-families.js";
+import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
 import { moveRay, rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
@@ -31,7 +33,19 @@ export class World {
     this.growth = new Uint8Array(this.length);
     this.storedLiquid = new Uint8Array(this.length);
     this.storedAmount = new Uint8Array(this.length);
-    this.particleFields = particleStateFields.map((name) => this[name]);
+    for (const key of elasticFields)
+      this[key] = new (
+        elasticFloatFields.includes(key)
+          ? Float32Array
+          : key === "elasticAnchor"
+            ? Uint8Array
+            : Uint32Array
+      )(this.length);
+    this.elastic = new Elasticity(this);
+    this.particleFields = particleStateFields
+      .filter((name) => !elasticFields.includes(name))
+      .map((name) => this[name]);
+    this.elasticParticleFields = elasticFields.map((name) => this[name]);
     this.chunkWidth = Math.ceil(width / 16);
     this.chunks = new Uint16Array(this.chunkWidth * Math.ceil(height / 16));
     this.motionStamp = new Uint32Array(this.chunks.length);
@@ -60,6 +74,7 @@ export class World {
     id,
     temperature = materials[id].temperature,
     lifetime = materials[id].lifetime || 0,
+    connectElastic = true,
   ) {
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
     if (!this.cells[i] && id) {
@@ -68,6 +83,10 @@ export class World {
     } else if (this.cells[i] && !id) {
       this.chunks[this.chunk(i)]--;
       this.count--;
+    }
+    if (this.elasticId[i]) {
+      this.elastic.locations.delete(this.elasticId[i]);
+      for (const field of this.elasticParticleFields) field[i] = 0;
     }
     this.cells[i] = id;
     this.temp[i] = temperature;
@@ -93,6 +112,10 @@ export class World {
     this.residue[i] = 0;
     this.variant[i] = this.random() * 255;
     this.heading[i] = materials[id].ray ? this.variant[i] >> 5 : 0;
+    if (materials[id].elasticity) {
+      this.elastic.world = this;
+      this.elastic.add(i, connectElastic);
+    }
     this.updated[i] = this.tick;
     this.wake(i);
   }
@@ -118,6 +141,9 @@ export class World {
     }
   }
   clear() {
+    this.elastic.locations.clear();
+    this.elastic.nextId = 1;
+    for (const key of elasticFields) this[key].fill(0);
     for (const key of [
       "cells",
       "heading",
@@ -192,8 +218,16 @@ export class World {
       field[i] = field[j];
       field[j] = value;
     }
+    if (this.elasticId[i] || this.elasticId[j])
+      for (const field of this.elasticParticleFields) {
+        const value = field[i];
+        field[i] = field[j];
+        field[j] = value;
+      }
     this.updated[i] = this.tick;
     this.updated[j] = this.tick;
+    if (this.elasticId[i]) this.elastic.locations.set(this.elasticId[i], i);
+    if (this.elasticId[j]) this.elastic.locations.set(this.elasticId[j], j);
     this.wake(i);
     this.wake(j);
   }
@@ -203,6 +237,7 @@ export class World {
     if (!b.id) return true;
     if (
       b.category === "solid" ||
+      b.category === "elastic" ||
       b.category === "special" ||
       b.category === "powder"
     )
@@ -214,7 +249,7 @@ export class World {
   move(i, x, y) {
     const m = materials[this.cells[i]],
       cat = m.category;
-    if (!m.movable) return;
+    if (!m.movable || m.elasticity) return;
     if (m.ray) {
       moveRay(this, i, x, y, m);
       return;
@@ -274,6 +309,7 @@ export class World {
     this.temp[j] += transfer;
   }
   step() {
+    this.elastic.world = this;
     this.tick++;
     this.fields.border = this.border;
     this.fields.update();
@@ -325,6 +361,7 @@ export class World {
           }
         }
       }
+    this.elastic.step();
   }
   explode(x, y, radius) {
     this.fields.add(x, y, radius * 2);
@@ -349,7 +386,7 @@ export class World {
         }
         if (
           !m.id ||
-          m.category !== "solid" ||
+          !["solid", "elastic"].includes(m.category) ||
           this.random() > (m.resistance || 0.6)
         )
           this.set(i, M.Fire, 850, 15 + this.random() * 30);
@@ -366,8 +403,12 @@ export class World {
     replace = false,
     directionX = 1,
     directionY = 0,
+    temperature = materials[id].temperature,
   ) {
     if (![x, y, radius, directionX, directionY].every(Number.isFinite)) return;
+    if (!Number.isFinite(temperature)) return;
+    temperature = Math.max(-250, Math.min(6000, temperature));
+    id = drawingPhase(id, temperature);
     if (id === M.Lightning || materials[id].directed) radius = 0;
     for (let dy = -radius; dy <= radius; dy++)
       for (let dx = -radius; dx <= radius; dx++) {
@@ -382,7 +423,7 @@ export class World {
           !this.cells[i] ||
           (id === M.Lightning && this.cells[i] === M.Lightning && this.clone[i])
         ) {
-          this.set(i, id);
+          this.set(i, id, temperature);
           if (materials[id].directed)
             this.heading[i] = rayHeading(directionX, directionY);
         }

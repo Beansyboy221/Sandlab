@@ -657,10 +657,13 @@ const definitions = [
   ],
   [
     "Rubber",
-    "solid",
+    "elastic",
     "#766983",
     1.1,
     {
+      elasticity: 0.18,
+      damping: 0.94,
+      tearAt: 5,
       conductivity: 0.005,
       resistance: 0.8,
       ignite: 350,
@@ -702,6 +705,70 @@ const definitions = [
     { temperature: -196, conductivity: 0.22, boil: -190, boilTo: "Nitrogen" },
   ],
   ...energyMaterials,
+  [
+    "Rope",
+    "elastic",
+    "#cda77b",
+    0.9,
+    {
+      elasticity: 0.24,
+      damping: 0.94,
+      tearAt: 3.5,
+      conductivity: 0.025,
+      ignite: 270,
+      burn: 120,
+      residue: "Ash",
+      organic: true,
+    },
+  ],
+  [
+    "Jelly",
+    "elastic",
+    "#cf83b4",
+    1.05,
+    {
+      elasticity: 0.08,
+      damping: 0.88,
+      tearAt: 6,
+      conductivity: 0.12,
+      melt: 75,
+      meltTo: "Water",
+      freeze: -3,
+      freezeTo: "Ice",
+      organic: true,
+    },
+  ],
+  ["Soap", "powder", "#d9c9ec", 0.7, { conductivity: 0.03 }],
+  [
+    "Soapy water",
+    "liquid",
+    "#94c7da",
+    1.01,
+    {
+      aqueous: true,
+      waterLike: true,
+      absorbable: true,
+      conductive: true,
+      conductivity: 0.2,
+      viscosity: 2,
+      boil: 100,
+      boilTo: "Steam",
+      freeze: -2,
+      freezeTo: "Ice",
+    },
+  ],
+  [
+    "Bubble",
+    "gas",
+    "#bbdfed",
+    -0.45,
+    {
+      conductivity: 0.01,
+      lifetime: 220,
+      lifetimeVariation: 0.35,
+      bubble: true,
+    },
+  ],
 ];
 export const M = Object.create(null);
 export const materials = definitions.map(
@@ -736,16 +803,43 @@ for (const m of materials)
     "combustionGas",
   ])
     if (m[field]) m[field] = M[m[field]];
+// Palette groups describe the dominant behavior; category remains the engine's movement behavior.
 export const categories = [
   "all",
   "powder",
   "liquid",
-  "solid",
   "gas",
+  "solid",
+  "elastic",
+  "life",
+  "explosive",
   "energy",
-  "special",
+  "devices",
   "fiction",
 ];
+export const categoryLabels = {
+  all: "All",
+  powder: "Powders",
+  liquid: "Liquids",
+  gas: "Gases",
+  solid: "Solids",
+  elastic: "Elastics",
+  life: "Life",
+  explosive: "Explosives",
+  energy: "Energy",
+  devices: "Devices",
+  fiction: "Fiction",
+};
+for (const m of materials)
+  m.paletteCategory = m.fiction
+    ? "fiction"
+    : m.explosive
+      ? "explosive"
+      : ["Plant", "Seed", "Fertilizer", "Nutrient water"].includes(m.name)
+        ? "life"
+        : m.category === "special"
+          ? "devices"
+          : m.category;
 
 for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 

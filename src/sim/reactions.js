@@ -1,3 +1,4 @@
+import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
 import { arcGap } from "./sparks.js";
 import { reactExplosive } from "./ignition.js";
@@ -30,6 +31,7 @@ export function react(world, i, x, y) {
     reactEnergy(world, i, x, y, m);
     return;
   }
+  if (reactBubbles(world, i, x, y)) return;
   // Contact chemistry precedes phase changes, so a hot water-reactive metal
   // still reacts with water before that water flashes into steam.
   if (reactContact(world, i, x, y) || changePhase(world, i, x, y, m)) return;

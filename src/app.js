@@ -1,3 +1,8 @@
+import {
+  paletteBase,
+  paletteMaterials,
+  materialSearchText,
+} from "./sim/material-families.js";
 import { MobileDock } from "./mobile-dock.js";
 import { ToolPicker } from "./tool-picker.js";
 import { LevelEditor } from "./level-editor.js";
@@ -15,7 +20,7 @@ import { SettingsPanel } from "./settings-panel.js";
 import { Selection } from "./selection.js";
 import { brushTools } from "./sim/tools.js";
 import { World } from "./sim/world.js";
-import { materials, M, categories } from "./sim/materials.js";
+import { materials, M, categories, categoryLabels } from "./sim/materials.js";
 import { Renderer } from "./renderer.js";
 import { Input, lightningInterval } from "./input.js";
 import { loadPreset } from "./presets.js";
@@ -37,13 +42,14 @@ const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
 let autosaveTimer, toolPicker, mobileDock;
-$("palette").querySelector("h1 span").textContent = materials.length - 1;
+$("palette").querySelector("h1 span").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
   renderer = new Renderer($("world"), world);
 const inspector = new Inspector($("inspection-card"), world, renderer);
 const state = {
   material: M.Sand,
+  paintTemperature: 20,
   radius: settings.get("brushSize"),
   shape: settings.get("brushShape"),
   selectionShape: "square",
@@ -309,8 +315,10 @@ mobileDock = new MobileDock(
   world,
   renderer,
 );
-function selectMaterial(id) {
+function selectMaterial(id, temperature = materials[id].temperature) {
+  id = paletteBase[id];
   state.material = id;
+  state.paintTemperature = temperature;
   setTool(false);
   const m = materials[id];
   renderMaterials();
@@ -318,25 +326,40 @@ function selectMaterial(id) {
   details.replaceChildren();
   const title = document.createElement("div");
   title.className = "detail-title";
-  title.innerHTML = `<span class="swatch" style="--color:${m.color}"></span><h2>${m.name}</h2><span class="detail-type">${m.category}</span>`;
+  title.innerHTML = `<span class="swatch" style="--color:${m.color}"></span><h2>${m.name}</h2><span class="detail-type">${categoryLabels[m.paletteCategory] || m.category}</span>`;
   details.append(title);
+  const temperatureControl = document.createElement("label");
+  temperatureControl.className = "draw-temperature";
+  temperatureControl.textContent = "Draw temperature";
+  const temperatureInput = document.createElement("input");
+  temperatureInput.id = "draw-temperature";
+  temperatureInput.type = "number";
+  temperatureInput.min = "-250";
+  temperatureInput.max = "6000";
+  temperatureInput.step = "1";
+  temperatureInput.value = String(Math.round(temperature));
+  temperatureInput.setAttribute("aria-label", "Draw temperature in Celsius");
+  temperatureInput.addEventListener("change", () => {
+    if (Number.isFinite(temperatureInput.valueAsNumber))
+      state.paintTemperature = Math.max(
+        -250,
+        Math.min(6000, temperatureInput.valueAsNumber),
+      );
+    temperatureInput.value = String(state.paintTemperature);
+  });
+  temperatureControl.append(temperatureInput, document.createTextNode("°C"));
+  details.append(temperatureControl);
   $("palette-toggle").querySelector("i").style.background = m.color;
   $("palette-toggle").querySelector("span:not([data-icon])").textContent =
     m.name;
 }
 function renderMaterials() {
   const query = $("search").value.trim().toLowerCase(),
-    filtered = materials
-      .slice(1)
-      .filter(
-        (m) =>
-          (category === "all" ||
-            (category === "fiction" ? m.fiction : m.category === category)) &&
-          (!query ||
-            `${m.name} ${m.category} ${m.fiction ? "fiction" : ""}`
-              .toLowerCase()
-              .includes(query)),
-      );
+    filtered = paletteMaterials.filter(
+      (m) =>
+        (category === "all" || m.paletteCategory === category) &&
+        (!query || materialSearchText(m).includes(query)),
+    );
   $("materials").replaceChildren();
   for (const m of filtered) {
     const b = document.createElement("button");
@@ -363,22 +386,11 @@ function renderMaterials() {
     ? "Search results"
     : category === "all"
       ? "All elements"
-      : `${category === "energy" ? "Energy" : category.charAt(0).toUpperCase() + category.slice(1)}${["powder", "liquid", "solid", "gas"].includes(category) ? (category === "gas" ? "es" : "s") : ""}`;
+      : categoryLabels[category];
 }
 for (const cat of categories) {
   const b = document.createElement("button");
-  b.textContent =
-    cat === "all"
-      ? "All"
-      : cat === "fiction"
-        ? "Fiction"
-        : cat === "special"
-          ? "Special"
-          : cat === "energy"
-            ? "Energy"
-            : cat === "gas"
-              ? "Gases"
-              : cat + "s";
+  b.textContent = categoryLabels[cat];
   b.classList.toggle("selected", cat === "all");
   b.setAttribute("aria-pressed", String(cat === "all"));
   b.addEventListener("click", () => {
@@ -486,7 +498,7 @@ const input = new Input(
       const cell = cellAt(world, point);
       if (!cell) return;
       if (!cell.material.id) return toast("Empty cell—choose a particle.");
-      selectMaterial(cell.material.id);
+      selectMaterial(cell.material.id, world.temp[cell.index]);
       toast(`${cell.material.name} selected`);
     }
   },
@@ -549,7 +561,8 @@ $("settings-btn").addEventListener("click", () =>
 );
 $("about-btn").addEventListener("click", () => openDialog("about-dialog"));
 $("app-version").textContent = `Version ${changelog[0].version}`;
-$("app-content-count").textContent = `${materials.length - 1} materials`;
+$("app-content-count").textContent =
+  `${paletteMaterials.length} materials · ${materials.length - 1} simulation forms`;
 for (const release of changelog) {
   const section = document.createElement("section"),
     heading = document.createElement("h3"),
@@ -719,9 +732,9 @@ $("import-file").addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   try {
-    if (file.size > 12e6)
+    if (file.size > 64e6)
       throw Error(
-        "This file is too large. Choose a Sandlab export under 12 MB.",
+        "This file is too large. Choose a Sandlab export under 64 MB.",
       );
     const data = unpack(JSON.parse(await file.text()));
     validateSnapshot(data);

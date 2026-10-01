@@ -1,11 +1,11 @@
 {
   "name": "sandlab",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 3000 --bind 0.0.0.0",
-    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js",
+    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js tests/elasticity.test.js",
     "bench": "node tests/benchmark.js",
     "test:browser": "python3 tests/browser_check.py",
     "format": "prettier --write \"src/**/*.js\" \"tests/*.js\" index.html style.css README.md",
@@ -16,7 +16,8 @@
     "test:levels": "python3 tests/level_check.py",
     "test:energy": "python3 tests/energy_check.py",
     "test:drawing": "python3 tests/drawing_check.py",
-    "test:mobile-layout": "python3 tests/mobile_layout_check.py"
+    "test:mobile-layout": "python3 tests/mobile_layout_check.py",
+    "test:elastics": "python3 tests/elastics_check.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"

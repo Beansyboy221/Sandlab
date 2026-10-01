@@ -1,0 +1,221 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { World } from "../src/sim/world.js";
+import { M, materials, categories } from "../src/sim/materials.js";
+import { elasticFields } from "../src/sim/elasticity.js";
+import { react } from "../src/sim/reactions.js";
+import { snapshot, restore, pack, unpack } from "../src/persistence.js";
+import {
+  copyRegion,
+  pasteRegion,
+  moveRegion,
+} from "../src/selection-region.js";
+import { resizeLevel } from "../src/level.js";
+const at = (w, x, y) => y * w.width + x;
+function line(name = "Rope", anchor = false) {
+  const w = new World(64, 64);
+  if (anchor) w.set(at(w, 9, 10), M.Stone);
+  for (let x = 10; x < 30; x++) w.set(at(w, x, 10), M[name]);
+  return w;
+}
+function links(w) {
+  let count = 0;
+  for (const i of w.elastic.locations.values())
+    for (let d = 0; d < 4; d++)
+      if (w.elastic.locations.has(w[`bond${d}`][i])) count++;
+  return count;
+}
+test("only elastics have springs and every material has one meaningful palette group", () => {
+  assert.deepEqual(
+    materials.filter((m) => m.elasticity).map((m) => m.name),
+    ["Rubber", "Rope", "Jelly"],
+  );
+  for (const m of materials.slice(1))
+    assert.ok(categories.includes(m.paletteCategory), m.name);
+  assert.equal(materials[M.TNT].category, "solid");
+  assert.equal(materials[M.TNT].paletteCategory, "explosive");
+  assert.equal(materials[M.Plant].paletteCategory, "life");
+  assert.equal(materials[M.Repulsor].paletteCategory, "fiction");
+});
+test("free elastic lines fall together without becoming powders or losing their original links", () => {
+  for (const name of ["Rope", "Rubber", "Jelly"]) {
+    const w = line(name);
+    for (let n = 0; n < 120; n++) w.step();
+    assert.equal(w.count, 20);
+    assert.equal(links(w), 19);
+    const positions = [...w.elastic.locations.values()];
+    assert.ok(positions.every((i) => Math.floor(i / w.width) > 10));
+    assert.equal(
+      new Set(positions.map((i) => Math.floor(i / w.width))).size,
+      1,
+    );
+    assert.ok(w.velocityX.every(Number.isFinite));
+  }
+});
+test("anchored strings sag with gravity, remain connected, and release when their support is erased", () => {
+  const w = line("Rope", true);
+  for (let n = 0; n < 300; n++) w.step();
+  assert.equal(w.cells[at(w, 10, 10)], M.Rope);
+  assert.equal(links(w), 19);
+  assert.ok(
+    [...w.elastic.locations.values()].some((i) => Math.floor(i / w.width) > 18),
+  );
+  w.set(at(w, 9, 10), 0);
+  for (let n = 0; n < 40; n++) w.step();
+  assert.ok(!w.elasticAnchor.some(Boolean));
+  assert.equal(w.cells[at(w, 10, 10)], 0);
+  assert.equal(w.count, 20);
+});
+test("cuts remove links and stretched links tear without reconnecting on contact", () => {
+  const w = line();
+  w.set(at(w, 20, 10), 0);
+  w.step();
+  assert.equal(links(w), 17);
+  const i = at(w, 10, 10),
+    j = at(w, 50, 10);
+  w.swap(i, j);
+  w.step();
+  assert.equal(w.bond0[j], 0);
+  assert.equal(w.count, 19);
+});
+test("elastic saves, history, resize, and independent clipboard copies preserve state and links", () => {
+  const w = line();
+  w.velocityX[at(w, 15, 10)] = 0.1;
+  const loaded = new World();
+  restore(loaded, unpack(pack(snapshot(w))));
+  assert.deepEqual(snapshot(loaded), snapshot(w));
+  assert.equal(links(loaded), 19);
+  const clip = copyRegion(w, { x: 10, y: 10, width: 20, height: 1 });
+  pasteRegion(w, clip, 10, 25);
+  assert.equal(links(w), 38);
+  assert.equal(new Set(w.elasticId.filter(Boolean)).size, 40);
+  const originalIds = new Set(clip.arrays.elasticId);
+  for (const i of w.elastic.locations.values())
+    if (Math.floor(i / w.width) === 25)
+      assert.ok(!originalIds.has(w.elasticId[i]));
+  const mask = new Uint8Array(w.length);
+  for (let x = 10; x < 30; x++) mask[at(w, x, 10)] = 1;
+  assert.ok(moveRegion(w, clip, 12, 12, mask));
+  assert.equal(links(w), 38);
+  assert.equal(w.elasticId[at(w, 12, 12)], clip.arrays.elasticId[0]);
+  const resized = resizeLevel(
+    w,
+    {
+      name: "Elastic test",
+      width: 80,
+      height: 80,
+      border: "solid",
+      background: "#111b20",
+    },
+    -8,
+    -8,
+  );
+  assert.equal(links(resized), 38);
+  assert.equal(resized.count, 40);
+  resized.step();
+  assert.equal(resized.count, 40);
+  const legacy = snapshot(line("Rubber"));
+  for (const key of elasticFields) delete legacy.arrays[key];
+  restore(loaded, legacy);
+  assert.equal(links(loaded), 19);
+});
+test("malformed elastic state is rejected before it can change a world", () => {
+  const w = line(),
+    before = snapshot(w),
+    bad = snapshot(w);
+  bad.arrays.elasticId[at(w, 11, 10)] = bad.arrays.elasticId[at(w, 10, 10)];
+  assert.throws(() => restore(w, bad), /identity/);
+  assert.deepEqual(snapshot(w), before);
+  const invalid = snapshot(w);
+  invalid.arrays.offsetX[at(w, 10, 10)] = 10;
+  assert.throws(() => restore(w, invalid), /invalid particle/);
+});
+test("elastic boundaries contain, wrap, or delete particles without stale identities", () => {
+  for (const border of ["solid", "looping", "void"]) {
+    const w = new World(16, 16);
+    w.border = border;
+    w.set(at(w, 5, 15), M.Jelly);
+    w.velocityY[at(w, 5, 15)] = 0.4;
+    for (let n = 0; n < 10; n++) w.step();
+    assert.equal(w.count, border === "void" ? 0 : 1);
+    assert.equal(w.elastic.locations.size, w.count);
+    assert.ok(
+      [...w.elastic.locations.values()].every((i) => i >= 0 && i < w.length),
+    );
+  }
+});
+test("soap dissolves in water, heated soapy water forms bubbles, and bubbles rise through water", () => {
+  const w = new World(20, 20);
+  w.set(210, M.Soap);
+  w.set(211, M.Water);
+  react(w, 210, 10, 10);
+  assert.equal(w.cells[210], 0);
+  assert.equal(w.cells[211], M["Soapy water"]);
+  w.temp[211] = 70;
+  w.tick = 6;
+  w.random = () => 0;
+  react(w, 211, 11, 10);
+  assert.equal(w.cells[211], M.Bubble);
+  w.set(191, M.Water);
+  w.move(211, 11, 10);
+  assert.equal(w.cells[191], M.Bubble);
+  assert.equal(w.cells[211], M.Water);
+  w.temp[191] = 100;
+  react(w, 191, 11, 9);
+  assert.equal(w.cells[191], 0);
+  w.set(210, M.Bubble);
+  w.fields.add(10, 10, 10);
+  react(w, 210, 10, 10);
+  assert.equal(w.cells[210], 0);
+});
+test("bubbles have varied lifetimes and exposed foam drains sooner than submerged bubbles", () => {
+  const w = new World(20, 20);
+  for (let i = 40; i < 60; i++) w.set(i, M.Bubble);
+  assert.ok(new Set(w.life.subarray(40, 60)).size > 5);
+  w.set(210, M.Bubble, 20, 100);
+  w.set(250, M.Bubble, 20, 100);
+  w.set(251, M.Water);
+  w.life[210] = w.life[250] = 100;
+  react(w, 210, 10, 10);
+  react(w, 250, 10, 12);
+  assert.equal(w.life[210], 95);
+  assert.equal(w.life[250], 99);
+});
+
+test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
+  const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
+    await import("../src/sim/material-families.js");
+  assert.equal(paletteMaterials.length, 79);
+  for (const [base, phase, temp] of [
+    ["Salt", "Molten salt", 850],
+    ["Water", "Ice", -20],
+    ["Water", "Steam", 150],
+    ["Stone", "Lava", 1400],
+    ["Copper", "Molten copper", 1150],
+    ["Nitrogen", "Liquid nitrogen", -210],
+    ["Wax", "Liquid wax", 80],
+  ]) {
+    assert.equal(paletteBase[M[phase]], M[base]);
+    assert.ok(!paletteMaterials.some((m) => m.id === M[phase]));
+    assert.equal(drawingPhase(M[base], temp), M[phase]);
+    assert.ok(
+      materialSearchText(materials[M[base]]).includes(phase.toLowerCase()),
+    );
+    const w = new World(20, 20);
+    w.brush(10, 10, 0, M[base], "circle", false, 1, 0, temp);
+    assert.equal(w.cells[210], M[phase]);
+    assert.equal(w.temp[210], temp);
+  }
+});
+test("restoring different dimensions rebinds the elastic solver to the live world", () => {
+  const source = new World(20, 20);
+  source.border = "void";
+  source.set(19 * 20 + 5, M.Jelly);
+  source.velocityY[19 * 20 + 5] = 0.4;
+  const target = new World(64, 64);
+  restore(target, snapshot(source));
+  assert.equal(target.elastic.world, target);
+  for (let n = 0; n < 10; n++) target.step();
+  assert.equal(target.count, 0);
+  assert.equal(target.elastic.locations.size, 0);
+});

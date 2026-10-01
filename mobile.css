@@ -411,3 +411,218 @@
   padding-left: max(4px, env(safe-area-inset-left));
   padding-right: max(4px, env(safe-area-inset-right));
 }
+
+/* Semantic groups retain one set of controls across desktop and mobile. */
+.control-caption {
+  display: none;
+}
+.edit-controls {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.material-controls {
+  display: contents;
+}
+.camera-controls {
+  display: contents;
+}
+.camera-controls > button {
+  display: none;
+}
+.canvas-focus:not(.mobile-layout) .camera-controls {
+  display: flex;
+}
+.canvas-focus:not(.mobile-layout) .camera-controls > button {
+  display: flex;
+}
+.mobile-layout .toolbox:not(.expanded) .edit-controls,
+.mobile-layout .toolbox:not(.expanded) .control-caption,
+.mobile-layout .toolbox:not(.expanded) .camera-controls {
+  display: none;
+}
+.mobile-layout .toolbox:not(.expanded) .material-controls {
+  display: contents;
+}
+.mobile-layout .toolbox.expanded {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 8px;
+  padding: 6px 10px calc(10px + env(safe-area-inset-bottom));
+  align-items: start;
+}
+.mobile-layout .toolbox.expanded .controls-toggle {
+  grid-column: 1 / -1;
+  width: 100%;
+  position: static;
+}
+.mobile-layout .toolbox.expanded .control-caption {
+  display: block;
+  width: 100%;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.mobile-layout .toolbox.expanded .play-controls,
+.mobile-layout .toolbox.expanded .edit-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-width: 0;
+  align-items: center;
+}
+.mobile-layout .toolbox.expanded .speed-control select {
+  padding: 8px 1px;
+  min-height: 44px;
+}
+.mobile-layout .toolbox.expanded .draw-controls,
+.mobile-layout .toolbox.expanded .brush-control,
+.mobile-layout .toolbox.expanded .material-controls,
+.mobile-layout .toolbox.expanded .utility-controls,
+.mobile-layout .toolbox.expanded .camera-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+}
+.mobile-layout .toolbox.expanded .draw-controls {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.mobile-layout .toolbox.expanded .draw-controls .tool-picker-toggle {
+  flex: 1;
+}
+.mobile-layout .toolbox.expanded .brush-control {
+  padding: 0 2px;
+}
+.mobile-layout .toolbox.expanded .material-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.mobile-layout .toolbox.expanded .material-controls .control-caption {
+  width: auto;
+  margin: 0;
+}
+.mobile-layout .toolbox.expanded .mobile-material {
+  flex: 1;
+  max-width: none;
+}
+.mobile-layout .toolbox.expanded:not([data-tool="paint"]) .material-controls {
+  display: none;
+}
+.mobile-layout .toolbox.expanded .utility-controls,
+.mobile-layout .toolbox.expanded[data-tool="paint"] .utility-controls {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0;
+  border: 0;
+  gap: 6px;
+}
+.mobile-layout .toolbox.expanded[data-tool="paint"] .utility-controls {
+  display: none;
+}
+.mobile-layout .toolbox.expanded .tool-properties {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.mobile-layout .toolbox.expanded .property-group {
+  flex-wrap: wrap;
+}
+.mobile-layout .toolbox.expanded .camera-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.mobile-layout .toolbox.expanded .camera-controls > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.mobile-layout .toolbox.expanded .camera-controls #exit-focus-btn {
+  display: none;
+}
+.mobile-layout.canvas-focus .toolbox.expanded .camera-controls #exit-focus-btn {
+  display: flex;
+}
+.mobile-layout .toolbox.expanded .view-control {
+  display: flex;
+  flex: 1;
+  min-width: 110px;
+}
+.mobile-layout.dock-side .toolbox.expanded .play-controls,
+.mobile-layout.dock-side .toolbox.expanded .edit-controls {
+  grid-column: 1 / -1;
+}
+.mobile-layout .material-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 76px;
+  align-items: stretch;
+}
+.mobile-layout .material {
+  width: 100%;
+  height: 76px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px 6px;
+  gap: 7px;
+  overflow: hidden;
+}
+.mobile-layout .material-name {
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.material[data-category="elastic"] .swatch {
+  border-radius: 7px 3px 7px 3px;
+}
+@media (min-width: 600px) {
+  .mobile-layout .material-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.draw-temperature {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 8px;
+}
+.draw-temperature input {
+  width: 80px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #162127;
+  color: var(--text);
+}
+.mobile-layout .material-detail {
+  display: block;
+  padding: 8px 0 0;
+}
+.mobile-layout .draw-temperature input {
+  min-height: 44px;
+}
+.mobile-layout .material-detail {
+  min-height: 0;
+  flex: none;
+}
+.mobile-layout .material-detail .detail-title {
+  display: none;
+}
+.mobile-layout .draw-temperature {
+  padding-top: 0;
+}
+.mobile-layout .material-name {
+  white-space: normal;
+}

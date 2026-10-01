@@ -42,10 +42,24 @@ export function copyRegion(world, box, mask = null) {
     }
   return { ...rect, arrays, mask: copiedMask, tick: world.tick };
 }
-export function pasteRegion(world, clipboard, x, y, replace = false) {
+export function pasteRegion(
+  world,
+  clipboard,
+  x,
+  y,
+  replace = false,
+  preserveIds = false,
+) {
   x = Math.round(x);
   y = Math.round(y);
   let count = 0;
+  const identities = new Map();
+  if (!preserveIds)
+    for (let n = 0; n < clipboard.width * clipboard.height; n++) {
+      const id = clipboard.arrays.elasticId?.[n];
+      if (id && (!clipboard.mask || clipboard.mask[n]) && !identities.has(id))
+        identities.set(id, world.elastic.allocate());
+    }
   for (let row = 0; row < clipboard.height; row++)
     for (let col = 0; col < clipboard.width; col++) {
       const nx = x + col,
@@ -62,9 +76,16 @@ export function pasteRegion(world, clipboard, x, y, replace = false) {
         id,
         clipboard.arrays.temp[source],
         clipboard.arrays.life[source],
+        false,
       );
       for (const name of particleStateFields)
         world[name][target] = clipboard.arrays[name][source];
+      if (!preserveIds && world.elasticId[target]) {
+        world.elasticId[target] = identities.get(world.elasticId[target]);
+        for (let d = 0; d < 4; d++)
+          world[`bond${d}`][target] =
+            identities.get(world[`bond${d}`][target]) || 0;
+      }
       // Electrical tick stamps are relative to the copied moment, rather than the old world clock.
       world.chargedAt[target] = clipboard.arrays.chargedAt[source]
         ? Math.max(
@@ -74,6 +95,7 @@ export function pasteRegion(world, clipboard, x, y, replace = false) {
         : 0;
       count++;
     }
+  world.elastic.rebuild(world);
   return count;
 }
 // Validate the whole move before clearing any source cells. Overlap is safe:
@@ -105,6 +127,6 @@ export function moveRegion(world, clip, x, y, sourceMask, replace = false) {
         continue;
       world.set((clip.y + row) * world.width + clip.x + col, 0);
     }
-  pasteRegion(world, clip, x, y, true);
+  pasteRegion(world, clip, x, y, true, true);
   return true;
 }

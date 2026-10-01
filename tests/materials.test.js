@@ -18,7 +18,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Furnace, 50);
-  assert.equal(materials.length, 86);
+  assert.equal(materials.length, 91);
   assert.equal(M["Liquid nitrogen"], 71);
   for (const m of materials)
     for (const key of [

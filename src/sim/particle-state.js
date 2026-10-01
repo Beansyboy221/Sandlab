@@ -1,3 +1,4 @@
+import { elasticFields } from "./elasticity.js";
 // Shared by copying, movement, and persistence: every particle property travels together.
 export const particleStateFields = [
   "cells",
@@ -15,4 +16,5 @@ export const particleStateFields = [
   "growth",
   "storedLiquid",
   "storedAmount",
+  ...elasticFields,
 ];

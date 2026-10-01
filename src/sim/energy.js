@@ -183,7 +183,7 @@ export function moveRay(w, i, x, y, m) {
         ] > 3.5
       )
         w.set(j, M["Glass dust"], w.temp[j]);
-      if (target.category === "solid" || target.category === "powder") {
+      if (["solid", "elastic", "powder"].includes(target.category)) {
         reflect(w, i, x, y, dx, dy);
         w.life[i] = Math.max(1, w.life[i] - 4);
         return;
