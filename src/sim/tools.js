@@ -1,17 +1,17 @@
 import { materials, M } from "./materials.js";
 export const brushTools = [
-  ["paint", "Paint"],
-  ["erase", "Erase"],
-  ["warm", "Warm"],
-  ["cool", "Cool"],
-  ["fan", "Fan"],
-  ["grab", "Grab"],
-  ["select", "Select"],
-  ["inspect", "Magnifier"],
-  ["eyedropper", "Eyedropper"],
-  ["pressure", "Pressure"],
-  ["vacuum", "Vacuum"],
-  ["squeeze", "Squeeze"],
+  ["paint", "Paint", "brush"],
+  ["erase", "Erase", "eraser"],
+  ["warm", "Warm", "warm"],
+  ["cool", "Cool", "cool"],
+  ["fan", "Fan", "fan"],
+  ["grab", "Grab", "hand"],
+  ["select", "Select", "select"],
+  ["inspect", "Magnifier", "search"],
+  ["eyedropper", "Eyedropper", "eyedropper"],
+  ["pressure", "Pressure", "pressure"],
+  ["vacuum", "Vacuum", "vacuum"],
+  ["squeeze", "Squeeze", "squeeze"],
 ];
 export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
   dx = Math.round(dx);

@@ -1141,6 +1141,7 @@ dialog::backdrop {
     top: 0;
     height: 100dvh;
     border-radius: 0;
+    pointer-events: none;
     transform: translateY(105%);
     transition: transform 0.22s;
     background: #1a252b;
@@ -1151,6 +1152,7 @@ dialog::backdrop {
     box-shadow: 0 -10px 60px #0008;
   }
   .palette.open {
+    pointer-events: auto;
     transform: translateY(0);
   }
   .palette-heading {
@@ -2062,5 +2064,104 @@ dialog::backdrop {
   }
   .resize-offsets {
     gap: 8px;
+  }
+}
+
+.tool-picker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 124px;
+  min-height: 44px;
+  padding: 0 9px;
+}
+.tool-picker-toggle > svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.tool-picker-toggle > span:not(.tool-picker-arrow) {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tool-picker-arrow svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(90deg);
+}
+.tool-picker-menu {
+  position: fixed;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: min(320px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  padding: 8px;
+  background: #192328;
+  border: 1px solid #405158;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px #0008;
+}
+.tool-picker-menu button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  min-height: 48px;
+  border-radius: 5px;
+  font-size: 12px;
+  text-align: left;
+}
+.tool-picker-menu button svg {
+  flex: none;
+  width: 21px;
+  height: 21px;
+}
+.tool-picker-menu button[aria-selected="true"] {
+  color: var(--accent);
+  background: #a6d5bd14;
+}
+.tool-picker-menu button:hover {
+  background: #ffffff08;
+}
+@media (max-width: 700px) {
+  .tool-picker-toggle {
+    width: 114px;
+  }
+}
+@media (max-width: 400px) {
+  .tool-picker-toggle {
+    width: 110px;
+    gap: 5px;
+    padding: 0 7px;
+  }
+}
+
+.brush-control.frequency output {
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+@media (max-height: 550px) and (min-width: 701px) {
+  .toolbox[data-tool="inspect"],
+  .toolbox[data-tool="eyedropper"] {
+    gap: 4px;
+    padding: 6px;
+  }
+  .toolbox[data-tool="inspect"] .tool-divider,
+  .toolbox[data-tool="eyedropper"] .tool-divider {
+    display: none;
+  }
+  .toolbox[data-tool="inspect"] .tool-picker-toggle,
+  .toolbox[data-tool="eyedropper"] .tool-picker-toggle {
+    width: 110px;
+  }
+  #inspection-properties .property-button {
+    padding: 0 7px;
+    font-size: 11px;
   }
 }

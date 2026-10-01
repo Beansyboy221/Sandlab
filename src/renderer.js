@@ -117,9 +117,11 @@ export class Renderer {
             id === M.Fire ||
             id === M.Plasma ||
             id === M.Spark ||
-            id === M.Lightning
+            id === M.Lightning ||
+            materials[id].glow
           ) {
-            const flicker = (variant[i] + tick * 17) % 70;
+            const flicker =
+              ((variant[i] + tick * 17) % 70) * (materials[id].glow ? 0.4 : 1);
             r += flicker;
             g += flicker * 0.65;
             b += flicker * 0.3;

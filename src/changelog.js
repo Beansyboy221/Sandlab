@@ -1,5 +1,18 @@
 export const changelog = [
   {
+    version: "1.2.0",
+    date: "2026-10-01",
+    title: "Energy and imagination",
+    changes: [
+      "Every tool now has a matching line icon in a touch-friendly dropdown with keyboard navigation.",
+      "Added light, lasers, sound, neutrons, mirrors, solar cells, uranium, and glass dust.",
+      "Light reflects from mirrors, passes through glass and water, and powers solar cells. Lasers heat targets; sound makes pressure pulses; neutrons trigger uranium fission.",
+      "Added dragonfire, frostfire, antimatter, black holes, repulsors, and fairy dust, with a Fiction filter in the material palette.",
+      "Ray direction survives copying, resizing, undo, and save files. Existing saves and material IDs remain compatible.",
+      "Lightning brush size controls strike frequency: small brushes strike slowly, large brushes strike rapidly. Clicks and taps remain immediate.",
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-10-01",
     title: "Canvas creation and resizing",

@@ -1,3 +1,4 @@
+import { moveRay, rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
 import { materials, M } from "./materials.js";
@@ -22,6 +23,7 @@ export class World {
     this.clone = new Uint8Array(this.length);
     this.residue = new Uint8Array(this.length);
     this.variant = new Uint8Array(this.length);
+    this.heading = new Uint8Array(this.length);
     this.updated = new Uint32Array(this.length);
     this.chargedAt = new Uint32Array(this.length);
     this.moisture = new Uint8Array(this.length);
@@ -35,6 +37,9 @@ export class World {
     this.motionStamp = new Uint32Array(this.chunks.length);
     this.wakeStamp = new Uint32Array(this.chunks.length);
     this.count = 0;
+    this.energyBudgetTick = -1;
+    this.energyBirths = 0;
+    this.energyReactions = 0;
     this.fields = new Fields(width, height);
   }
   random() {
@@ -87,6 +92,7 @@ export class World {
     this.clone[i] = 0;
     this.residue[i] = 0;
     this.variant[i] = this.random() * 255;
+    this.heading[i] = materials[id].ray ? this.variant[i] >> 5 : 0;
     this.updated[i] = this.tick;
     this.wake(i);
   }
@@ -114,6 +120,7 @@ export class World {
   clear() {
     for (const key of [
       "cells",
+      "heading",
       "life",
       "charge",
       "cooldown",
@@ -134,6 +141,7 @@ export class World {
     this.motionStamp.fill(this.tick + 1);
     this.wakeStamp.fill(0);
     this.count = 0;
+    this.energyBudgetTick = -1;
   }
   index(x, y) {
     if (x >= 0 && x < this.width && y >= 0 && y < this.height)
@@ -207,6 +215,10 @@ export class World {
     const m = materials[this.cells[i]],
       cat = m.category;
     if (!m.movable) return;
+    if (m.ray) {
+      moveRay(this, i, x, y, m);
+      return;
+    }
     const gas = m.gas,
       dy = gas ? (m.density > 0 ? 1 : -1) : 1;
     const direction = this.random() < 0.5 ? -1 : 1;
@@ -304,6 +316,7 @@ export class World {
             // Only movement sleeps. Heat and chemistry continue in settled chunks.
             const chunk = (y >> 4) * this.chunkWidth + cx;
             if (
+              materials[this.cells[i]].ray ||
               this.tick + 1 - this.motionStamp[chunk] < 30 ||
               this.tick % 8 === 0 ||
               Math.abs(this.fields.pressure[this.fields.index(x, y)]) > 1
@@ -344,9 +357,18 @@ export class World {
       }
     this.set(this.index(x, y), M.Fire, 1100, 50);
   }
-  brush(x, y, radius, id, shape = "circle", replace = false) {
-    if (![x, y, radius].every(Number.isFinite)) return;
-    if (id === M.Lightning) radius = 0;
+  brush(
+    x,
+    y,
+    radius,
+    id,
+    shape = "circle",
+    replace = false,
+    directionX = 1,
+    directionY = 0,
+  ) {
+    if (![x, y, radius, directionX, directionY].every(Number.isFinite)) return;
+    if (id === M.Lightning || materials[id].directed) radius = 0;
     for (let dy = -radius; dy <= radius; dy++)
       for (let dx = -radius; dx <= radius; dx++) {
         if (shape === "circle" && dx * dx + dy * dy > radius * radius) continue;
@@ -354,7 +376,16 @@ export class World {
           ny = Math.round(y) + dy;
         if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;
         const i = ny * this.width + nx;
-        if (!id || replace || !this.cells[i]) this.set(i, id);
+        if (
+          !id ||
+          replace ||
+          !this.cells[i] ||
+          (id === M.Lightning && this.cells[i] === M.Lightning && this.clone[i])
+        ) {
+          this.set(i, id);
+          if (materials[id].directed)
+            this.heading[i] = rayHeading(directionX, directionY);
+        }
       }
   }
 }

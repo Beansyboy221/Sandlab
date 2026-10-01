@@ -17,6 +17,10 @@ def serve(route):
     else:
         route.fulfill(status=404, body='not found')
 
+def choose(page, tool):
+    page.locator('#tool-picker-toggle').click()
+    page.locator(f'[data-tool-option="{tool}"]').click()
+
 def init(context):
     context.route('**/*', serve)
     page = context.new_page()
@@ -32,7 +36,7 @@ with sync_playwright() as p:
     desktop = browser.new_context(viewport={'width':1440, 'height':900}, device_scale_factor=1)
     page, errors = init(desktop)
     page.wait_for_timeout(1200)
-    assert page.locator('.material').count() == 71
+    assert page.locator('.material').count() == 85
     assert page.locator('.tagline, .canvas-note, .palette-foot').count() == 0
     assert page.locator('.material-detail p, .material[title]').count() == 0
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -132,12 +136,12 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '71 materials'
+    assert page.locator('#app-content-count').inner_text() == '85 materials'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 7
+    assert page.locator('.changelog-release').count() == 8
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -187,39 +191,39 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.world.cells.some(v=>v===5)')
     page.screenshot(path=str(ARTIFACTS / 'fire-surfaces.png'))
     page.evaluate("() => {sandlab.state.paused=true;const w=sandlab.world;w.clear();w.set(100*w.width+160,2);}")
-    point=page.evaluate("""()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+160*v.scale)/s,y:b.top+(v.y+100*v.scale)/s};}""")
-    page.locator('#brush-tool').select_option('warm')
+    point=page.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+160*v.scale)/s,y:b.top+(v.y+100*v.scale)/s};}""")
+    choose(page, 'warm')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.temp[100*sandlab.world.width+160]') > 20
     page.locator('#undo-btn').click()
     assert page.evaluate('sandlab.world.temp[100*sandlab.world.width+160]') == 20
-    page.locator('#brush-tool').select_option('cool')
+    choose(page, 'cool')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.temp[100*sandlab.world.width+160]') < 20
     page.evaluate("() => {const w=sandlab.world;w.clear();w.set(100*w.width+160,51);w.storedLiquid[100*w.width+160]=2;w.storedAmount[100*w.width+160]=10;}")
-    page.locator('#brush-tool').select_option('grab')
+    choose(page, 'grab')
     page.mouse.move(point['x'],point['y']);page.mouse.down()
     scale=page.evaluate('sandlab.renderer.viewport.scale / (sandlab.renderer.canvas.width / sandlab.renderer.canvas.getBoundingClientRect().width)')
     page.mouse.move(point['x']+5*scale,point['y'],steps=5);page.mouse.up()
     assert page.evaluate('sandlab.world.storedAmount[100*sandlab.world.width+165]') == 10
     page.locator('#undo-btn').click()
     assert page.evaluate('sandlab.world.storedAmount[100*sandlab.world.width+160]') == 10
-    page.locator('#brush-tool').select_option('squeeze')
+    choose(page, 'squeeze')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.cooldown[100*sandlab.world.width+160]') > 0
-    page.locator('#brush-tool').select_option('vacuum')
+    choose(page, 'vacuum')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.fields.pressure.some(v=>v<0)')
-    page.locator('#brush-tool').select_option('paint')
+    choose(page, 'paint')
     assert page.locator('#palette #brush-tool').count() == 0
-    assert page.locator('.toolbox #brush-tool').is_visible()
-    page.locator('#brush-tool').select_option('select')
+    assert page.locator('.toolbox #tool-picker-toggle').is_visible()
+    choose(page, 'select')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#selection-properties').is_visible()
     assert not page.locator('#brush-control').is_visible()
     page.evaluate("() => {const w=sandlab.world;w.clear();w.set(90*w.width+140,4);w.set(91*w.width+140,51,42);w.storedLiquid[91*w.width+140]=2;w.storedAmount[91*w.width+140]=7;w.set(90*w.width+141,41);w.clone[90*w.width+141]=21;}")
     def cell(page,x,y):
-        return page.evaluate("""([x,y])=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+(x+.5)*v.scale)/s,y:b.top+(v.y+(y+.5)*v.scale)/s};}""",[x,y])
+        return page.evaluate("""([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+(x+.5)*v.scale)/s,y:b.top+(v.y+(y+.5)*v.scale)/s};}""",[x,y])
     start,end=cell(page,139,89),cell(page,142,92)
     page.mouse.move(start['x'],start['y']);page.mouse.down();page.mouse.move(end['x'],end['y'],steps=5);page.mouse.up()
     assert page.evaluate('sandlab.world.count') == 3
@@ -295,8 +299,8 @@ with sync_playwright() as p:
     page.evaluate("() => {const w=sandlab.world;w.clear();w.set(100*w.width+147,4);w.set(100*w.width+148,51,87);w.storedLiquid[100*w.width+148]=6;w.storedAmount[100*w.width+148]=12;w.set(100*w.width+151,12);}")
     start,end=cell(page,147,98),cell(page,153,102)
     page.mouse.move(start['x'],start['y']);page.mouse.down();page.mouse.move(end['x'],end['y']);page.mouse.up()
-    hole=cell(page,151,100)
     page.locator('#shape-btn').click()  # refine the rectangle using a circle
+    hole=cell(page,151,100)
     page.locator('#brush').evaluate("e=>{e.value=1;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     page.mouse.click(hole['x'],hole['y'],button='right')
     start,end=cell(page,148,98),cell(page,178,118)
@@ -351,7 +355,7 @@ with sync_playwright() as p:
     page.locator('#world').focus();page.keyboard.press('Control+d')
     assert page.evaluate('sandlab.selection.box === null')
     assert page.evaluate('sandlab.world.count') == 3
-    page.locator('#brush-tool').select_option('paint')
+    choose(page, 'paint')
     assert page.locator('#clear-btn').is_visible()
     assert not page.locator('#deselect-selection').is_visible()
     assert not errors, errors
@@ -416,17 +420,17 @@ with sync_playwright() as p:
     phone.screenshot(path=str(ARTIFACTS / 'mobile-palette.png'))
     phone.locator('#palette-close').tap()
     phone.wait_for_timeout(300)
-    phone.locator('#brush-tool').select_option('cool')
+    choose(phone, 'cool')
     assert not phone.locator('#palette-toggle').is_visible()
     assert phone.locator('#tool-properties').is_visible()
     assert phone.evaluate("sandlab.state.tool === 'cool'")
     assert 'open' not in phone.locator('#palette').get_attribute('class')
     phone.wait_for_timeout(300)
     phone.evaluate("() => {const w=sandlab.world;w.clear();w.set(150*w.width+100,2);}")
-    point=phone.evaluate("""()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+100*v.scale)/s,y:b.top+(v.y+150*v.scale)/s};}""")
+    point=phone.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+100*v.scale)/s,y:b.top+(v.y+150*v.scale)/s};}""")
     phone.touchscreen.tap(point['x'],point['y'])
     assert phone.evaluate('sandlab.world.temp[150*sandlab.world.width+100]') < 20
-    phone.locator('#brush-tool').select_option('paint')
+    choose(phone, 'paint')
     phone.locator('#palette-toggle').tap()
     phone.wait_for_timeout(300)
     phone.locator('.material').filter(has_text='Water').first.tap()
@@ -458,7 +462,7 @@ with sync_playwright() as p:
     assert phone.locator('#world').bounding_box()['height'] > 150
     phone.set_viewport_size({'width':390,'height':844})
     phone.wait_for_timeout(200)
-    phone.locator('#brush-tool').select_option('select')
+    choose(phone, 'select')
     phone.wait_for_timeout(100)
     assert not phone.locator('#palette-toggle').is_visible()
     assert phone.locator('#copy-selection').is_visible()
@@ -534,11 +538,11 @@ with sync_playwright() as p:
     assert phone.locator('#deselect-selection').is_visible()
     assert phone.locator('#deselect-selection').bounding_box()['height'] >= 44
     phone.set_viewport_size({'width':390,'height':844})
-    phone.locator('#brush-tool').select_option('fan')
+    choose(phone, 'fan')
     assert phone.locator('#fan-direction').is_visible()
     phone.locator('#fan-direction').select_option('up')
     assert phone.evaluate("sandlab.state.fanDirection === 'up'")
-    phone.locator('#brush-tool').select_option('paint')
+    choose(phone, 'paint')
     assert phone.locator('#palette-toggle').is_visible()
     phone.set_viewport_size({'width':360,'height':640})
     assert phone.evaluate('document.documentElement.scrollWidth <= innerWidth')

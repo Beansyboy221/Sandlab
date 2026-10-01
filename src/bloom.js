@@ -28,11 +28,13 @@ export class Bloom {
         id === M.Plasma ||
         id === M.Spark ||
         world.charge[i];
-      const strength = energy
-        ? 1
-        : materials[id].burn && world.life[i]
-          ? 0.6
-          : Math.min(0.8, Math.max(0, (world.temp[i] - 500) / 1000));
+      const strength =
+        materials[id].glow ??
+        (energy
+          ? 1
+          : materials[id].burn && world.life[i]
+            ? 0.6
+            : Math.min(0.8, Math.max(0, (world.temp[i] - 500) / 1000)));
       if (!strength) continue;
       emitting = true;
       const target =

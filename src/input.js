@@ -1,3 +1,4 @@
+import { M, materials } from "./sim/materials.js";
 import { applyTool, dragBrush } from "./sim/tools.js";
 const fanDirections = {
   right: [1, 0],
@@ -6,6 +7,9 @@ const fanDirections = {
   down: [0, 1],
 };
 const readTools = new Set(["inspect", "eyedropper"]);
+export function lightningInterval(radius) {
+  return 1000 / (1 + 0.4 * (Math.max(1, Math.min(30, radius)) - 1));
+}
 export class Input {
   constructor(
     canvas,
@@ -22,6 +26,7 @@ export class Input {
     this.world = world;
     this.state = state;
     this.pointers = new Map();
+    this.lastLightningAt = -Infinity;
     this.onStroke = onStroke;
     this.onHover = onHover;
     this.selection = selection;
@@ -59,7 +64,8 @@ export class Input {
             e.button === 2 || state.selectionErase,
             e.shiftKey,
           );
-      } else this.paint(point, point, e.button === 2 || state.erase);
+      } else
+        this.paint(point, point, e.button === 2 || state.erase, 1, 0, true);
       this.hover(
         point,
         selecting && (e.button === 2 || state.selectionErase),
@@ -165,14 +171,37 @@ export class Input {
     this.canvas.style.cursor = "crosshair";
     this.renderer.cursor = {
       ...point,
-      radius: this.state.radius,
+      radius:
+        this.state.tool === "paint" &&
+        (this.state.material === M.Lightning ||
+          materials[this.state.material].directed)
+          ? 0
+          : this.state.radius,
       shape: this.state.shape,
       erase: this.state.erase,
     };
     this.onHover(point);
   }
-  paint(a, b, erase, dx = 1, dy = 0) {
+  paint(a, b, erase, dx = 1, dy = 0, immediate = false) {
     const tool = erase ? "erase" : this.state.tool || "paint";
+    if (tool === "paint" && this.state.material === M.Lightning) {
+      const now = performance.now();
+      if (
+        !immediate &&
+        now - this.lastLightningAt < lightningInterval(this.state.radius)
+      )
+        return;
+      this.lastLightningAt = now;
+      this.world.brush(
+        b.x,
+        b.y,
+        0,
+        M.Lightning,
+        this.state.shape,
+        this.state.replace,
+      );
+      return;
+    }
     if (tool === "grab") {
       dragBrush(
         this.world,
@@ -226,6 +255,8 @@ export class Input {
         erase ? 0 : this.state.material,
         this.state.shape,
         this.state.replace,
+        dx,
+        dy,
       );
     }
   }

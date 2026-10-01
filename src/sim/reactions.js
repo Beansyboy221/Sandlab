@@ -1,3 +1,4 @@
+import { reactEnergy } from "./energy.js";
 import { arcGap } from "./sparks.js";
 import { reactExplosive } from "./ignition.js";
 import { M, materials } from "./materials.js";
@@ -24,6 +25,10 @@ export function react(world, i, x, y) {
         world.chargedAt[j] = world.tick;
       }
     });
+  }
+  if (m.energyRule) {
+    reactEnergy(world, i, x, y, m);
+    return;
   }
   // Contact chemistry precedes phase changes, so a hot water-reactive metal
   // still reacts with water before that water flashes into steam.

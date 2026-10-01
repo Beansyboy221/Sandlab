@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 71 materials, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 85 materials, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -12,13 +12,14 @@ Open **http://localhost:3000**. The development server uses Python 3. For deploy
 
 ## Play
 
-Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Magnifier (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Eyedropper (`I`) picks a material and returns to Paint without changing the world. Scroll over the canvas or use `[` / `]` to resize the brush. Multiple fingers can paint simultaneously.
+Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Magnifier (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Eyedropper (`I`) picks a material and returns to Paint without changing the world. Scroll over the canvas or use `[` / `]` to resize the brush. Multiple fingers can paint simultaneously. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
 
 - `Space`: pause or resume; `.`: one simulation step.
 - `B` / `E`: draw or erase; `1` / `2` / `3`: sand, water, fire.
 - `Ctrl/⌘ Z`: restore the world before the last stroke or canvas change.
 - `/`: search materials; `G`: grid overlay.
 - Natural, Temperature, and Pressure views expose different systems.
+- Lightning uses brush size as its repetition rate: 1 strike/s at size 1, about 12.6 strikes/s at size 30. The drawing slider shows Rate when lightning is selected. Clicks and taps fire immediately; holding and dragging repeat at the selected cadence.
 - Settings → Keyboard lets you replace or clear any shortcut, with two bindings per action, conflict detection, and a keyboard-only reset. The question mark menu shows the app version, changelog, and local storage information.
 
 Try oil over water, sand in a density column, cement with water, an acid bath in glass, ice next to a heater, metal touched by a spark, or TNT connected to a fuse. Seeds germinate on moist soil. Plants share moisture through roots and stems, grow upward, and stop growing outside suitable temperatures. Lightning seeks nearby conductors, heats its impact point, and energizes wires. Storm sources emit clouds and periodic strikes; clouds release rain. Clone learns an adjacent movable material. Fans push to the right; voids drain their surroundings. Wax melts and solidifies for casting experiments.
@@ -35,22 +36,25 @@ My worlds stores up to eight named worlds on the current device. Autosave captur
 
 ## Architecture
 
-| Module                    | Responsibility                                                                    |
-| ------------------------- | --------------------------------------------------------------------------------- |
-| `src/sim/materials.js`    | Stable material IDs, colors, physical properties, phase rules                     |
-| `src/sim/world.js`        | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
-| `src/sim/reactions.js`    | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
-| `src/sim/fields.js`       | Coarse pressure diffusion and decay                                               |
-| `src/renderer.js`         | Canvas rendering, thermal palette, viewport, brush preview                        |
-| `src/inspector.js`        | Read-only live cell properties and magnified rendering                            |
-| `src/shortcuts.js`        | Validated shortcut catalogue, bindings, and key dispatch                          |
-| `src/input.js`            | Pointer capture, continuous strokes, multitouch, wheel control                    |
-| `src/persistence.js`      | Validated snapshots, RLE encoding, device storage                                 |
-| `src/level.js`            | Canvas creation and positioned resizing without losing particle state             |
-| `src/level-editor.js`     | Canvas properties dialog and touch/keyboard placement preview                     |
-| `src/level-properties.js` | Validated canvas metadata and dimensions                                          |
-| `src/presets.js`          | Internal simulation fixtures                                                      |
-| `src/app.js`              | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
+| Module                        | Responsibility                                                                    |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| `src/sim/materials.js`        | Stable material IDs, colors, physical properties, phase rules                     |
+| `src/sim/world.js`            | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
+| `src/sim/reactions.js`        | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
+| `src/sim/fields.js`           | Coarse pressure diffusion and decay                                               |
+| `src/renderer.js`             | Canvas rendering, thermal palette, viewport, brush preview                        |
+| `src/inspector.js`            | Read-only live cell properties and magnified rendering                            |
+| `src/shortcuts.js`            | Validated shortcut catalogue, bindings, and key dispatch                          |
+| `src/input.js`                | Pointer capture, continuous strokes, multitouch, wheel control                    |
+| `src/persistence.js`          | Validated snapshots, RLE encoding, device storage                                 |
+| `src/tool-picker.js`          | Accessible icon dropdown, keyboard navigation, touch targets                      |
+| `src/sim/energy.js`           | Shared ray transport, energy absorption, thermal auras, and bounded emissions     |
+| `src/sim/energy-materials.js` | Append-only energy and fictional material definitions                             |
+| `src/level.js`                | Canvas creation and positioned resizing without losing particle state             |
+| `src/level-editor.js`         | Canvas properties dialog and touch/keyboard placement preview                     |
+| `src/level-properties.js`     | Validated canvas metadata and dimensions                                          |
+| `src/presets.js`              | Internal simulation fixtures                                                      |
+| `src/app.js`                  | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
 
 The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a coarse gameplay field, rather than a full fluid solver.
 
@@ -65,6 +69,7 @@ npm test
 npm run bench
 npm run test:browser
 npm run test:levels
+npm run test:energy
 npm run test:experiments
 npm run test:inspection
 npm run test:security
@@ -112,7 +117,7 @@ The gear in the top-right opens Rendering, Simulation, Brush, Storage, Keyboard,
 
 ## Chemistry and new materials
 
-The palette contains 71 materials. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Metal and metal dust rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to metal.
+The palette contains 85 materials. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Metal and metal dust rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to metal.
 
 Acid or vinegar plus baking soda releases carbon dioxide. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form acid. Rubber insulates electricity and heat but burns.
 
@@ -133,3 +138,13 @@ This is a qualitative cellular simulation. Relative density, heat transport, exp
 The `.github/workflows/pages.yml` workflow tests the simulation, builds `dist/`, and publishes it to GitHub Pages after each push to `main`. No application secrets or runtime dependencies are required. In the repository's **Settings → Pages**, select **GitHub Actions** as the source. The game uses relative asset URLs, so it works under a repository URL such as `/Sandlab/`. After deployment, the game is available at https://beansyboy221.github.io/Sandlab/.
 
 This repository and its GitHub Pages site are public. Local worlds and preferences stay in each player’s browser.
+
+## Energy and fictional materials
+
+Light and lasers travel as directional packets. Glass, water, and gases transmit them, mirrors reflect them, and opaque materials absorb them. Solar cells convert incoming light into charge that travels through connected conductors. Lasers aim along the stroke direction and deposit more heat than ordinary light. Heading is a compact particle field included in copying, resizing, history, and saves; legacy saves initialize it safely.
+
+Sound is a visible mechanical pulse, with no audible playback. It deposits pressure as it travels, reflects from solid surfaces, and can shatter glass into glass dust after repeated impacts. Sponge damps sound. Neutrons penetrate and heat matter, are absorbed by sponge, and cause uranium to become hot metal while releasing pressure and secondary neutrons. Uranium occasionally emits neutrons. These are qualitative gameplay models, rather than calibrated optics, acoustics, or nuclear physics.
+
+The Fiction filter groups six experimental substances. Dragonfire heats nearby matter and boils water; frostfire freezes liquids and weakens ordinary flames. Touching dragonfire and frostfire cancel into steam. Antimatter annihilates neighboring matter in a plasma-producing blast. Black holes pull through the pressure field and consume adjacent movable particles; repulsors push through that field. Fairy dust hydrates and fertilizes plants and makes seeds sprout without soil, consuming itself into light.
+
+Ray travel, transparent-volume scanning, new emissions, and fission/annihilation events have fixed work limits. No interaction starts recursive simulation work or creates an unbounded list of effects. All effects remain local to the browser and use the existing bloom renderer.

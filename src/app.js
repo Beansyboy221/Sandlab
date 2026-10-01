@@ -1,3 +1,4 @@
+import { ToolPicker } from "./tool-picker.js";
 import { LevelEditor } from "./level-editor.js";
 import { EditHistory } from "./history.js";
 import {
@@ -15,7 +16,7 @@ import { brushTools } from "./sim/tools.js";
 import { World } from "./sim/world.js";
 import { materials, M, categories } from "./sim/materials.js";
 import { Renderer } from "./renderer.js";
-import { Input } from "./input.js";
+import { Input, lightningInterval } from "./input.js";
 import { loadPreset } from "./presets.js";
 import {
   snapshot,
@@ -34,7 +35,7 @@ import { icon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
-let autosaveTimer;
+let autosaveTimer, toolPicker;
 $("palette").querySelector("h1 span").textContent = materials.length - 1;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
@@ -57,8 +58,13 @@ const state = {
   setRadius(radius) {
     this.radius = Math.max(1, Math.min(30, Math.round(radius)));
     $("brush").value = this.radius;
-    $("brush-value").value = this.radius;
-    if (renderer.cursor) renderer.cursor.radius = this.radius;
+    syncBrushControl();
+    if (renderer.cursor)
+      renderer.cursor.radius =
+        this.tool === "paint" &&
+        (this.material === M.Lightning || materials[this.material].directed)
+          ? 0
+          : this.radius;
     if (selection.brushing) selection.radius = this.radius;
     settings.set("brushSize", this.radius);
   },
@@ -133,7 +139,26 @@ function setPaused(value) {
     ? "#a39573"
     : "#a6d5bd";
 }
+function syncBrushControl() {
+  const frequency = state.tool === "paint" && state.material === M.Lightning;
+  $("brush-label").textContent = frequency ? "Rate" : "Size";
+  $("brush-value").value = frequency
+    ? `${(1000 / lightningInterval(state.radius)).toFixed(1)}/s`
+    : state.radius;
+  $("brush-control").classList.toggle("frequency", frequency);
+  $("brush").setAttribute(
+    "aria-label",
+    frequency ? "Lightning strike frequency" : "Brush radius",
+  );
+  if (frequency)
+    $("brush").setAttribute(
+      "aria-valuetext",
+      `${(1000 / lightningInterval(state.radius)).toFixed(1)} strikes per second`,
+    );
+  else $("brush").removeAttribute("aria-valuetext");
+}
 function updateToolProperties() {
+  syncBrushControl();
   if (selection.dragging && !state.paused) setPaused(true);
   const tool = state.tool;
   document.querySelector(".toolbox").dataset.tool = tool;
@@ -209,6 +234,7 @@ function setTool(value) {
   state.tool = tool;
   state.erase = tool === "erase";
   $("brush-tool").value = tool;
+  toolPicker?.sync(tool);
   selection.visible = tool === "select";
   inspector.setActive(tool === "inspect");
   if (tool === "inspect") inspector.follow(hover);
@@ -275,6 +301,7 @@ $("brush-tool").addEventListener("change", (e) => {
   setTool(e.target.value);
   if (innerWidth <= 700) $("palette").classList.remove("open");
 });
+toolPicker = new ToolPicker($("brush-tool"), brushTools);
 function selectMaterial(id) {
   state.material = id;
   setTool(false);
@@ -296,8 +323,12 @@ function renderMaterials() {
       .slice(1)
       .filter(
         (m) =>
-          (category === "all" || m.category === category) &&
-          (!query || `${m.name} ${m.category}`.toLowerCase().includes(query)),
+          (category === "all" ||
+            (category === "fiction" ? m.fiction : m.category === category)) &&
+          (!query ||
+            `${m.name} ${m.category} ${m.fiction ? "fiction" : ""}`
+              .toLowerCase()
+              .includes(query)),
       );
   $("materials").replaceChildren();
   for (const m of filtered) {
@@ -332,13 +363,15 @@ for (const cat of categories) {
   b.textContent =
     cat === "all"
       ? "All"
-      : cat === "special"
-        ? "Special"
-        : cat === "energy"
-          ? "Energy"
-          : cat === "gas"
-            ? "Gases"
-            : cat + "s";
+      : cat === "fiction"
+        ? "Fiction"
+        : cat === "special"
+          ? "Special"
+          : cat === "energy"
+            ? "Energy"
+            : cat === "gas"
+              ? "Gases"
+              : cat + "s";
   b.classList.toggle("selected", cat === "all");
   b.setAttribute("aria-pressed", String(cat === "all"));
   b.addEventListener("click", () => {

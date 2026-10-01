@@ -8,6 +8,7 @@ export const particleStateFields = [
   "clone",
   "residue",
   "variant",
+  "heading",
   "chargedAt",
   "moisture",
   "nutrition",

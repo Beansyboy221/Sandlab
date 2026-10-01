@@ -65,6 +65,7 @@ export function validateSnapshot(data) {
     const values =
       data.arrays?.[key] ??
       ([
+        "heading",
         "chargedAt",
         "moisture",
         "nutrition",
@@ -87,15 +88,17 @@ export function validateSnapshot(data) {
     const maximum =
       key === "temp"
         ? 100000
-        : key === "chargedAt"
-          ? 4294967295
-          : key === "life"
-            ? 65535
-            : key === "storedAmount"
-              ? 48
-              : ["cells", "clone", "residue", "storedLiquid"].includes(key)
-                ? materials.length - 1
-                : 255;
+        : key === "heading"
+          ? 7
+          : key === "chargedAt"
+            ? 4294967295
+            : key === "life"
+              ? 65535
+              : key === "storedAmount"
+                ? 48
+                : ["cells", "clone", "residue", "storedLiquid"].includes(key)
+                  ? materials.length - 1
+                  : 255;
     const minimum = key === "temp" ? -273 : 0;
     if (
       values.some(
@@ -192,6 +195,7 @@ export function unpack(data) {
     const runs =
       data.arrays?.[key] ??
       ([
+        "heading",
         "chargedAt",
         "moisture",
         "nutrition",

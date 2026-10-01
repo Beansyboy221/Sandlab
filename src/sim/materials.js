@@ -1,3 +1,4 @@
+import { energyMaterials } from "./energy-materials.js";
 const definitions = [
   ["Empty", "none", "#111b20", 0, {}],
   [
@@ -700,6 +701,7 @@ const definitions = [
     0.81,
     { temperature: -196, conductivity: 0.22, boil: -190, boilTo: "Nitrogen" },
   ],
+  ...energyMaterials,
 ];
 export const M = Object.create(null);
 export const materials = definitions.map(
@@ -742,6 +744,7 @@ export const categories = [
   "gas",
   "energy",
   "special",
+  "fiction",
 ];
 
 for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;

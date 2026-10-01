@@ -48,7 +48,13 @@ export function cellProperties(world, point) {
         ? `${materials[world.storedLiquid[i]].name} · ${world.storedAmount[i]} / 48`
         : "Empty · 0 / 48",
     ]);
-  if (world.clone[i]) rows.push(["Clones", materials[world.clone[i]].name]);
+  if (m.ray)
+    rows.push([
+      "Direction",
+      ["E", "SE", "S", "SW", "W", "NW", "N", "NE"][world.heading[i]],
+    ]);
+  if (world.clone[i] && m.id === M.Clone)
+    rows.push(["Clones", materials[world.clone[i]].name]);
   if (m.id === M.Ice && world.residue[i])
     rows.push(["Frozen from", materials[world.residue[i]].name]);
   return { ...cell, rows };

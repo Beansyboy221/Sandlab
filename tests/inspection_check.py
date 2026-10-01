@@ -38,12 +38,13 @@ def init(browser, width, height, touch=False):
 
 def point(page, x=100, y=80):
     return page.evaluate('''([x,y]) => {
-      const r=sandlab.renderer, b=r.canvas.getBoundingClientRect(), v=r.viewport, ratio=r.canvas.width/b.width;
+      const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(), v=r.viewport, ratio=r.canvas.width/b.width;
       return {x:b.left+(v.x+(x+.5)*v.scale)/ratio, y:b.top+(v.y+(y+.5)*v.scale)/ratio};
     }''', [x,y])
 
 def choose(page, tool):
-    page.locator('#brush-tool').select_option(tool)
+    page.locator('#tool-picker-toggle').click()
+    page.locator(f'[data-tool-option="{tool}"]').click()
 
 def properties(page):
     return page.locator('#inspection-card dl').inner_text()
