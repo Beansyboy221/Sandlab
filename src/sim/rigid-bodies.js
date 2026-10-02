@@ -1,5 +1,7 @@
 import { materials, M } from "./materials.js";
-import { collide } from "./body-collisions.js";
+import { BodyConnections } from "./body-connections.js";
+import { BodyRaster } from "./body-raster.js";
+import { stepBodies } from "./body-motion.js";
 
 export const rigidFields = ["restX", "restY", "angularVelocity", "damage"];
 const directions = [
@@ -7,12 +9,6 @@ const directions = [
   [0, 1],
   [1, 1],
   [-1, 1],
-];
-const neighbors = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
 ];
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 const wrapDelta = (v, length) => v - Math.round(v / length) * length;
@@ -27,12 +23,14 @@ export class RigidBodies {
     this.bodies = [];
     this.dirty = true;
     this.fresh = new Set();
+    this.collidedBodies = new Set();
     this.parents = new Int32Array(world.length);
-    this.reservations = new Uint32Array(world.length);
-    this.epoch = 0;
-    this.targets = new Int32Array(world.length);
-    this.targetX = new Float64Array(world.length);
-    this.targetY = new Float64Array(world.length);
+    this.edgeCounts = new Uint8Array(world.length);
+    this.connections = new BodyConnections(this);
+    this.raster = new BodyRaster(this);
+    this.targets = this.raster.targets;
+    this.targetX = this.raster.x;
+    this.targetY = this.raster.y;
   }
   add(i, connect = true) {
     const w = this.world,
@@ -63,7 +61,10 @@ export class RigidBodies {
     const w = this.world;
     this.bodyOf.clear();
     const parent = this.parents;
-    for (const i of this.locations.values()) parent[i] = i;
+    for (const i of this.locations.values()) {
+      parent[i] = i;
+      this.edgeCounts[i] = 0;
+    }
     const root = (i) => {
       while (parent[i] !== i) {
         parent[i] = parent[parent[i]];
@@ -79,6 +80,10 @@ export class RigidBodies {
         if (j === undefined) {
           w["bond" + d][i] = 0;
           continue;
+        }
+        if (d < 2) {
+          this.edgeCounts[i]++;
+          this.edgeCounts[j]++;
         }
         const a = root(i),
           b = root(j);
@@ -101,6 +106,8 @@ export class RigidBodies {
         ly: 0,
         inertia: 0,
         radius: 0,
+        friction: 0,
+        restitution: 0,
       };
       const first = this.locations.get(ids[0]),
         fx = (first % w.width) + w.offsetX[first] + 0.5,
@@ -119,21 +126,29 @@ export class RigidBodies {
           w.restY[i] = y;
         }
         body.mass += mass;
+        body.friction += materials[w.cells[i]].friction * mass;
+        body.restitution += materials[w.cells[i]].restitution * mass;
         body.lx += w.restX[i] * mass;
         body.ly += w.restY[i] * mass;
         this.bodyOf.set(node, body);
       }
       body.lx /= body.mass;
       body.ly /= body.mass;
+      body.friction /= body.mass;
+      body.restitution /= body.mass;
       for (const node of ids) {
         const i = this.locations.get(node),
           r2 = (w.restX[i] - body.lx) ** 2 + (w.restY[i] - body.ly) ** 2;
         body.inertia += materials[w.cells[i]].density * (r2 + 1 / 6);
         body.radius = Math.max(body.radius, Math.sqrt(r2));
       }
+      body.edges = Uint32Array.from(
+        ids.filter((node) => this.edgeCounts[this.locations.get(node)] < 4),
+      );
       this.bodies.push(body);
     }
     this.fresh.clear();
+    this.connections.dirty = true;
     this.dirty = false;
   }
   pose(body) {
@@ -163,7 +178,7 @@ export class RigidBodies {
       y += py * m;
       vx += w.velocityX[i] * m;
       vy += w.velocityY[i] * m;
-      omega += w.angularVelocity[i] * m;
+      omega += (w.angularVelocity[i] * m) / 6;
     }
     x /= body.mass;
     y /= body.mass;
@@ -178,6 +193,7 @@ export class RigidBodies {
       }
       const lx = w.restX[i] - body.lx,
         ly = w.restY[i] - body.ly;
+      omega += m * (px * w.velocityY[i] - py * w.velocityX[i]);
       cross += m * (lx * py - ly * px);
       dot += m * (lx * px + ly * py);
     }
@@ -187,10 +203,11 @@ export class RigidBodies {
       angle: Math.atan2(cross, dot),
       vx: vx / body.mass,
       vy: vy / body.mass,
-      omega: omega / body.mass,
+      omega: omega / body.inertia,
     };
   }
   sync(body, p) {
+    body.motion = p;
     const w = this.world,
       cos = Math.cos(p.angle),
       sin = Math.sin(p.angle);
@@ -217,13 +234,12 @@ export class RigidBodies {
       this.bodyOf.get(w.elasticId[j]) === body
     );
   }
-  plan(body, p) {
+  plan(body, p, contactsOnly = false) {
     const w = this.world,
       cos = Math.cos(p.angle),
       sin = Math.sin(p.angle);
-    this.epoch = (this.epoch + 1) >>> 0 || 1;
-    if (this.epoch === 1) this.reservations.fill(0);
     let hit = null;
+    let contacts = null;
     for (let n = 0; n < body.ids.length; n++) {
       const i = this.locations.get(body.ids[n]);
       if (i === undefined) return { i: -1, j: -1 };
@@ -231,75 +247,125 @@ export class RigidBodies {
         ly = w.restY[i] - body.ly,
         x = p.x + cos * lx - sin * ly,
         y = p.y + sin * lx + cos * ly,
-        gx = Math.floor(x),
-        gy = Math.floor(y);
+        gx = Math.floor(x - 1e-6),
+        gy = Math.floor(y - 1e-6);
       let j = w.index(gx, gy);
-      const ix = i % w.width,
-        iy = Math.floor(i / w.width);
-      // Swept corner contacts prevent diagonal movement escaping a closed box.
+      const oldX = (i % w.width) + 0.5 + w.offsetX[i],
+        oldY = Math.floor(i / w.width) + 0.5 + w.offsetY[i],
+        ix = Math.floor(oldX - 1e-6),
+        iy = Math.floor(oldY - 1e-6);
+      let axis = gx !== ix && gy === iy ? 0 : 1;
+      // Sweep from the continuous position, not a displaced raster reservation.
       if (gx !== ix && gy !== iy) {
         const sideX = w.index(gx, iy),
           sideY = w.index(ix, gy);
-        if (!this.passable(sideX, body)) j = sideX;
-        else if (!this.passable(sideY, body)) j = sideY;
+        if (!this.passable(sideX, body)) {
+          j = sideX;
+          axis = 0;
+        } else if (!this.passable(sideY, body)) {
+          j = sideY;
+          axis = 1;
+        }
       }
       if (!this.passable(j, body)) {
-        hit ??= {
-          i,
-          j,
-          count: 0,
-          x: 0,
-          y: 0,
-          minX: Infinity,
-          maxX: -Infinity,
-          minY: Infinity,
-          maxY: -Infinity,
-        };
-        hit.count++;
-        hit.x += (i % w.width) + 0.5 + w.offsetX[i];
-        const cx = (i % w.width) + 0.5 + w.offsetX[i],
+        const owner = j >= 0 ? this.bodyOf.get(w.elasticId[j]) : undefined;
+        const sign =
+          Math.sign(axis === 0 ? x - oldX : y - oldY) ||
+          Math.sign(axis === 0 ? p.vx : p.vy) ||
+          1;
+        contacts ??= [];
+        let contact;
+        for (let c = 0; c < contacts.length; c++)
+          if (
+            contacts[c].owner === owner &&
+            contacts[c].axis === axis &&
+            contacts[c].sign === sign
+          ) {
+            contact = contacts[c];
+            break;
+          }
+        if (!contact) {
+          contact = {
+            i,
+            j,
+            owner,
+            axis,
+            sign,
+            depth: 0,
+            count: 0,
+            x: 0,
+            y: 0,
+            minX: Infinity,
+            maxX: -Infinity,
+            minY: Infinity,
+            maxY: -Infinity,
+          };
+          contacts.push(contact);
+          hit ??= contact;
+        }
+        let boundary =
+          j >= 0
+            ? (axis === 0 ? j % w.width : Math.floor(j / w.width)) +
+              (sign < 0 ? 1 : 0)
+            : sign > 0
+              ? axis === 0
+                ? w.width
+                : w.height
+              : 0;
+        if (w.border === "looping") {
+          const length = axis === 0 ? w.width : w.height,
+            value = axis === 0 ? x : y;
+          boundary = value + wrapDelta(boundary - value, length);
+        }
+        contact.depth = Math.max(
+          contact.depth,
+          ((axis === 0 ? x : y) - boundary) * sign,
+        );
+        contact.count++;
+        let cx = (i % w.width) + 0.5 + w.offsetX[i],
           cy = Math.floor(i / w.width) + 0.5 + w.offsetY[i];
-        hit.y += cy;
-        hit.minX = Math.min(hit.minX, cx);
-        hit.maxX = Math.max(hit.maxX, cx);
-        hit.minY = Math.min(hit.minY, cy);
-        hit.maxY = Math.max(hit.maxY, cy);
+        if (w.border === "looping") {
+          cx = p.x + wrapDelta(cx - p.x, w.width);
+          cy = p.y + wrapDelta(cy - p.y, w.height);
+        }
+        contact.x += cx;
+        contact.y += cy;
+        contact.minX = Math.min(contact.minX, cx);
+        contact.maxX = Math.max(contact.maxX, cx);
+        contact.minY = Math.min(contact.minY, cy);
+        contact.maxY = Math.max(contact.maxY, cy);
         continue;
       }
-      if (j >= 0 && this.reservations[j] === this.epoch) {
-        let best = -1,
-          distance = Infinity;
-        // Rotation can round two attached pixels to one cell. Reserve the closest
-        // unoccupied raster cell; the continuous rendered shape never deforms.
-        for (let dy = -1; dy <= 1; dy++)
-          for (let dx = -1; dx <= 1; dx++) {
-            const k = w.index(gx + dx, gy + dy),
-              d = (gx + dx + 0.5 - x) ** 2 + (gy + dy + 0.5 - y) ** 2;
-            if (
-              k >= 0 &&
-              this.reservations[k] !== this.epoch &&
-              this.passable(k, body) &&
-              d < distance
-            ) {
-              best = k;
-              distance = d;
-            }
-          }
-        if (best < 0) return { i, j: -1, internal: true };
-        j = best;
-      }
-      if (j >= 0) this.reservations[j] = this.epoch;
       this.targets[n] = j;
       this.targetX[n] = x;
       this.targetY[n] = y;
     }
     if (hit) {
-      hit.x /= hit.count;
-      hit.y /= hit.count;
+      for (const contact of contacts) {
+        contact.x /= contact.count;
+        contact.y /= contact.count;
+      }
+      hit.others = contacts.slice(1);
+      return hit;
     }
-    return hit;
+    if (contactsOnly) return null;
+    // Most rejected moves touch a support near the last row of the body. Reserve
+    // occupancy only after the physical sweep succeeds, avoiding wasted matching.
+    this.raster.begin();
+    for (let n = 0; n < body.ids.length; n++)
+      if (
+        !this.raster.reserve(
+          n,
+          this.targetX[n],
+          this.targetY[n],
+          body,
+          this.targets[n],
+        )
+      )
+        return { i: this.locations.get(body.ids[n]), j: -1, internal: true };
+    return null;
   }
-  commit(body, p) {
+  commit(body, p, sync = true) {
     const w = this.world;
     for (let n = 0; n < body.ids.length; n++) {
       const i = this.locations.get(body.ids[n]),
@@ -323,7 +389,7 @@ export class RigidBodies {
       w.offsetX[i] = dx;
       w.offsetY[i] = dy;
     }
-    this.sync(body, p);
+    if (sync) this.sync(body, p);
   }
   translate(body, dx, dy) {
     const p = this.pose(body);
@@ -338,107 +404,6 @@ export class RigidBodies {
     return true;
   }
   step() {
-    const w = this.world;
-    if (this.dirty) this.rebuild();
-    for (const body of this.bodies) {
-      const p = this.pose(body);
-      if (!p) continue;
-      let liquid = 0,
-        contacts = 0,
-        pressureX = 0,
-        pressureY = 0,
-        rooted = false;
-      for (const id of body.ids) {
-        const i = this.locations.get(id),
-          x = i % w.width,
-          y = Math.floor(i / w.width);
-        pressureX +=
-          w.fields.sample((x >> 2) - 1, y >> 2) -
-          w.fields.sample((x >> 2) + 1, y >> 2);
-        pressureY +=
-          w.fields.sample(x >> 2, (y >> 2) - 1) -
-          w.fields.sample(x >> 2, (y >> 2) + 1);
-        for (const [dx, dy] of neighbors) {
-          const j = w.index(x + dx, y + dy);
-          if (j < 0 || this.bodyOf.get(w.elasticId[j]) === body) continue;
-          contacts++;
-          if (materials[w.cells[j]].category === "liquid")
-            liquid += materials[w.cells[j]].density;
-          if (
-            w.cells[i] === M.Plant &&
-            (w.cells[j] === M.Dirt || w.cells[j] === M.Mud)
-          )
-            rooted = true;
-        }
-      }
-      if (rooted) {
-        p.vx = p.vy = p.omega = 0;
-        this.sync(body, p);
-        continue;
-      }
-      const buoyancy = contacts
-          ? liquid / contacts / (body.mass / body.ids.length)
-          : 0,
-        gravity = 0.16 * (1 - buoyancy),
-        drag = liquid ? 0.96 : 0.999;
-      p.vx = clamp(
-        (p.vx + gravity * w.gravityX + (pressureX * 0.012) / body.mass) * drag,
-        2.5,
-      );
-      p.vy = clamp(
-        (p.vy + gravity * w.gravityY + (pressureY * 0.012) / body.mass) * drag,
-        2.5,
-      );
-      p.omega = clamp(
-        p.omega * 0.995,
-        Math.min(0.12, 1.5 / Math.max(1, body.radius)),
-      );
-      const steps = Math.max(
-          1,
-          Math.ceil(
-            (Math.hypot(p.vx, p.vy) + Math.abs(p.omega) * body.radius) / 0.4,
-          ),
-        ),
-        dt = 1 / steps;
-      for (let n = 0; n < steps; n++) {
-        const next = {
-            ...p,
-            x: p.x + p.vx * dt,
-            y: p.y + p.vy * dt,
-            angle: p.angle + p.omega * dt,
-          },
-          hit = this.plan(body, next);
-        if (!hit) {
-          this.commit(body, next);
-          Object.assign(p, next);
-        } else {
-          collide(
-            this,
-            body,
-            p,
-            hit,
-            p.vx - p.omega * (Math.floor(hit.i / w.width) + 0.5 - p.y),
-            p.vy + p.omega * ((hit.i % w.width) + 0.5 - p.x),
-          );
-          if (this.dirty) {
-            this.sync(body, p);
-            break;
-          }
-          // Tangential motion and rotation remain live at contact, allowing a
-          // supported beam to topple instead of becoming an immobile pile.
-          for (const axis of ["x", "y", "angle"]) {
-            const amount =
-              (axis === "x" ? p.vx : axis === "y" ? p.vy : p.omega) * dt;
-            if (Math.abs(amount) < 0.00001) continue;
-            const slide = { ...p, [axis]: p[axis] + amount };
-            if (!this.plan(body, slide)) {
-              this.commit(body, slide);
-              Object.assign(p, slide);
-            }
-          }
-          this.sync(body, p);
-        }
-      }
-    }
+    stepBodies(this);
   }
 }

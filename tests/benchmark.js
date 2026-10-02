@@ -50,3 +50,15 @@ measure("Rigid solids", (w) => {
         for (let dx = 0; dx < 18; dx++)
           w.set((y + dy) * w.width + x + dx, M.Steel);
 });
+
+measure("Settled solid stack", (w) => {
+  for (let x = 0; x < w.width; x++) w.set(185 * w.width + x, M.Wall);
+  for (let layer = 0; layer < 5; layer++)
+    for (let x = 40; x < 280; x += 30)
+      for (let dy = 0; dy < 12; dy++)
+        for (let dx = 0; dx < 18; dx++)
+          w.set(
+            (125 + layer * 12 + dy) * w.width + x + dx,
+            layer % 2 ? M.Copper : M.Steel,
+          );
+});

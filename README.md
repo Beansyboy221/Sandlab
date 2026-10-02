@@ -41,7 +41,12 @@ My worlds stores up to eight named worlds on the current device. Autosave captur
 | `src/sim/materials.js`        | Stable material IDs, colors, physical properties, phase rules                     |
 | `src/sim/world.js`            | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
 | `src/sim/reactions.js`        | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
-| `src/sim/fields.js`           | Coarse pressure diffusion and decay                                               |
+| `src/sim/fields.js`           | Coarse pressure/temperature diffusion and cached forces                           |
+| `src/sim/rigid-bodies.js`     | Rigid topology, mass, pose, and particle state                                    |
+| `src/sim/body-motion.js`      | Integration, rolling, buoyancy, and stack support                                 |
+| `src/sim/body-collisions.js`  | Rotational contact impulses, friction, and fracture                               |
+| `src/sim/body-raster.js`      | Unique cell matching for continuous rotating shapes                               |
+| `src/sim/body-connections.js` | Cached structural electrical connections                                          |
 | `src/renderer.js`             | Canvas rendering, thermal palette, viewport, brush preview                        |
 | `src/inspector.js`            | Read-only live cell properties and magnified rendering                            |
 | `src/shortcuts.js`            | Validated shortcut catalogue, bindings, and key dispatch                          |
@@ -75,13 +80,25 @@ npm run test:inspection
 npm run test:security
 npm run test:fill
 npm run test:gestures
+npm run test:rigid
 ```
 
-Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, and two-finger camera gestures. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
+Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, two-finger camera gestures, and rolling solids rendered through the actual app. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
 
-Bloom-enabled Chromium rendering measured **1.87 ms/frame** on a flame scene (2.2 ms at the 95th percentile). These measurements include particle rendering and the glow effect.
+Bloom-enabled Chromium rendering on v1.6.2 measured **3.74 ms/frame** on a flame scene (4.1 ms at the 95th percentile). These measurements include particle rendering and the glow effect.
 
-Engine benchmark observations in this workspace: about **12.6 ms/tick** for 54,400 settled liquid particles, **10.4 ms/tick** for 43,305 powder particles, and **4.3 ms/tick** for 17,699 particles on burning surfaces. Chromium rendered the starter scene at **60 FPS**. These are development-environment measurements, not device-independent guarantees. The optional FPS panel shows live frame rate and simulation cost.
+The same ten benchmark scenes were run sequentially on v1.6.1 and v1.6.2 in this workspace. Mean simulation time improved in nine scenes. Selected results (milliseconds per tick):
+
+| Scene                           | v1.6.1 | v1.6.2 |
+| ------------------------------- | -----: | -----: |
+| Liquids, 54,400 particles       |  16.71 |   9.77 |
+| Powders, 43,305 particles       |  12.89 |   6.62 |
+| Burning surfaces                |   7.72 |   4.01 |
+| Elastic bodies, 5,920 particles |  10.86 |   7.71 |
+| Settled solid stack             |  38.53 |  14.35 |
+| Dense tumbling solids           |  12.10 |  25.54 |
+
+Dense tumbling solids now resolve rotation, torque, friction, and multiple contact faces, costing more than the earlier sliding-only behavior. Settled stacks remain intact instead of accumulating contact damage. Particle counts can therefore differ in these evolving scenes. The benchmark reports the mean and 95th percentile; it keeps all simulation systems enabled. Chromium rendered the starter scene at **60 FPS**. These are development-environment measurements, not device-independent guarantees. The optional FPS panel shows live frame rate and simulation cost.
 
 `npm install` installs only the development formatter. `npm run format` formats the source; runtime code has no npm dependencies.
 
@@ -91,7 +108,7 @@ Bloom adds a soft screen-composited halo to flames, lightning, sparks, and hot m
 
 - Test on physical iOS Safari and Android devices; browser emulation does not cover every device behavior.
 - Profile active lava, gas, and explosive loads on slower hardware before deciding whether workers are worthwhile.
-- Add zoom and pan for detailed inspection and for viewing portrait saves on wide screens.
+- Refine concave solid contacts and optimize dense tumbling piles while retaining rotation, torque, friction, and fracture.
 - Model heat capacity and latent heat to improve phase-change energy balance.
 - Move named saves to IndexedDB if experiments regularly exceed LocalStorage capacity.
 
@@ -171,7 +188,7 @@ Paint uses packed RGBA foreground coatings that travel with particle state and a
 
 Fill (`K`, rebindable) fills a four-connected region once per click/tap, including across looping edges. Material fill matches the starting material, protects occupied cells unless Replace is enabled, and right-click deletes that connected region. Foreground color fill matches material and existing coating, ignores empty space, and preserves all physics. Background color fill matches the existing background coating. Color, opacity, removal, and Undo/Redo use the same controls as Paint. An iterative typed-array queue bounds memory and avoids recursive stack overflow.
 
-Wall is the sole Static palette material. It blocks particles and atmospheric flow, cannot fall or be destroyed by simulation effects, and remains removable through editing. Ordinary solids form connected rigid bodies from their drawn shape. Gravity, pressure, buoyancy, mass, rotational inertia, and impact momentum move each body; a separate rendering pass preserves its continuous shape. Rest coordinates and permanent links survive saves, cropping, and copying. Grab moves the complete connected body, and erasing splits it into independent fragments. Glass, ice, wood, and mineral solids have distinct impact toughness and fracture products. This is a qualitative grid contact solver, not calibrated engineering stress analysis.
+Wall is the sole Static palette material. It blocks particles and atmospheric flow, cannot fall or be destroyed by simulation effects, and remains removable through editing. Ordinary solids form connected rigid bodies from their drawn shape. Gravity, pressure, buoyancy, mass, rotational inertia, and impact momentum move each body; a separate rendering pass preserves its continuous shape. Rest coordinates and permanent links survive saves, cropping, and copying. Grab moves the complete connected body, and erasing splits it into independent fragments. Glass, ice, wood, and mineral solids have distinct impact toughness and fracture products. Friction converts slipping motion into spin, with different friction and bounce for ice, wood, glass, and metals. Painted round shapes roll down slopes; off-center forces and collisions transfer angular momentum. Local raster matching preserves unique cells without locking a rotated body. Contact faces are grouped by the obstacle they belong to; bounded centers of pressure support balanced shapes, and impulse relaxation transmits load through stacks. Electricity and heat follow permanent structural connections when raster positions separate. This is a qualitative grid contact solver, not calibrated engineering stress analysis.
 
 Elastics remain the only spring materials. Three stable integration substeps are retained; cached connectivity avoids rebuilding components unless editing or tearing changes their links. Acid is now the sole acidic palette entry. Historic acid IDs are migrated when loading, including clone targets, residues, and sponge contents.
 

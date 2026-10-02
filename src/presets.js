@@ -153,8 +153,11 @@ export function loadPreset(world, id) {
     line(w * 0.62, terminalY, terminalX - 3, terminalY, "Steel", 1);
     rect(terminalX - 2, terminalY - 3, 2, 7, "Empty");
     put(terminalX - 1, terminalY, "Steel");
-    line(terminalX - 2, terminalY - 1, terminalX, terminalY - 1, "Wood", 0);
-    rect(terminalX - 2, terminalY + 1, 3, 2, "Wall");
+    // A capped arc gap heats a supported fuse underneath. The tinder cannot
+    // topple into the electrical gap when the new contact solver settles it.
+    rect(terminalX - 2, terminalY - 1, 2, 1, "Wall");
+    rect(terminalX - 2, terminalY + 1, 3, 1, "Wood");
+    rect(terminalX - 2, terminalY + 2, 3, 1, "Wall");
     // A static channel holds the live wire in place; keep the visible arc gap open.
     const backing = [];
     for (let i = 0; i < world.length; i++)

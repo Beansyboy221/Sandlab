@@ -863,6 +863,8 @@ export const materials = definitions.map(
       temperature: 20,
       movable: !["static", "special"].includes(category),
       rigid: category === "solid",
+      friction: 0.4,
+      restitution: 0.08,
       gas: category === "gas" || category === "energy",
       ...properties,
     };
@@ -985,3 +987,26 @@ for (const m of materials)
     if (m.id === M.Steel) m.breakInto = M["Steel powder"];
     if (m.resistance === 1) m.resistance = 0.97;
   }
+
+// Sliding friction and impact bounce are distinct from chemical resistance.
+for (const [name, friction, restitution] of [
+  ["Ice", 0.035, 0.1],
+  ["Glass", 0.22, 0.08],
+  ["Wood", 0.55, 0.06],
+  ["Steel", 0.35, 0.1],
+  ["Copper", 0.35, 0.08],
+  ["Wall", 0.5, 0.05],
+])
+  Object.assign(materials[M[name]], { friction, restitution });
+
+// Compiled thresholds skip phase handlers at stable temperatures. The handler
+// retains transition precedence, latent contents, vent checks and pressure.
+for (const m of materials) {
+  m.phaseMinimum = Math.max(m.freeze ?? -Infinity, m.condense ?? -Infinity);
+  m.phaseMaximum = Math.min(
+    m.dry ?? Infinity,
+    m.bake ?? Infinity,
+    m.melt ?? Infinity,
+    m.boil ?? Infinity,
+  );
+}

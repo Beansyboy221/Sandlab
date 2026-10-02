@@ -231,6 +231,7 @@ export class Elasticity {
     for (let n = 0; n < 3 && this.locations.size; n++) this.substep(1 / 3);
   }
   substep(dt) {
+    this.world.fields.beginForceSample();
     const w = this.world,
       { locations, indices, forceX: fx, forceY: fy } = this;
     let count = 0;
@@ -316,12 +317,9 @@ export class Elasticity {
         fx[i] = fy[i] = 0;
         continue;
       }
-      const pressureX =
-          w.fields.sample((x >> 2) - 1, y >> 2) -
-          w.fields.sample((x >> 2) + 1, y >> 2),
-        pressureY =
-          w.fields.sample(x >> 2, (y >> 2) - 1) -
-          w.fields.sample(x >> 2, (y >> 2) + 1);
+      const fi = w.fields.forceGradient(x, y),
+        pressureX = w.fields.gradientX[fi],
+        pressureY = w.fields.gradientY[fi];
       let liquidDensity = 0,
         liquidNeighbors = 0;
       for (const [dx, dy] of supports) {

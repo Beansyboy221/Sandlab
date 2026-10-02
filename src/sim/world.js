@@ -286,7 +286,8 @@ export class World {
       field[j] = value;
     }
     if (this.elasticId[i] || this.elasticId[j])
-      for (const field of this.elasticParticleFields) {
+      for (let k = 0; k < this.elasticParticleFields.length; k++) {
+        const field = this.elasticParticleFields[k];
         const value = field[i];
         field[i] = field[j];
         field[j] = value;
@@ -296,13 +297,18 @@ export class World {
     this.elastic.components[j] = component;
     this.updated[i] = this.tick;
     this.updated[j] = this.tick;
-    for (const k of [i, j])
-      if (this.elasticId[k]) {
-        const owner = materials[this.cells[k]].rigid
-          ? this.rigid
-          : this.elastic;
-        owner.locations.set(this.elasticId[k], k);
-      }
+    const first = this.elasticId[i],
+      second = this.elasticId[j];
+    if (first)
+      (materials[this.cells[i]].rigid
+        ? this.rigid
+        : this.elastic
+      ).locations.set(first, i);
+    if (second)
+      (materials[this.cells[j]].rigid
+        ? this.rigid
+        : this.elastic
+      ).locations.set(second, j);
     this.wake(i);
     this.wake(j);
   }
@@ -337,10 +343,10 @@ export class World {
       acrossX = downY,
       acrossY = -downX;
     const direction = this.random() < 0.5 ? -1 : 1;
-    const fx = x >> 2,
-      fy = y >> 2,
-      gx = this.fields.sample(fx - 1, fy) - this.fields.sample(fx + 1, fy),
-      gy = this.fields.sample(fx, fy - 1) - this.fields.sample(fx, fy + 1);
+    if (!this.inParticlePass) this.fields.beginForceSample();
+    const fi = this.fields.forceGradient(x, y),
+      gx = this.fields.gradientX[fi],
+      gy = this.fields.gradientY[fi];
     if (
       (Math.abs(gx) > 1 || Math.abs(gy) > 1) &&
       this.random() < 0.6 &&
@@ -404,6 +410,8 @@ export class World {
     this.tick++;
     this.fields.border = this.border;
     this.fields.update(this);
+    this.fields.beginForceSample();
+    this.inParticlePass = true;
     const w = this.width,
       h = this.height,
       reverse = this.gravityX ? (this.gravityX > 0 ? 1 : 0) : this.tick % 2;
@@ -425,6 +433,19 @@ export class World {
               below = this.index(x, y + 1);
             if (right >= 0) this.transferHeat(i, right);
             if (below >= 0) this.transferHeat(i, below);
+            if (materials[this.cells[i]].rigid)
+              for (let d = 0; d < 2; d++) {
+                const j = this.rigid.locations.get(this["bond" + d][i]);
+                // Cardinal rest links remain physical neighbors after rotation.
+                // Grid-adjacent pairs already exchange heat through the normal pass.
+                if (
+                  j !== undefined &&
+                  Math.abs((i % w) - (j % w)) +
+                    Math.abs(Math.floor(i / w) - Math.floor(j / w)) !==
+                    1
+                )
+                  this.transferHeat(i, j);
+              }
             this.fields.exchange(this, i, x, y);
           }
           react(this, i, x, y);
@@ -459,6 +480,7 @@ export class World {
         }
       }
     }
+    this.inParticlePass = false;
     this.rigid.step();
     this.elastic.step();
   }

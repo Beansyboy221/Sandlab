@@ -27,6 +27,10 @@ export class Fields {
     this.vertical = new Float32Array(length).fill(1);
     this.dirtyTiles = new Uint8Array(length);
     this.obstaclesDirty = true;
+    this.gradientX = new Float64Array(length);
+    this.gradientY = new Float64Array(length);
+    this.gradientStamp = new Uint32Array(length);
+    this.gradientEpoch = 0;
   }
   index(x, y) {
     return (y >> 2) * this.width + (x >> 2);
@@ -57,8 +61,26 @@ export class Fields {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) return ambient;
     return values[y * this.width + x];
   }
+  // Reuse coarse gradients during a force pass. Pressure writes invalidate the
+  // generation; new passes also see restored data or direct diagnostic writes.
+  beginForceSample() {
+    this.gradientEpoch = (this.gradientEpoch + 1) >>> 0 || 1;
+    if (this.gradientEpoch === 1) this.gradientStamp.fill(0);
+  }
+  forceGradient(x, y) {
+    const i = this.index(x, y);
+    if (this.gradientStamp[i] !== this.gradientEpoch) {
+      const fx = x >> 2,
+        fy = y >> 2;
+      this.gradientX[i] = this.sample(fx - 1, fy) - this.sample(fx + 1, fy);
+      this.gradientY[i] = this.sample(fx, fy - 1) - this.sample(fx, fy + 1);
+      this.gradientStamp[i] = this.gradientEpoch;
+    }
+    return i;
+  }
   add(x, y, value) {
     if (
+      !value ||
       !Number.isFinite(value) ||
       x < 0 ||
       y < 0 ||
@@ -67,7 +89,9 @@ export class Fields {
     )
       return;
     const i = this.index(x, y);
-    this.pressure[i] = Math.max(-80, Math.min(80, this.pressure[i] + value));
+    const before = this.pressure[i];
+    this.pressure[i] = Math.max(-80, Math.min(80, before + value));
+    if (this.pressure[i] !== before) this.beginForceSample();
   }
   heat(x, y, amount) {
     if (

@@ -344,7 +344,9 @@ test("one flame ignites a cold surface and spreads across its exposed top", () =
   w.set(index(w, 10, 41), M.Fire);
   let farthest = 0,
     smoke = false;
-  for (let n = 0; n < 280; n++) {
+  // Friction holds the slab in place; allow the flame front to advance without
+  // depending on fuel sliding sideways into the initial flame.
+  for (let n = 0; n < 560; n++) {
     w.step();
     for (let x = 8; x < 72; x++)
       if (w.cells[index(w, x, 42)] === M.Wood && w.life[index(w, x, 42)])

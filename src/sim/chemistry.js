@@ -50,6 +50,9 @@ pair(M.Rust, M.Coal, M.Steel, M["Carbon dioxide"], {
   chance: 0.04,
   pressure: 0.5,
 });
+export const contactParticipants = Uint8Array.from(materials, (m) =>
+  Number(!!contacts[m.id]),
+);
 function contact(w, i, j, row, x, y) {
   const rule = row[w.cells[j]];
   if (

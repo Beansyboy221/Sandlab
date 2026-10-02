@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.6.2",
+    date: "2026-10-02",
+    title: "Rolling solids and faster physics",
+    changes: [
+      "Solid bodies use friction, material-specific bounce, and angular momentum. Round shapes roll down slopes; ice slides more easily than wood; off-center forces and impacts create spin.",
+      "Rotating bodies resolve grid reservations without catching on themselves. Contact faces and other bodies are handled separately, with bounded support forces and weight transfer through stacks.",
+      "Chemistry skips inactive rules at stable temperatures while preserving heat, electricity, reactions and phase changes. Pressure gradients are reused until pressure changes; particle swaps and body force/update passes avoid unnecessary work.",
+      "Electricity and heat follow structural links through rotating solids. The Live wire fixture has a supported fuse and an insulated spark gap. Rolling, friction, torque, stacks, gravity directions, looping seams and rotating save/load have dedicated regression checks.",
+    ],
+  },
+  {
     version: "1.6.1",
     date: "2026-10-02",
     title: "Two-finger navigation",
