@@ -75,7 +75,6 @@ export const settingGroups = [
           [0.25, "0.25×"],
           [0.5, "0.5×"],
           [1, "1×"],
-          [2, "2×"],
         ],
         default: 1,
       },

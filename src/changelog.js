@@ -1,5 +1,14 @@
 export const changelog = [
   {
+    version: "1.11.1",
+    date: "2026-10-02",
+    title: "60 FPS and tick limits",
+    changes: [
+      "Rendering and physics now run at a maximum of 60 per second, including on high-refresh displays. Slow frames drop missed ticks instead of running catch-up bursts, and returning from a hidden tab resets the clock.",
+      "Simulation speed now offers 0.25×, 0.5× and 1×; older 2× preferences return to 1×. Pause, single-step and input remain available. Performance diagnostics show the measured tick rate and dropped ticks.",
+    ],
+  },
+  {
     version: "1.11.0",
     date: "2026-10-02",
     title: "Flocks and fish schools",

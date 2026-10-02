@@ -1,3 +1,4 @@
+import { FrameClock } from "./frame-clock.js";
 import { defaultMechanics } from "./sim/mechanics-options.js";
 import { GameAudio } from "./audio.js";
 import { ColorPicker } from "./color-picker.js";
@@ -96,11 +97,11 @@ let category = "all",
   toastTimer,
   simTime = 0,
   fps = 60,
-  accumulator = 0,
-  lastTime = performance.now(),
-  statsTime = lastTime,
+  clock = new FrameClock(performance.now()),
+  statsTime = performance.now(),
   frameCount = 0,
-  lagFrames = 0;
+  tickCount = 0,
+  tickRate = 0;
 let hasChanged = false;
 const dialogPrevious = new WeakMap();
 let pendingDelete = null;
@@ -149,7 +150,7 @@ function setPaused(value, fromDrawing = false) {
   }
   if (!value && selection.dragging) selection.cancel();
   state.paused = value;
-  accumulator = 0;
+  clock.resetSimulation();
   $("play-btn").innerHTML = icon(value ? "play" : "pause");
   $("play-btn").setAttribute(
     "aria-label",
@@ -559,7 +560,7 @@ function closeDialog(dialog) {
   // be overwritten by that event after the menu has already disappeared.
   if (!document.querySelector("dialog[open]"))
     setPaused(dialogPrevious.get(dialog) ?? false);
-  lastTime = performance.now();
+  clock.reset(performance.now());
 }
 $("fill-layer").addEventListener("change", (e) => {
   state.fillLayer = e.target.value;
@@ -925,7 +926,7 @@ const settingEffects = {
   speed: () => {
     state.speed = settings.get("speed");
     $("speed").value = state.speed;
-    accumulator = 0;
+    clock.resetSimulation();
   },
   brushSize: () => state.setRadius(settings.get("brushSize")),
   brushShape: () => {
@@ -1001,62 +1002,53 @@ document.addEventListener("visibilitychange", () => {
     input.cancel();
     selection.cancel();
   }
-  lastTime = performance.now();
-  accumulator = 0;
+  clock.reset(performance.now());
+  statsTime = performance.now();
+  frameCount = tickCount = 0;
 });
 window.addEventListener("pagehide", storeAuto);
 function frame(now) {
-  const elapsed = Math.min(100, now - lastTime);
-  lastTime = now;
-  if (!document.hidden) {
-    input.update();
-    playerControls.update();
-    syncMechanics();
-    if (!state.paused) {
-      accumulator += elapsed * state.speed;
-      let steps = 0;
-      const start = performance.now();
-      while (accumulator >= 1000 / 60 && steps < 4) {
-        world.step();
-        accumulator -= 1000 / 60;
-        steps++;
-        hasChanged = true;
-        if (performance.now() - start > 22) break;
-      }
-      simTime = performance.now() - start;
-      if (accumulator > 100) {
-        accumulator = 100;
-        lagFrames++;
-      }
-    } else accumulator = 0;
-    audio.update(state.paused);
-    renderer.draw();
-
-    inspector.update(now);
-    frameCount++;
-    if (now - statsTime >= 600) {
-      fps = Math.round((frameCount * 1000) / (now - statsTime));
-      frameCount = 0;
-      statsTime = now;
-      $("fps").textContent = fps;
-      $("world-resolution").textContent = `${world.width} × ${world.height}`;
-      $("particle-count").textContent =
-        `${world.count.toLocaleString()} particles`;
-      if (hover) {
-        const x = Math.floor(hover.x),
-          y = Math.floor(hover.y);
-        if (x >= 0 && x < world.width && y >= 0 && y < world.height) {
-          const i = y * world.width + x;
-          $("hover-info").textContent =
-            `${materials[world.cells[i]].name} · ${Math.round(world.temp[i])}°C · ${x}, ${y}`;
-        }
-      } else $("hover-info").textContent = "";
-      if (!$("debug-panel").hidden)
-        $("debug-panel").textContent =
-          `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation: ${simTime.toFixed(1)} ms/frame\nDisplay: ${fps} FPS · ${state.speed}× speed\nBacklog dropped: ${lagFrames} frames`;
-    }
-  }
   requestAnimationFrame(frame);
+  if (document.hidden) return;
+  const elapsed = clock.takeFrame(now);
+  if (!elapsed) return;
+  input.update();
+  playerControls.update();
+  syncMechanics();
+  const start = performance.now();
+  if (clock.takeTick(elapsed, state.speed, state.paused)) {
+    world.step();
+    tickCount++;
+    hasChanged = true;
+  }
+  simTime = performance.now() - start;
+  audio.update(state.paused);
+  renderer.draw();
+
+  inspector.update(now);
+  frameCount++;
+  if (now - statsTime >= 600) {
+    fps = Math.round((frameCount * 1000) / (now - statsTime));
+    tickRate = Math.round((tickCount * 1000) / (now - statsTime));
+    frameCount = tickCount = 0;
+    statsTime = now;
+    $("fps").textContent = fps;
+    $("world-resolution").textContent = `${world.width} × ${world.height}`;
+    $("particle-count").textContent =
+      `${world.count.toLocaleString()} particles`;
+    if (hover) {
+      const x = Math.floor(hover.x),
+        y = Math.floor(hover.y);
+      if (x >= 0 && x < world.width && y >= 0 && y < world.height) {
+        const i = y * world.width + x;
+        $("hover-info").textContent =
+          `${materials[world.cells[i]].name} · ${Math.round(world.temp[i])}°C · ${x}, ${y}`;
+      }
+    } else $("hover-info").textContent = "";
+    if (!$("debug-panel").hidden)
+      $("debug-panel").textContent =
+        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}`;
+  }
 }
 requestAnimationFrame(frame);
 // Exposed only for reproducible browser diagnostics, not required by the UI.
