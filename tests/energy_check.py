@@ -24,7 +24,7 @@ def cell(page,x,y):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==80
+    assert page.locator('.material').count()==92
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#tool-picker-menu [role=option]').count()==14
@@ -40,8 +40,9 @@ with sync_playwright() as p:
     page.locator('#tool-picker-toggle').click();page.keyboard.press('f');page.keyboard.press('f');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='fan'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()
-    page.locator('#categories').get_by_role('button',name='Fiction',exact=True).click()
-    assert page.locator('.material').count()==3
+    page.locator('#categories').get_by_role('button',name='Static',exact=True).click()
+    assert page.get_by_role('button',name='Black Hole',exact=True).is_visible()
+    assert page.get_by_role('button',name='Repulsor',exact=True).is_visible()
     page.locator('#categories').get_by_role('button',name='All',exact=True).click()
     page.locator('#search').fill('Laser');page.get_by_role('button',name='Laser',exact=True).click()
     a=cell(page,100,80);b=cell(page,100,90)
@@ -88,8 +89,10 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS/'tool-icons-mobile.png'))
     page.locator('[data-tool-option=eyedropper]').tap();assert page.evaluate('sandlab.state.tool')=='eyedropper'
     page.locator('#tool-picker-toggle').tap();page.locator('[data-tool-option=paint]').tap()
-    page.locator('#palette-toggle').tap();page.locator('#categories').get_by_role('button',name='Fiction',exact=True).tap()
-    assert page.locator('.material').count()==3
+    page.locator('#palette-toggle').tap();page.locator('#categories').get_by_role('button',name='Static',exact=True).tap()
+    assert page.get_by_role('button',name='Black Hole',exact=True).is_visible()
+    assert page.get_by_role('button',name='Repulsor',exact=True).is_visible()
+    page.locator('#categories').get_by_role('button',name='Energy',exact=True).tap()
     page.get_by_role('button',name='Antimatter',exact=True).tap()
     assert not page.locator('#palette').evaluate('e=>e.classList.contains("open")')
     target=cell(page,100,140);page.touchscreen.tap(target['x'],target['y'])
@@ -102,4 +105,4 @@ with sync_playwright() as p:
     page.locator('[data-tool-option=fan]').tap();assert page.evaluate('sandlab.state.tool')=='fan'
     assert not errors,errors
     browser.close()
-    print(json.dumps({'tool_icons':'pass','keyboard':'pass','touch':'pass','fiction_filter':'pass','energy_rendering':'pass','energy_benchmark':benchmark,'lightning_strikes':strike_counts,'runtime_errors':errors}))
+    print(json.dumps({'tool_icons':'pass','keyboard':'pass','touch':'pass','material_group_filter':'pass','energy_rendering':'pass','energy_benchmark':benchmark,'lightning_strikes':strike_counts,'runtime_errors':errors}))

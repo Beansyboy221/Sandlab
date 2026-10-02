@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.12.0",
+    date: "2026-10-02",
+    title: "Custom groups and real devices",
+    changes: [
+      "The palette now has one Materials heading. Explosives and Fiction sections are removed; materials use their physical behavior groups. Fixed sources such as Heater, Cooler, Clone, Void and Repulsor are under Static. Moving missiles remain in Devices.",
+      "Use the plus beside Materials to create, name, edit and delete custom material groups. Choose any mix of materials; groups are saved locally and keep the original physics and built-in categories.",
+      "Devices adds Wire, Battery, AND, OR, XOR and NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan. Facing sets output direction. Input A is behind and B is on the left; Inspect shows ports and signal state. Gates read a shared tick snapshot, toggles react to rising edges, and delays hold signals for 12 ticks.",
+      "Added Drone and Rover. Drones hover and cruise; rovers drive, climb small ledges and turn at obstacles. Both respond to gravity when motors are disabled, tools, heat, collisions and damage. Settings → Devices controls motors and cruise speed. Save/load, undo and canvas resizing preserve machine and circuit state. Logic workbench and Device yard demonstrate the new systems. The 60 FPS and 60 tick limits remain in place.",
+    ],
+  },
+  {
     version: "1.11.1",
     date: "2026-10-02",
     title: "60 FPS and tick limits",

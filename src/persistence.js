@@ -258,6 +258,7 @@ export function restore(world, data) {
       world.chunks[world.chunk(i)]++;
     }
   world.elastic.rebuild(world);
+  world.circuits.rebuild(world);
   world.stickmen.world = world;
   world.stickmen.restore(data.stickmen);
   world.missiles.world = world;

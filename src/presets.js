@@ -1,3 +1,4 @@
+import { buildDeviceLab } from "./presets/device-lab.js";
 import { buildMissileRange } from "./presets/missile-range.js";
 import { buildWildlife } from "./presets/wildlife.js";
 import { buildMaterialLab } from "./presets/material-labs.js";
@@ -5,6 +6,20 @@ import { painter } from "./presets/painter.js";
 import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
 export const presets = [
+  {
+    id: "logic",
+    name: "Logic workbench",
+    subtitle: "Powered gates, toggles and delays",
+    tag: "CIRCUITS",
+    color: "#a7c9e5",
+  },
+  {
+    id: "machines",
+    name: "Device yard",
+    subtitle: "Hovering drones and a terrain rover",
+    tag: "MACHINES",
+    color: "#a8d9d4",
+  },
   {
     id: "flocks",
     name: "Flocks and schools",
@@ -186,6 +201,7 @@ export function loadPreset(world, id) {
     }
     return;
   }
+  if (buildDeviceLab(world, id)) return;
   if (buildWildlife(world, id) || buildMissileRange(world, id)) return;
   if (buildMaterialLab(world, id) || buildExperiment(world, id)) return;
   if (id === "volcano") {

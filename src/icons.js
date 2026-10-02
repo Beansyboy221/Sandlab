@@ -68,14 +68,10 @@ const materialShapes = {
   elastic:
     '<path d="M2 2h2v4h4v2h10v2H8v2h10v2H8v2h10v2h2v4h-2v-2H8v-2H6v-4h2v-2H6V8H2Z"/>',
   life: '<path d="M12 2h10v10h-2v4h-4v2h-4v-2H8v-4H6V8h2V6h4ZM2 20h2v-2h2v-2h2v-2h2v-2h2v-2h2V8h2v2h-2v2h-2v2h-2v2H8v2H6v2H4v2H2Z"/><path d="M10 8h2V6h8v2h-8v4h-2Z" fill="white" opacity=".28"/>',
-  explosive:
-    '<path d="M10 1h4v6h-4ZM10 17h4v6h-4ZM1 10h6v4H1ZM17 10h6v4h-6ZM3 3h4v4H3ZM17 3h4v4h-4ZM3 17h4v4H3ZM17 17h4v4h-4ZM9 9h6v6H9Z"/>',
   energy:
     '<path d="M12 1h8v3h-3v3h-3v3h6v3h-3v3h-3v3h-3v4H8v-8H4v-3h3V9h2V5h3Z"/>',
   devices:
     '<path fill-rule="evenodd" d="M9 1h6v4h4v4h4v6h-4v4h-4v4H9v-4H5v-4H1V9h4V5h4ZM9 9v6h6V9Z"/>',
-  fiction:
-    '<path d="M10 1h4v6h3v3h6v4h-6v3h-3v6h-4v-6H7v-3H1v-4h6V7h3Z"/><path d="M10 10h4v4h-4Z" fill="white" opacity=".28"/>',
 };
 
 export function materialIcon(category) {

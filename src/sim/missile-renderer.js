@@ -1,9 +1,11 @@
+import { drawMachine } from "./machine-renderer.js";
 export function drawMissiles(c, w, view) {
   if (!w.missiles.items.length) return;
   c.save();
   c.translate(view.x, view.y);
   c.scale(view.scale, view.scale);
   for (const a of w.missiles.items) {
+    if (drawMachine(c, w, a)) continue;
     c.save();
     c.translate(a.x, a.y);
     c.rotate(a.angle);

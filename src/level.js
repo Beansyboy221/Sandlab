@@ -62,6 +62,7 @@ export function resizeLevel(world, properties, x, y) {
       }
     }
   resized.elastic.rebuild(resized);
+  resized.circuits.rebuild(resized);
   resized.mechanics = { ...world.mechanics };
   resized.missiles.restore(
     world.missiles

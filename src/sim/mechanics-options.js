@@ -6,6 +6,8 @@ export const defaultMechanics = {
   flocking: true,
   flockRange: 40,
   flockMinimum: 3,
+  machineMotors: true,
+  machineSpeed: 0.35,
   missileHoming: true,
   missileHeat: 80,
   missileRange: 256,

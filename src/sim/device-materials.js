@@ -1,0 +1,66 @@
+const electronics = {
+  device: true,
+  movable: false,
+  conductivity: 0.12,
+  resistance: 0.8,
+  melt: 900,
+  meltTo: "Molten Steel",
+};
+const gate = (name, rule, color) => [
+  name,
+  "special",
+  color,
+  2,
+  { ...electronics, circuit: rule, directed: true },
+];
+// Append-only IDs preserve older worlds; circuit state uses existing life/heading arrays.
+export const deviceMaterials = [
+  ["Wire", "special", "#d4a96a", 3, { ...electronics, conductive: true }],
+  gate("Battery", "battery", "#b5d68a"),
+  gate("AND Gate", "and", "#91b8e9"),
+  gate("OR Gate", "or", "#9accc2"),
+  gate("XOR Gate", "xor", "#b39add"),
+  gate("NOT Gate", "not", "#e4a5a1"),
+  gate("Toggle Gate", "toggle", "#dfbd7a"),
+  gate("Delay Gate", "delay", "#a1b0cf"),
+  [
+    "Signal Lamp",
+    "special",
+    "#ffe4ad",
+    2,
+    {
+      ...electronics,
+      circuit: "lamp",
+      directed: true,
+      lightEmission: 1.4,
+      glow: 0.65,
+    },
+  ],
+  gate("Electric Fan", "fan", "#87c8d5"),
+  [
+    "Drone",
+    "special",
+    "#a8d9d4",
+    1,
+    {
+      device: true,
+      projectile: true,
+      vehicle: "drone",
+      directed: true,
+      movable: false,
+    },
+  ],
+  [
+    "Rover",
+    "special",
+    "#d3b28a",
+    4,
+    {
+      device: true,
+      projectile: true,
+      vehicle: "rover",
+      directed: true,
+      movable: false,
+    },
+  ],
+];

@@ -1,3 +1,5 @@
+import { MaterialGroups } from "./material-groups.js";
+import { MaterialGroupsPanel } from "./material-groups-panel.js";
 import { FrameClock } from "./frame-clock.js";
 import { defaultMechanics } from "./sim/mechanics-options.js";
 import { GameAudio } from "./audio.js";
@@ -48,6 +50,7 @@ import { icon, materialIcon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
+const materialGroups = new MaterialGroups();
 let autosaveTimer, toolPicker, mobileDock, drawingPause;
 $("palette").querySelector("h1 span").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
@@ -70,6 +73,7 @@ const state = {
   power: 1,
   includeSolids: true,
   fanDirection: "drag",
+  deviceFacing: 0,
   replace: false,
   paused: false,
   speed: settings.get("speed"),
@@ -190,6 +194,8 @@ function updateToolProperties() {
     String(materialTool);
   $("palette-toggle").hidden = !materialTool;
   $("replace-property").hidden = !materialTool;
+  $("device-facing-property").hidden =
+    tool !== "paint" || !materials[state.material].circuit;
   $("tool-properties").hidden = tool === "paint";
   $("selection-properties").hidden = tool !== "select";
   $("inspection-properties").hidden = tool !== "inspect";
@@ -359,7 +365,9 @@ function renderMaterials() {
   const query = $("search").value.trim().toLowerCase(),
     filtered = paletteMaterials.filter(
       (m) =>
-        (category === "all" || m.paletteCategory === category) &&
+        (category === "all" ||
+          m.paletteCategory === category ||
+          materialGroups.includes(category, m.id)) &&
         (!query || materialSearchText(m).includes(query)),
     );
   $("materials").replaceChildren();
@@ -380,32 +388,61 @@ function renderMaterials() {
     const p = document.createElement("p");
     p.style.cssText =
       "grid-column:1/-1;color:#91a6af;font-size:12px;padding:20px 0;line-height:1.7";
-    p.textContent = "No elements found. Try another search or category.";
+    p.textContent = "No materials found. Try another search or category.";
     $("materials").append(p);
   }
   $("material-count").textContent = filtered.length;
   $("category-title").textContent = query
     ? "Search results"
     : category === "all"
-      ? "All elements"
-      : categoryLabels[category];
+      ? "All materials"
+      : materialGroups.get(category)?.name || categoryLabels[category];
 }
-for (const cat of categories) {
-  const b = document.createElement("button");
-  b.textContent = categoryLabels[cat];
-  b.classList.toggle("selected", cat === "all");
-  b.setAttribute("aria-pressed", String(cat === "all"));
-  b.addEventListener("click", () => {
-    category = cat;
-    for (const item of $("categories").children) {
-      item.classList.toggle("selected", item === b);
-      item.setAttribute("aria-pressed", String(item === b));
-    }
-    renderMaterials();
-  });
-  $("categories").append(b);
+function renderCategories() {
+  $("categories").replaceChildren();
+  for (const cat of [
+    ...categories,
+    ...materialGroups.groups.map((group) => group.id),
+  ]) {
+    const b = document.createElement("button");
+    b.textContent = materialGroups.get(cat)?.name || categoryLabels[cat];
+    b.dataset.group = cat;
+    b.classList.toggle("selected", cat === category);
+    b.setAttribute("aria-pressed", String(cat === category));
+    b.addEventListener("click", () => {
+      category = cat;
+      for (const tab of $("categories").children) {
+        const selected = tab.dataset.group === category;
+        tab.classList.toggle("selected", selected);
+        tab.setAttribute("aria-pressed", String(selected));
+      }
+      renderMaterials();
+    });
+    $("categories").append(b);
+  }
 }
+renderCategories();
+const groupsPanel = new MaterialGroupsPanel(
+  $("groups-dialog"),
+  materialGroups,
+  {
+    open: openDialog,
+    close: closeDialog,
+    changed: (id) => {
+      category = id;
+      renderCategories();
+      renderMaterials();
+    },
+  },
+);
+$("groups-btn").addEventListener("click", () =>
+  groupsPanel.open(materialGroups.get(category)?.id),
+);
 $("search").addEventListener("input", renderMaterials);
+$("device-facing").addEventListener(
+  "change",
+  (e) => (state.deviceFacing = +e.target.value),
+);
 $("brush").addEventListener("input", (e) => state.setRadius(+e.target.value));
 $("play-btn").addEventListener("click", () => setPaused(!state.paused));
 const mechanicKeys = Object.keys(defaultMechanics);
@@ -1062,6 +1099,7 @@ window.sandlab = {
   selection,
   settings,
   levelEditor,
+  materialGroups,
   mobileDock,
   loadPreset: (id) => {
     remember();

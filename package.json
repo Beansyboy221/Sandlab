@@ -1,11 +1,11 @@
 {
   "name": "sandlab",
-  "version": "1.11.1",
+  "version": "1.12.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 3000 --bind 0.0.0.0",
-    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js tests/elasticity.test.js tests/canvas-view.test.js tests/paint.test.js tests/atmosphere.test.js tests/bodies-fill.test.js tests/touch-navigation.test.js tests/rigid-physics.test.js tests/stickmen.test.js tests/creatures.test.js tests/acoustics.test.js tests/moving-mechanics.test.js tests/lighting.test.js tests/boids.test.js tests/frame-clock.test.js",
+    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js tests/elasticity.test.js tests/canvas-view.test.js tests/paint.test.js tests/atmosphere.test.js tests/bodies-fill.test.js tests/touch-navigation.test.js tests/rigid-physics.test.js tests/stickmen.test.js tests/creatures.test.js tests/acoustics.test.js tests/moving-mechanics.test.js tests/lighting.test.js tests/boids.test.js tests/frame-clock.test.js tests/material-groups.test.js tests/devices.test.js",
     "bench": "node tests/benchmark.js",
     "test:browser": "python3 tests/browser_check.py",
     "format": "prettier --write \"src/**/*.js\" \"tests/*.js\" index.html style.css README.md",
@@ -30,7 +30,8 @@
     "test:moving": "python3 tests/moving_mechanics_check.py",
     "test:lighting": "python3 tests/lighting_check.py",
     "test:flocking": "python3 tests/flocking_check.py",
-    "test:timing": "python3 tests/frame_clock_check.py"
+    "test:timing": "python3 tests/frame_clock_check.py",
+    "test:devices": "python3 tests/devices_check.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"

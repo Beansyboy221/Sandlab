@@ -1,3 +1,4 @@
+import { Circuits } from "./circuits.js";
 import { Missiles } from "./missiles.js";
 import { defaultMechanics } from "./mechanics-options.js";
 import { Acoustics } from "./acoustics.js";
@@ -76,6 +77,7 @@ export class World {
     this.stickmen = new Stickmen(this);
     this.sound = new Acoustics(width, height);
     this.missiles = new Missiles(this);
+    this.circuits = new Circuits(this);
     this.fallDistance = new Uint8Array(this.length);
     this.particleFields.push(this.fallDistance);
   }
@@ -106,6 +108,9 @@ export class World {
       this.missiles.spawn(
         (i % this.width) + 0.5,
         Math.floor(i / this.width) + 0.5,
+        1,
+        0,
+        id,
       );
       return;
     }
@@ -141,6 +146,7 @@ export class World {
     )
       this.fields.markObstacle(i, this);
     this.cells[i] = id;
+    this.circuits.register(i, id);
     this.temp[i] = temperature;
     const variation = materials[id].lifetimeVariation || 0;
     this.fallDistance[i] = 0;
@@ -204,6 +210,7 @@ export class World {
     this.stickmen.restore();
     this.sound.clear();
     this.missiles.clear();
+    this.circuits.locations.clear();
     this.fallDistance.fill(0);
     this.rigid.locations.clear();
     this.rigid.bodies = [];
@@ -321,6 +328,10 @@ export class World {
         value = field[i];
       field[i] = field[j];
       field[j] = value;
+    }
+    if (this.circuits.locations.has(i) || this.circuits.locations.has(j)) {
+      this.circuits.register(i, this.cells[i]);
+      this.circuits.register(j, this.cells[j]);
     }
     if (this.elasticId[i] || this.elasticId[j])
       for (let k = 0; k < this.elasticParticleFields.length; k++) {
@@ -469,6 +480,8 @@ export class World {
     this.fields.border = this.border;
     this.fields.update(this);
     this.fields.beginForceSample();
+    this.circuits.world = this;
+    this.circuits.step();
     this.inParticlePass = true;
     const w = this.width,
       h = this.height,
@@ -600,7 +613,7 @@ export class World {
     id = drawingPhase(id, temperature);
     if (materials[id].projectile) {
       this.missiles.world = this;
-      this.missiles.spawn(x + 0.5, y + 0.5, directionX, directionY);
+      this.missiles.spawn(x + 0.5, y + 0.5, directionX, directionY, id);
       return;
     }
     if (materials[id].actor) {

@@ -1,3 +1,4 @@
+import { deviceMaterials } from "./device-materials.js";
 import { energyMaterials } from "./energy-materials.js";
 const definitions = [
   ["Empty", "none", "#111b20", 0, {}],
@@ -842,7 +843,7 @@ definitions.push(
     "special",
     "#e5b985",
     3,
-    { projectile: true, directed: true, movable: false },
+    { device: true, projectile: true, directed: true, movable: false },
   ],
 );
 definitions.push([
@@ -852,6 +853,7 @@ definitions.push([
   2,
   { movable: false, lightEmission: 1.4, glow: 0.65, resistance: 0.7 },
 ]);
+definitions.push(...deviceMaterials);
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {
@@ -901,10 +903,8 @@ export const categories = [
   "static",
   "elastic",
   "life",
-  "explosive",
   "energy",
   "devices",
-  "fiction",
 ];
 export const categoryLabels = {
   all: "All",
@@ -915,21 +915,17 @@ export const categoryLabels = {
   static: "Static",
   elastic: "Elastics",
   life: "Life",
-  explosive: "Explosives",
   energy: "Energy",
   devices: "Devices",
-  fiction: "Fiction",
 };
 for (const m of materials)
-  m.paletteCategory = m.fiction
-    ? "fiction"
-    : m.explosive
-      ? "explosive"
-      : ["Plant", "Seed"].includes(m.name)
-        ? "life"
-        : m.category === "special"
-          ? "devices"
-          : m.category;
+  m.paletteCategory = m.device
+    ? "devices"
+    : ["Plant", "Seed"].includes(m.name)
+      ? "life"
+      : m.category === "special"
+        ? "static"
+        : m.category;
 
 for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 
@@ -955,7 +951,7 @@ materials[M.Coal].sparkChance = 0.025;
 materials[M.Wood].sparkChance = 0.006;
 
 // Ambient air is implicit. Real gases share buoyancy and pressure rules, with
-// their own chemistry and products; fiction remains explicitly categorized.
+// their own chemistry and products. Palette grouping never changes physical rules.
 materials[M.Hydrogen].combustionGas = M.Steam;
 materials[M.Methane].combustionGas = M["CO2"];
 materials[M.Kerosene].combustionGas = M["CO2"];

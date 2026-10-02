@@ -1,3 +1,4 @@
+import { circuitDirection, circuitOutput } from "./sim/circuits.js";
 import { actorProfile } from "./sim/creature-profiles.js";
 import { materials, M } from "./sim/materials.js";
 
@@ -31,13 +32,22 @@ export function cellProperties(world, point) {
       ...cell,
       rows: [
         ["Temperature", `${a.temperature.toFixed(1)}°C`],
-        ["Lifetime", `${a.life} ticks`],
+        [
+          a.health !== undefined ? "Condition" : "Lifetime",
+          a.health !== undefined
+            ? `${a.health.toFixed(0)}%`
+            : `${a.life} ticks`,
+        ],
         ["Speed", `${Math.hypot(a.vx, a.vy).toFixed(2)} cells/tick`],
         [
           "Target",
-          a.target < 0
-            ? "Searching"
-            : `${materials[world.cells[a.target]].name} · ${world.temp[a.target].toFixed(0)}°C`,
+          materials[a.material].vehicle
+            ? world.mechanics.machineMotors
+              ? "Cruising"
+              : "Motors off"
+            : a.target < 0
+              ? "Searching"
+              : `${materials[world.cells[a.target]].name} · ${world.temp[a.target].toFixed(0)}°C`,
         ],
       ],
     };
@@ -80,6 +90,43 @@ export function cellProperties(world, point) {
                     : "Walking",
         ],
         ["Grounded", a.grounded ? "Yes" : "No"],
+      ],
+    };
+  }
+  if (m.circuit) {
+    const [dx, dy] = circuitDirection(world.heading[i]);
+    return {
+      ...cell,
+      rows: [
+        ["Temperature", `${world.temp[i].toFixed(1)}°C`],
+        [
+          "Output",
+          circuitOutput(m, life) ||
+          ((m.circuit === "lamp" || m.circuit === "fan") && life)
+            ? "On"
+            : "Off",
+        ],
+        [
+          "Facing",
+          dx === 1 ? "Right" : dx === -1 ? "Left" : dy === 1 ? "Down" : "Up",
+        ],
+        [
+          "Inputs",
+          m.circuit === "battery"
+            ? "None"
+            : ["and", "or", "xor"].includes(m.circuit)
+              ? "A behind · B on left"
+              : "A behind",
+        ],
+        [
+          "Output port",
+          m.circuit === "fan"
+            ? "Air in front"
+            : m.circuit === "lamp"
+              ? "Light"
+              : "In front",
+        ],
+        ...(m.circuit === "delay" ? [["Delay", "12 ticks"]] : []),
       ],
     };
   }

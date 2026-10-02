@@ -28,7 +28,9 @@ export class Bloom {
         id === M.Spark ||
         world.charge[i];
       const strength =
-        materials[id].glow ??
+        (materials[id].circuit === "lamp" && !world.life[i]
+          ? 0
+          : materials[id].glow) ??
         (energy
           ? 1
           : materials[id].burn && world.life[i]

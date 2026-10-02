@@ -220,6 +220,15 @@
             >
               <i></i><span>Sand</span><span data-icon="chevron"></span>
             </button>
+            <label id="device-facing-property" class="property-check" hidden
+              >Facing
+              <select id="device-facing" aria-label="Device facing">
+                <option value="0">→</option>
+                <option value="2">↓</option>
+                <option value="4">←</option>
+                <option value="6">↑</option>
+              </select>
+            </label>
             <label
               id="replace-property"
               class="draw-replace"
@@ -395,23 +404,32 @@
       <aside class="palette" id="palette" aria-label="Material palette">
         <div class="palette-heading">
           <div>
-            <span class="eyebrow">MATERIALS</span>
-            <h1>Elements <span>51</span></h1>
+            <h1>Materials <span>92</span></h1>
           </div>
-          <button
-            id="palette-close"
-            class="icon-button mobile-only"
-            aria-label="Close material palette"
-          >
-            <span data-icon="close"></span></button
-          ><span class="palette-decoration" data-icon="grid"></span>
+          <div class="palette-heading-actions">
+            <button
+              id="groups-btn"
+              class="icon-button"
+              aria-label="Create or edit material groups"
+              title="Material groups"
+            >
+              <span data-icon="plus"></span>
+            </button>
+            <button
+              id="palette-close"
+              class="icon-button mobile-only"
+              aria-label="Close material palette"
+            >
+              <span data-icon="close"></span>
+            </button>
+          </div>
         </div>
         <div class="search-box">
           <span data-icon="search"></span
           ><input
             id="search"
             type="search"
-            placeholder="Find an element…"
+            placeholder="Find a material…"
             autocomplete="off"
             aria-label="Search materials"
           /><kbd>/</kbd>
@@ -422,7 +440,7 @@
           aria-label="Material categories"
         ></div>
         <div class="material-section-title">
-          <span id="category-title">All elements</span
+          <span id="category-title">All materials</span
           ><span id="material-count">44</span>
         </div>
         <div class="material-grid" id="materials"></div>
@@ -430,6 +448,60 @@
       </aside>
     </main>
     <div class="toast" id="toast" role="status"></div>
+    <dialog
+      id="groups-dialog"
+      class="groups-dialog"
+      aria-labelledby="groups-heading"
+    >
+      <div class="dialog-heading">
+        <h2 id="groups-heading">Material groups</h2>
+        <button
+          class="icon-button dialog-close"
+          aria-label="Close material groups"
+        >
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <form id="group-form">
+        <div class="group-fields">
+          <label
+            >Group<select
+              id="group-select"
+              aria-label="Choose material group"
+            ></select
+          ></label>
+          <label
+            >Name<input
+              id="group-name"
+              maxlength="32"
+              required
+              placeholder="My materials"
+              autocomplete="off"
+          /></label>
+        </div>
+        <div class="group-filter">
+          <input
+            id="group-search"
+            type="search"
+            placeholder="Find a material…"
+            aria-label="Search group materials"
+          /><span id="group-count">0 selected</span>
+        </div>
+        <div
+          id="group-materials"
+          class="material-grid"
+          aria-label="Choose materials for this group"
+        ></div>
+        <p id="group-status" role="status"></p>
+        <div class="group-actions">
+          <button id="group-delete" type="button" class="quiet-button" hidden>
+            Delete group</button
+          ><button id="group-save" type="submit" class="primary-button">
+            Save group
+          </button>
+        </div>
+      </form>
+    </dialog>
     <dialog
       id="color-dialog"
       class="color-dialog"

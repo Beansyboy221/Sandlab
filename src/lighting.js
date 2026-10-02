@@ -21,7 +21,7 @@ const transparency = materials.map((m) =>
 );
 export function emissionStrength(m, temperature, life, charge) {
   return Math.max(
-    m.lightEmission || 0,
+    m.circuit === "lamp" && !life ? 0 : m.lightEmission || 0,
     m.id === M.Fire
       ? 1
       : m.id === M.Lightning
@@ -29,7 +29,7 @@ export function emissionStrength(m, temperature, life, charge) {
         : m.id === M.Spark
           ? 1.1
           : 0,
-    m.glow || 0,
+    m.circuit === "lamp" && !life ? 0 : m.glow || 0,
     m.burn && life ? 0.65 : 0,
     charge ? 0.9 : 0,
     Math.min(1.3, Math.max(0, (temperature - 500) / 1000)),

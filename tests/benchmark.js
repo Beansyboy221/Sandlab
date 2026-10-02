@@ -74,3 +74,14 @@ measure("Fish school", (w) => {
     for (let column = 0; column < 8; column++)
       w.stickmen.spawn(90 + column * 10, 50 + row * 10, M.Fish);
 });
+
+measure("Logic gates", (w) => {
+  for (let y = 20; y < 160; y += 7)
+    for (let x = 30; x < 240; x += 7) w.set(y * w.width + x, M["NOT Gate"]);
+});
+measure("Moving devices", (w) => {
+  w.border = "looping";
+  for (let row = 0; row < 4; row++)
+    for (let column = 0; column < 8; column++)
+      w.missiles.spawn(50 + column * 24, 40 + row * 24, 1, 0, M.Drone);
+});

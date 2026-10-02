@@ -179,8 +179,25 @@ export const settingGroups = [
   },
   {
     id: "devices",
-    name: "Missiles",
+    name: "Devices",
     fields: [
+      {
+        key: "machineMotors",
+        label: "Drone and rover motors",
+        type: "toggle",
+        default: defaultMechanics.machineMotors,
+      },
+      {
+        key: "machineSpeed",
+        label: "Cruise speed",
+        type: "range",
+        min: 0.15,
+        max: 0.8,
+        step: 0.05,
+        default: defaultMechanics.machineSpeed,
+        depends: "machineMotors",
+        suffix: " cells/tick",
+      },
       {
         key: "missileHoming",
         label: "Heat seeking",

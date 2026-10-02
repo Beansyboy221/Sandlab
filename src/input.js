@@ -1,3 +1,4 @@
+import { circuitDirection } from "./sim/circuits.js";
 import { TouchNavigation } from "./touch-navigation.js";
 import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
@@ -358,6 +359,9 @@ export class Input {
     a = { x: a.x - 0.5, y: a.y - 0.5 };
     b = { x: b.x - 0.5, y: b.y - 0.5 };
     const tool = erase ? "erase" : this.state.tool || "paint";
+    if (tool === "paint" && materials[this.state.material].circuit) {
+      [dx, dy] = circuitDirection(this.state.deviceFacing ?? 0);
+    }
     if (tool === "paint" && this.state.material === M.Lightning) {
       const now = performance.now();
       if (

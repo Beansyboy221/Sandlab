@@ -7,10 +7,12 @@
 - Extend spring-body tests to folded ropes and large cut membranes touching other elastic objects.
 - Measure simulations on physical iPhones and Android devices; browser emulation verifies touch/layout but cannot measure phone thermal throttling or Safari sensor behavior.
 
-- Extend selection masks and clipboard operations to jointed actors and missiles, including partial-body selections.
+- Extend selection masks and clipboard operations to jointed actors and moving devices, including partial-body selections.
 - Expand AI navigation with climbing and swimming, with routes verified against character trajectories.
 
 - Improve finite food chains, creature terrain navigation and obstacle-aware hunting without unbounded population growth. Measure larger flock populations before raising the current 32-body cap or introducing a spatial index.
 - Measure acoustic occlusion and richer multi-bounce audible reflections before extending the current bounded room echo.
 
 - Refine optical shadows near thin/diagonal surfaces within four-pixel tiles; benchmark real mobile GPUs before increasing source or bounce budgets.
+
+- Add grouped circuit editing and richer vehicle suspension after measuring large circuits and machine scenes; retain directional signal isolation and bounded moving-device work.

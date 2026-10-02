@@ -64,6 +64,11 @@ My worlds stores up to eight named worlds on the current device. Autosave captur
 | `src/level.js`                | Canvas creation and positioned resizing without losing particle state             |
 | `src/level-editor.js`         | Canvas properties dialog and touch/keyboard placement preview                     |
 | `src/level-properties.js`     | Validated canvas metadata and dimensions                                          |
+| `src/sim/circuits.js`         | Directional gates, signal snapshots, toggles, delays and electrical outputs        |
+| `src/sim/device-materials.js` | Append-only electrical and moving-device definitions                               |
+| `src/sim/machine-motion.js`   | Swept vehicle collisions, motors, gravity, step-up and damage                       |
+| `src/material-groups.js`     | Bounded, validated custom material collections and local persistence               |
+| `src/material-groups-panel.js` | Accessible custom-group editor                                                  |
 | `src/presets.js`              | Internal simulation fixtures                                                      |
 | `src/app.js`                  | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
 
@@ -172,7 +177,7 @@ Simulation events produce synthesized Web Audio effects: weighted grain/body imp
 
 **Echolocation** displays a separate four-cell damped wave field. A leapfrog wave equation shares the atmosphere's cached barriers: solid walls reflect, looping edges wrap, void edges vent, and sponge absorbs sound. Waves are qualitative and slowed for readable visualization; they do not replace temperature/ambient pressure or add unlimited particle forces. Silent fields stop processing. Muting playback preserves the visualization; clearing/loading a world clears transient audio and waves. Uranium retains bounded decay heating without neutron particles.
 
-The Fiction filter groups three experimental substances. Antimatter annihilates neighboring matter in a fiery blast. Black Holes pull through the pressure field and consume adjacent movable particles; Repulsors push through that field.
+Antimatter belongs to Energy; Black Hole and Repulsor belong to Static. Antimatter annihilates neighboring matter in a fiery blast. Black Holes pull through the pressure field and consume adjacent movable particles; Repulsors push through that field.
 
 Ray travel, transparent-volume scanning, new emissions, and fission/annihilation events have fixed work limits. No interaction starts recursive simulation work or creates an unbounded list of effects. All effects remain local to the browser and use the existing bloom renderer.
 
@@ -210,7 +215,7 @@ Both Fit canvas buttons have been removed. Zooming, panning, touch gestures and 
 
 Life includes Wolf and Shark alongside Cat, Rabbit, Fish and Bird. Predators hunt their defined prey, prey flee, and sight is blocked by solid terrain. Bites need physical contact and have a cooldown. Dead bodies retain their physics, burning fuel and breakable joints. Settings → Wildlife controls predation and detection distance. Predator reserve demonstrates land and aquatic species.
 
-Devices includes Heat-Seeking Missile. Draw a rocket and drag to choose its initial heading. Each vehicle gradually steers toward the nearest exposed hot non-gaseous material inside its sensing range; it does not steer around obstacles. Swept collisions detonate it, while its eight-second lifetime limits missed shots. Smoke exhaust cannot attract its own seeker. Warm, Cool, Fan, Grab and Erase affect rockets; world saves, history and resize retain their state. Settings → Missiles controls homing, threshold, range, speed and blast radius. Missile range has static heated targets.
+Devices includes Heat-Seeking Missile. Draw a rocket and drag to choose its initial heading. Each vehicle gradually steers toward the nearest exposed hot non-gaseous material inside its sensing range; it does not steer around obstacles. Swept collisions detonate it, while its eight-second lifetime limits missed shots. Smoke exhaust cannot attract its own seeker. Warm, Cool, Fan, Grab and Erase affect rockets; world saves, history and resize retain their state. Settings → Devices controls homing, threshold, range, speed and blast radius. Missile range has static heated targets.
 
 Settings → Player offers joystick side, diameter, horizontal inset and vertical lift. Layout follows the available canvas and avoids the dock in portrait and landscape. Moving settings or rotating clears captured input to prevent stuck movement. Push up to jump; keyboard W/Space still work.
 
@@ -221,3 +226,10 @@ New canvas and Canvas properties provide Ambient light (0–100%). Full ambient 
 Lamp in Devices is a stationary, warm light source. Fire, sparks, lightning, charge, burning material, incandescent surfaces, hot creatures and missile engines also emit light. Local illumination uses radial falloff and coarse shadow visibility. Glass and clear liquids transmit light; opaque surfaces block it. A short, attenuated surface reflection picks up material/pigment color. Settings → Rendering → Reflected light ranges from no bounce to a subtle 25%; Bloom controls a separate soft halo.
 
 Optics use four-pixel tiles, a maximum of 96 spatially merged sources, and one short diffuse bounce. They update every other displayed frame, including paused edits, rather than slowing or changing physics. Thin walls block their entire optical tile, so shadows are conservative at this resolution. Dense emissive fields merge spatially without dropping entire parts of the scene. Lighting applies after all material and actor drawing and also appears in Inspect and world thumbnails. This is an approximate visual model, not spectral ray tracing.
+
+
+Custom material groups use the plus beside Materials. Create a named collection, select materials, and save it; use the same button to edit the selected collection. Groups persist locally, with a limit of 16, and never change built-in physics categories. Explosives and Fiction are properties rather than palette groups; fixed sources are under Static.
+
+Devices includes fixed Wire, Battery, AND/OR/XOR/NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan, plus Heat-Seeking Missile, Drone and Rover. Gates are ideal powered logic components. Facing sets their output port; A is the cell behind, B the cell to the left of the heading. A charged conductor, correctly oriented gate output or adjacent Spark is a high input. AND/OR/XOR take A and B; NOT, Toggle, Delay, Lamp and Fan take A. Toggle flips on rising edges; Delay is a 12-tick shift register. Battery repeatedly energizes the wire in front using the shared conductor cooldown. Wire stays fixed and propagates pulses with the existing conduction, heating and arcing rules. Gate evaluations share a pre-tick signal snapshot, so update order cannot change a circuit. State uses the existing life and heading arrays and survives copying, saving and resizing. Inspect displays signal state and ports. Logic workbench provides three isolated test circuits.
+
+Drone and Rover use the existing capped moving-device pool and a separate motion module. Drones maintain flight and turn at obstacles; rovers accelerate along the gravity-relative ground, fall, step over two-cell ledges and turn at walls. Disabling motors lets both fall. Swept footprints catch thin walls; hard impacts, corrosive contact and heat reduce condition and leave debris on destruction. Warm, Cool, Fan, Grab and Erase affect machines. Settings → Devices controls motors and cruise speed. Device yard is a safe starter scene. Machines preserve condition, velocity and temperature through save/load, undo and resizing; older missile saves retain their schema.

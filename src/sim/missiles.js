@@ -1,3 +1,4 @@
+import { stepMachine, machineFits } from "./machine-motion.js";
 import { materials, M } from "./materials.js";
 import { clearSight } from "./predation.js";
 export const MAX_MISSILES = 32;
@@ -16,9 +17,10 @@ export class Missiles {
     this.scanTick = -100;
     this.heatThreshold = 0;
   }
-  spawn(x, y, dx = 1, dy = 0) {
+  spawn(x, y, dx = 1, dy = 0, material = M["Heat-Seeking Missile"]) {
     const w = this.world;
     if (
+      !materials[material]?.projectile ||
       ![x, y, dx, dy].every(Number.isFinite) ||
       x < 2 ||
       y < 2 ||
@@ -29,17 +31,19 @@ export class Missiles {
       return false;
     const i = w.index(Math.floor(x), Math.floor(y));
     if (w.cells[i] && !materials[w.cells[i]].gas) return false;
+    if (materials[material].vehicle && !machineFits(w, x, y)) return false;
     if (this.items.some((a) => Math.hypot(a.x - x, a.y - y) < 5)) return false;
     const angle = Math.atan2(dy, dx || (!dy ? 1 : 0));
     this.items.push({
       id: this.nextId++,
-      material: M["Heat-Seeking Missile"],
+      material,
       x,
       y,
       angle,
       vx: Math.cos(angle) * 0.65,
       vy: Math.sin(angle) * 0.65,
-      life: 480,
+      life: materials[material].vehicle ? 0 : 480,
+      ...(materials[material].vehicle ? { health: 100 } : {}),
       temperature: 20,
       target: -1,
     });
@@ -117,7 +121,11 @@ export class Missiles {
   step() {
     if (!this.items.length) return;
     const w = this.world;
-    if (w.mechanics.missileHoming) this.scan();
+    if (
+      w.mechanics.missileHoming &&
+      this.items.some((a) => !materials[a.material].vehicle)
+    )
+      this.scan();
     for (const a of this.items) {
       if (w.border === "looping") {
         a.x = ((a.x % w.width) + w.width) % w.width;
@@ -127,6 +135,7 @@ export class Missiles {
         else a.remove = true;
         continue;
       }
+      if (stepMachine(w, a)) continue;
       if (--a.life <= 0) {
         a.remove = true;
         continue;
@@ -173,7 +182,8 @@ export class Missiles {
         }
         const i = w.index(Math.floor(a.x), Math.floor(a.y));
         if (i < 0) {
-          if (w.border === "solid") this.detonate(a);
+          if (w.border === "solid" && !materials[a.material].vehicle)
+            this.detonate(a);
           else a.remove = true;
           break;
         }
@@ -231,7 +241,7 @@ export class Missiles {
   }
   snapshot() {
     return this.items.map(
-      ({ id, material, x, y, angle, vx, vy, life, temperature }) => ({
+      ({ id, material, x, y, angle, vx, vy, life, temperature, health }) => ({
         id,
         material,
         x,
@@ -241,6 +251,7 @@ export class Missiles {
         vy,
         life,
         temperature,
+        ...(materials[material].vehicle ? { health } : {}),
       }),
     );
   }
@@ -259,6 +270,7 @@ export class Missiles {
           "temperature",
         ].map((key) => [key, a[key]]),
       ),
+      ...(materials[a.material].vehicle ? { health: a.health } : {}),
       target: -1,
     }));
     this.nextId = Math.max(0, ...this.items.map((a) => a.id)) + 1;
@@ -277,10 +289,15 @@ export function validateMissiles(data) {
       a.id < 1 ||
       a.id > 1000000 ||
       ids.has(a.id) ||
-      a.material !== M["Heat-Seeking Missile"] ||
+      !Number.isInteger(a.material) ||
+      !materials[a.material]?.projectile ||
       !Number.isInteger(a.life) ||
-      a.life < 1 ||
-      a.life > 480 ||
+      (materials[a.material]?.vehicle
+        ? a.life !== 0 ||
+          !Number.isFinite(a.health) ||
+          a.health <= 0 ||
+          a.health > 100
+        : a.life < 1 || a.life > 480) ||
       ![a.x, a.y, a.angle, a.vx, a.vy, a.temperature].every(Number.isFinite) ||
       Math.abs(a.x) > 2048 ||
       Math.abs(a.y) > 2048 ||

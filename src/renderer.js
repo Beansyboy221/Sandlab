@@ -1,3 +1,4 @@
+import { drawCircuits } from "./sim/circuit-renderer.js";
 import { LightOverlay } from "./lighting-renderer.js";
 import { drawMissiles } from "./sim/missile-renderer.js";
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
@@ -233,7 +234,8 @@ export class Renderer {
             id === M.Fire ||
             id === M.Spark ||
             id === M.Lightning ||
-            materials[id].glow
+            (materials[id].glow &&
+              (materials[id].circuit !== "lamp" || life[i]))
           ) {
             const flicker =
               ((variant[i] + tick * 17) % 70) * (materials[id].glow ? 0.4 : 1);
@@ -346,6 +348,7 @@ export class Renderer {
     this.ctx.putImageData(this.data, 0, 0);
     if (this.mode === "normal") {
       drawBubbles(this.ctx, this.world);
+      drawCircuits(this.ctx, this.world);
     }
     const c = this.context,
       v = this.viewport;

@@ -33,9 +33,9 @@ test("only elastics have springs and every material has one meaningful palette g
   for (const m of materials.filter((m) => m.id && !m.deprecated))
     assert.ok(categories.includes(m.paletteCategory), m.name);
   assert.equal(materials[M.TNT].category, "solid");
-  assert.equal(materials[M.TNT].paletteCategory, "explosive");
+  assert.equal(materials[M.TNT].paletteCategory, "solid");
   assert.equal(materials[M.Plant].paletteCategory, "life");
-  assert.equal(materials[M.Repulsor].paletteCategory, "fiction");
+  assert.equal(materials[M.Repulsor].paletteCategory, "static");
 });
 test("free elastic lines fall together without becoming powders or losing their original links", () => {
   for (const name of ["Rope", "Rubber", "Jelly"]) {
@@ -185,7 +185,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 80);
+  assert.equal(paletteMaterials.length, 92);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],
