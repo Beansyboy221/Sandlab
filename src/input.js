@@ -1,3 +1,4 @@
+import { TouchNavigation } from "./touch-navigation.js";
 import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
 import { stampGesture } from "./drawing-gesture.js";
@@ -35,7 +36,7 @@ export class Input {
     this.onHover = onHover;
     this.selection = selection;
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-    canvas.addEventListener("pointerdown", (e) => {
+    const pointerDown = (e) => {
       if (e.button === 1) {
         e.preventDefault();
         canvas.setPointerCapture(e.pointerId);
@@ -51,7 +52,7 @@ export class Input {
       if (selecting && this.pointers.size) return;
       e.preventDefault();
       canvas.focus({ preventScroll: true });
-      canvas.setPointerCapture(e.pointerId);
+      if (e.pointerType !== "touch") canvas.setPointerCapture(e.pointerId);
       const point = renderer.point(e.clientX, e.clientY);
       if (readTools.has(state.tool)) {
         const tool = state.tool;
@@ -129,8 +130,8 @@ export class Input {
         selecting && (e.button === 2 || state.selectionErase),
         e.shiftKey,
       );
-    });
-    canvas.addEventListener("pointermove", (e) => {
+    };
+    const pointerMove = (e) => {
       const point = renderer.point(e.clientX, e.clientY),
         last = this.pointers.get(e.pointerId);
       if (last?.pan) {
@@ -167,51 +168,84 @@ export class Input {
           ...direction,
         });
       }
+    };
+    const pointerEnd = (e) => {
+      const type = e.type;
+      const gesture = this.pointers.get(e.pointerId)?.gesture;
+      if (gesture) {
+        if (type === "pointerup") {
+          gesture.end = this.bounded(renderer.point(e.clientX, e.clientY));
+          this.onStroke();
+          if (state.tool === "recolor") beginColorStroke(world);
+          const dx = gesture.end.x - gesture.start.x,
+            dy = gesture.end.y - gesture.start.y;
+          if (
+            state.tool === "paint" &&
+            state.material === M.Lightning &&
+            !gesture.erase
+          )
+            this.paint(gesture.end, gesture.end, false, dx, dy, true);
+          else {
+            const radius = state.radius;
+            state.radius = gesture.radius;
+            try {
+              stampGesture(gesture, gesture.radius, (x, y) =>
+                this.paint({ x, y }, { x, y }, gesture.erase, dx, dy),
+              );
+            } finally {
+              state.radius = radius;
+            }
+          }
+        }
+        renderer.gesture = null;
+      }
+      if (this.pointers.get(e.pointerId)?.selecting) {
+        if (type === "pointerup") {
+          if (selection.dragging)
+            selection.move(renderer.point(e.clientX, e.clientY));
+          selection.end();
+        } else selection.cancel();
+      }
+      this.pointers.delete(e.pointerId);
+      if (e.pointerType === "touch") {
+        renderer.cursor = null;
+        canvas.style.cursor = "crosshair";
+      } else if (type === "pointerup")
+        this.hover(renderer.point(e.clientX, e.clientY));
+    };
+    this.touchNavigation = new TouchNavigation(renderer, {
+      down: pointerDown,
+      move: pointerMove,
+      up: pointerEnd,
+      cancel: () => {
+        this.cancelDrawing();
+        selection.cancel();
+        renderer.cursor = null;
+      },
+    });
+    canvas.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch") return pointerDown(e);
+      e.preventDefault();
+      canvas.focus({ preventScroll: true });
+      canvas.setPointerCapture(e.pointerId);
+      this.touchNavigation.down(e);
+    });
+    canvas.addEventListener("pointermove", (e) => {
+      if (e.pointerType !== "touch") return pointerMove(e);
+      e.preventDefault();
+      this.touchNavigation.move(e);
     });
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
       canvas.addEventListener(type, (e) => {
-        const gesture = this.pointers.get(e.pointerId)?.gesture;
-        if (gesture) {
-          if (type === "pointerup") {
-            gesture.end = this.bounded(renderer.point(e.clientX, e.clientY));
-            this.onStroke();
-            if (state.tool === "recolor") beginColorStroke(world);
-            const dx = gesture.end.x - gesture.start.x,
-              dy = gesture.end.y - gesture.start.y;
-            if (
-              state.tool === "paint" &&
-              state.material === M.Lightning &&
-              !gesture.erase
-            )
-              this.paint(gesture.end, gesture.end, false, dx, dy, true);
-            else {
-              const radius = state.radius;
-              state.radius = gesture.radius;
-              try {
-                stampGesture(gesture, gesture.radius, (x, y) =>
-                  this.paint({ x, y }, { x, y }, gesture.erase, dx, dy),
-                );
-              } finally {
-                state.radius = radius;
-              }
-            }
-          }
-          renderer.gesture = null;
-        }
-        if (this.pointers.get(e.pointerId)?.selecting) {
-          if (type === "pointerup") {
-            if (selection.dragging)
-              selection.move(renderer.point(e.clientX, e.clientY));
-            selection.end();
-          } else selection.cancel();
-        }
-        this.pointers.delete(e.pointerId);
-        if (e.pointerType === "touch") {
-          renderer.cursor = null;
-          canvas.style.cursor = "crosshair";
-        } else if (type === "pointerup")
-          this.hover(renderer.point(e.clientX, e.clientY));
+        if (e.pointerType !== "touch") return pointerEnd(e);
+        this.touchNavigation.end(e);
+        renderer.cursor = null;
       });
+    for (const type of ["gesturestart", "gesturechange"])
+      canvas.addEventListener(type, (e) => e.preventDefault(), {
+        passive: false,
+      });
+    window.addEventListener("blur", () => this.cancel());
     canvas.addEventListener("pointerleave", () => {
       if (!this.pointers.size) {
         renderer.cursor = null;
@@ -243,6 +277,10 @@ export class Input {
     };
   }
   cancel() {
+    this.touchNavigation.cancel();
+    this.cancelDrawing();
+  }
+  cancelDrawing() {
     this.pointers.clear();
     this.renderer.gesture = null;
   }

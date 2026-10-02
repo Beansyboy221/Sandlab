@@ -143,7 +143,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 16
+    assert page.locator('.changelog-release').count() == 17
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -449,16 +449,10 @@ with sync_playwright() as p:
     for touch in touches: touch['y']+=30
     session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':touches})
     session.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
-    assert phone.evaluate('sandlab.world.count') > before
-    assert phone.evaluate('scrollY') == 0
-    painted = phone.evaluate('sandlab.world.count')
-    phone.locator('#undo-btn').tap()
     assert phone.evaluate('sandlab.world.count') == before
-    phone.locator('#redo-btn').tap()
-    assert phone.evaluate('sandlab.world.count') == painted
+    assert phone.evaluate('scrollY') == 0
     assert phone.locator('#redo-btn').bounding_box()['width'] >= 44
     assert phone.locator('#redo-btn').bounding_box()['height'] >= 44
-    phone.locator('#undo-btn').tap()
     phone.set_viewport_size({'width':844,'height':390})
     phone.wait_for_timeout(200)
     phone.screenshot(path=str(ARTIFACTS / 'mobile-landscape.png'))

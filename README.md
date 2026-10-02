@@ -12,7 +12,7 @@ Open **http://localhost:3000**. The development server uses Python 3. For deploy
 
 ## Play
 
-Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Shift-drag previews a straight line. Control-drag previews a circle (center at the starting point) or rectangle outline using the current brush shape; release to draw or press Escape to cancel. Scroll over the canvas or use `[` / `]` to resize the brush. Control-scroll zooms at the pointer, middle-drag pans, and Fit resets the camera. Multiple fingers can paint simultaneously. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
+Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Shift-drag previews a straight line. Control-drag previews a circle (center at the starting point) or rectangle outline using the current brush shape; release to draw or press Escape to cancel. Scroll over the canvas or use `[` / `]` to resize the brush. Control-scroll zooms at the pointer, middle-drag pans, and Fit resets the camera. On phones and tablets, use one finger to draw; use two fingers to pan and pinch to zoom. Both fingers must lift before drawing resumes, and camera gestures leave the world and edit history unchanged. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
 
 - `Space`: pause or resume; `.`: one simulation step.
 - `B` / `E`: draw or erase; `1` / `2` / `3`: sand, water, fire.
@@ -74,9 +74,10 @@ npm run test:experiments
 npm run test:inspection
 npm run test:security
 npm run test:fill
+npm run test:gestures
 ```
 
-Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, and simultaneous touch pointers. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
+Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, and two-finger camera gestures. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
 
 Bloom-enabled Chromium rendering measured **1.87 ms/frame** on a flame scene (2.2 ms at the 95th percentile). These measurements include particle rendering and the glow effect.
 

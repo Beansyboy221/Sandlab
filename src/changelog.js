@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.6.1",
+    date: "2026-10-02",
+    title: "Two-finger navigation",
+    changes: [
+      "Two fingers pan the canvas and pinch to zoom around their midpoint on phones and tablets, including rotated views.",
+      "A short first-touch grace period prevents accidental dots when starting a gesture. Single-finger taps, strokes, painting, selection, inspection, and bucket fill still work.",
+      "Navigation cancels active drawing or selection movement without adding edits. Lifting one finger does not resume drawing; lift both before starting a new stroke.",
+      "Touch cancellation and focus changes stop held strokes. Canvas gestures keep the browser page from scrolling or zooming; navigation does not change particles or Undo/Redo history.",
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-10-02",
     title: "Bucket fill and moving solid bodies",
