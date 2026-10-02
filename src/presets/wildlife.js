@@ -1,6 +1,6 @@
 import { M } from "../sim/materials.js";
 export function buildWildlife(world, id) {
-  if (!["wildlife", "reserve"].includes(id)) return false;
+  if (!["wildlife", "reserve", "flocks"].includes(id)) return false;
   const { width: w, height: h, gravityX: gx, gravityY: gy } = world;
   const across = gy ? w : h,
     down = gx ? w : h;
@@ -14,7 +14,7 @@ export function buildWildlife(world, id) {
     if (i >= 0) world.set(i, id);
   };
   const floor = Math.floor(down * 0.74),
-    left = Math.floor(across * 0.58),
+    left = Math.floor(across * (id === "flocks" ? 0.48 : 0.58)),
     right = Math.floor(across * 0.96);
   for (let u = 0; u < across; u++)
     for (let v = down - 3; v < down; v++) put(u, v, M.Wall);
@@ -27,7 +27,17 @@ export function buildWildlife(world, id) {
     }
   for (let u = left + 3; u < right; u++)
     for (let v = Math.floor(down * 0.6); v < down - 3; v++) put(u, v, M.Water);
-  if (across >= 90 && down >= 45) {
+  if (id === "flocks" && across >= 64 && down >= 45) {
+    const center = (left + 3 + right) / 2;
+    for (const offset of [-10, 0, 10])
+      for (const [u, v, material] of [
+        [across * 0.3 + offset, down * 0.28, M.Bird],
+        [center + offset, down * 0.76, M.Fish],
+      ]) {
+        const p = map(u, v);
+        world.stickmen.spawn(p.x, p.y, material);
+      }
+  } else if (id !== "flocks" && across >= 90 && down >= 45) {
     for (const [u, v, m] of [
       [across * 0.16, floor - 1, id === "reserve" ? M.Wolf : M.Cat],
       [across * 0.37, floor - 1, M.Rabbit],

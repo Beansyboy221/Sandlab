@@ -1,14 +1,50 @@
 import { predatoryMotion } from "./predation.js";
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 import { blocked } from "./stickman-body.js";
 import { actorProfile } from "./creature-profiles.js";
-export function breathableWater(w, x, y) {
-  const i = w.index(Math.floor(x), Math.floor(y));
-  return (
-    i >= 0 &&
-    (w.cells[i] === M.Water || w.cells[i] === M.Brine) &&
-    w.temp[i] < 45
-  );
+import { breathableWater, clearHabitatPath } from "./creature-habitat.js";
+export { breathableWater } from "./creature-habitat.js";
+
+const turns = [
+  [1, 0],
+  [0.5, 0.8660254],
+  [0.5, -0.8660254],
+  [0, 1],
+  [0, -1],
+  [-1, 0],
+];
+function flockMotion(w, a, p) {
+  a.behavior = p.mode === "fly" ? "Flocking" : "Schooling";
+  const vx = w.gravityY * a.flockMove * p.speed + w.gravityX * a.flockLift;
+  const vy = -w.gravityX * a.flockMove * p.speed + w.gravityY * a.flockLift;
+  const look = 7 / Math.max(0.001, Math.hypot(vx, vy));
+  for (const [cos, sin] of turns) {
+    const x = vx * cos - vy * sin,
+      y = vx * sin + vy * cos;
+    if (
+      !clearHabitatPath(
+        w,
+        a.x[2],
+        a.y[2],
+        a.x[2] + x * look,
+        a.y[2] + y * look,
+        p.mode,
+      ) ||
+      !clearHabitatPath(
+        w,
+        a.x[0],
+        a.y[0],
+        a.x[0] + x * look,
+        a.y[0] + y * look,
+        p.mode,
+      )
+    )
+      continue;
+    const move = (x * w.gravityY - y * w.gravityX) / p.speed;
+    if (Math.abs(move) > 0.08) a.direction = Math.sign(move);
+    return { move, lift: x * w.gravityX + y * w.gravityY };
+  }
+  return { move: 0, lift: 0 };
 }
 // Steering uses the same gravity-relative axes as walking and phone rotation.
 // Looking ahead turns creatures away from walls, cliffs, hot cells and acid.
@@ -34,6 +70,7 @@ export function creatureMotion(w, a) {
     a.submerged =
       breathableWater(w, a.x[0], a.y[0]) && breathableWater(w, x, y);
     if (!a.submerged) return { move: 0, lift: 0 };
+    if (a.flockSize && !social) return flockMotion(w, a, p);
     if (turn || !breathableWater(w, aheadX, aheadY)) a.direction *= -1;
     const up = breathableWater(w, x - gx * 4, y - gy * 4),
       down = breathableWater(w, x + gx * 4, y + gy * 4);
@@ -47,6 +84,7 @@ export function creatureMotion(w, a) {
       lift: up && down && social ? social.lift : vertical,
     };
   }
+  if (p.mode === "fly" && a.flockSize && !social) return flockMotion(w, a, p);
   if (turn) a.direction *= -1;
   if (p.mode === "fly") {
     const center = (w.width * gx) / 2 + (w.height * gy) / 2;

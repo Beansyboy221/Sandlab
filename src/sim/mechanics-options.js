@@ -3,6 +3,9 @@
 export const defaultMechanics = {
   predation: true,
   predatorRange: 72,
+  flocking: true,
+  flockRange: 40,
+  flockMinimum: 3,
   missileHoming: true,
   missileHeat: 80,
   missileRange: 256,

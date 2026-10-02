@@ -133,6 +133,33 @@ export const settingGroups = [
     name: "Wildlife",
     fields: [
       {
+        key: "flocking",
+        label: "Flocking and schooling",
+        type: "toggle",
+        default: defaultMechanics.flocking,
+      },
+      {
+        key: "flockRange",
+        label: "Group distance",
+        type: "range",
+        min: 24,
+        max: 80,
+        step: 8,
+        default: defaultMechanics.flockRange,
+        depends: "flocking",
+        suffix: " cells",
+      },
+      {
+        key: "flockMinimum",
+        label: "Minimum group size",
+        type: "range",
+        min: 2,
+        max: 8,
+        step: 1,
+        default: defaultMechanics.flockMinimum,
+        depends: "flocking",
+      },
+      {
         key: "predation",
         label: "Predators and fleeing",
         type: "toggle",

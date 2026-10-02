@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.11.0",
+    date: "2026-10-02",
+    title: "Flocks and fish schools",
+    changes: [
+      "Birds and aquatic creatures now use Boids alignment, cohesion and separation when enough nearby members of their species share a clear habitat. Groups match headings, stay together and give one another room. Lone creatures retain their individual movement; fleeing and hunting take priority. Schools avoid dry gaps, hot water and tank boundaries; flocks steer around terrain and liquid. Looping worlds use neighbors across the seam.",
+      "Settings → Wildlife now includes Flocking and schooling, Group distance and Minimum group size. The default group size is three, counting the creature itself. Inspect shows Flocking or Schooling and the local group size. New canvas → Starting world → Flocks and schools starts three birds and three fish in a safe landscape and tank.",
+      "Flock steering reads a shared frame snapshot and reuses typed buffers, keeping the capped creature population deterministic and inexpensive. Jointed bodies, collision damage, burning, severed limbs, gravity rotation and save/load retain their existing physics.",
+    ],
+  },
+  {
     version: "1.10.2",
     date: "2026-10-02",
     title: "Walking over slopes",

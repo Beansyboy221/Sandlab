@@ -57,6 +57,11 @@ export function cellProperties(world, point) {
               : "Prey",
         ],
         ["Behavior", a.alive ? a.behavior || "Patrolling" : "Ragdoll"],
+        ...(a.alive &&
+        (a.behavior === "Flocking" || a.behavior === "Schooling") &&
+        a.flockSize
+          ? [["Group", `${a.flockSize} creatures`]]
+          : []),
         ["State", a.alive ? "Alive" : "Ragdoll"],
         ["Temperature", `${Math.max(...a.heat).toFixed(1)}°C`],
         ["Joints", `${a.bonds.filter(Boolean).length} / 8`],

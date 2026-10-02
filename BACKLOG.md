@@ -10,7 +10,7 @@
 - Extend selection masks and clipboard operations to jointed actors and missiles, including partial-body selections.
 - Expand AI navigation with climbing and swimming, with routes verified against character trajectories.
 
-- Improve finite food chains, creature terrain navigation and obstacle-aware hunting without unbounded population growth.
+- Improve finite food chains, creature terrain navigation and obstacle-aware hunting without unbounded population growth. Measure larger flock populations before raising the current 32-body cap or introducing a spatial index.
 - Measure acoustic occlusion and richer multi-bounce audible reflections before extending the current bounded room echo.
 
 - Refine optical shadows near thin/diagonal surfaces within four-pixel tiles; benchmark real mobile GPUs before increasing source or bounce budgets.

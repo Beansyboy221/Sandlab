@@ -6,6 +6,13 @@ import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
 export const presets = [
   {
+    id: "flocks",
+    name: "Flocks and schools",
+    subtitle: "Bird formations and a fish school",
+    tag: "BOIDS",
+    color: "#91c9d7",
+  },
+  {
     id: "reserve",
     name: "Predator reserve",
     subtitle: "Hunters on land and in water",

@@ -2,6 +2,7 @@ import { materials } from "./materials.js";
 import { bodyFields, integrateBody, blocked } from "./stickman-body.js";
 import { actorProfile } from "./creature-profiles.js";
 import { creatureMotion } from "./creature-behavior.js";
+import { Boids } from "./boids.js";
 import { StickmanPathfinder } from "./stickman-pathfinding.js";
 export const MAX_STICKMEN = 32;
 const segmentDistance = (x, y, ax, ay, bx, by) => {
@@ -21,6 +22,7 @@ export class Stickmen {
     this.nextId = 1;
     this.controls = { move: 0, jump: false, crouch: false };
     this.planner = new StickmanPathfinder(world);
+    this.boids = new Boids(MAX_STICKMEN);
   }
   get player() {
     return this.bodies.find(
@@ -149,6 +151,7 @@ export class Stickmen {
       return;
     }
     this.planner.world = w;
+    this.boids.update(w, this.bodies);
     let plans = 0;
     for (const a of this.bodies) {
       let move = 0,

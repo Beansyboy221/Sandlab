@@ -36,7 +36,7 @@ export class SettingsPanel {
       }
       const mechanicNotes = {
         wildlife:
-          "Cats and Wolves hunt on land; Sharks hunt Fish in water. Prey flee visible threats. Turning this off keeps creatures moving without hunting.",
+          "Birds and aquatic creatures group with nearby members of their species. Group size includes the creature itself. Hunting and fleeing take priority over grouping.",
         devices:
           "Missiles launch along your stroke and seek hot exposed material. With heat seeking off, they fly straight. Obstacles still stop them.",
         player:

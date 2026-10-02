@@ -62,3 +62,15 @@ measure("Settled solid stack", (w) => {
             layer % 2 ? M.Copper : M.Steel,
           );
 });
+
+measure("Bird flock", (w) => {
+  for (let row = 0; row < 4; row++)
+    for (let column = 0; column < 8; column++)
+      w.stickmen.spawn(90 + column * 10, 50 + row * 10, M.Bird);
+});
+measure("Fish school", (w) => {
+  for (let i = 0; i < w.length; i++) w.set(i, M.Water);
+  for (let row = 0; row < 4; row++)
+    for (let column = 0; column < 8; column++)
+      w.stickmen.spawn(90 + column * 10, 50 + row * 10, M.Fish);
+});
