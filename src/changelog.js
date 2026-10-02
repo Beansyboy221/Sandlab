@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.6.4",
+    date: "2026-10-02",
+    title: "Centered material cards",
+    changes: [
+      "Material icons and labels are centered within each grid card on desktop, phones and tablets, including wrapped names.",
+    ],
+  },
+  {
     version: "1.6.3",
     date: "2026-10-02",
     title: "Material cleanup",
