@@ -38,7 +38,7 @@ import {
   autosave,
   getAutosave,
 } from "./persistence.js";
-import { icon, populateIcons } from "./icons.js";
+import { icon, materialIcon, populateIcons } from "./icons.js";
 
 const $ = (id) => document.getElementById(id);
 populateIcons();
@@ -340,7 +340,7 @@ function selectMaterial(id) {
   details.replaceChildren();
   const title = document.createElement("div");
   title.className = "detail-title";
-  title.innerHTML = `<span class="swatch" style="--color:${m.color}"></span><h2>${m.name}</h2><span class="detail-type">${categoryLabels[m.paletteCategory] || m.category}</span>`;
+  title.innerHTML = `<span class="swatch" style="--color:${m.color}">${materialIcon(m.paletteCategory)}</span><h2>${m.name}</h2><span class="detail-type">${categoryLabels[m.paletteCategory] || m.category}</span>`;
   details.append(title);
   $("palette-toggle").querySelector("i").style.background = m.color;
   $("palette-toggle").querySelector("span:not([data-icon])").textContent =
@@ -357,10 +357,10 @@ function renderMaterials() {
   for (const m of filtered) {
     const b = document.createElement("button");
     b.className = "material" + (state.material === m.id ? " selected" : "");
-    b.dataset.category = m.category;
+    b.dataset.category = m.paletteCategory;
     b.style.setProperty("--color", m.color);
     b.setAttribute("aria-pressed", String(state.material === m.id));
-    b.innerHTML = `<span class="swatch"></span><span class="material-name">${m.name}</span>`;
+    b.innerHTML = `<span class="swatch">${materialIcon(m.paletteCategory)}</span><span class="material-name">${m.name}</span>`;
     b.addEventListener("click", () => {
       selectMaterial(m.id);
       if (mobileDock?.media.matches) $("palette").classList.remove("open");

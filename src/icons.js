@@ -52,6 +52,36 @@ export function icon(name) {
   const path = paths[name] || paths.circle;
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${path.split("|")[0]}"/>${path.includes("|circle") ? '<circle cx="12" cy="12" r="10"/>' : ""}</svg>`;
 }
+
+// Filled, grid-aligned silhouettes stay legible at palette size without changing
+// the outline style used by action and tool icons.
+const materialShapes = {
+  powder:
+    '<rect x="10" y="2" width="5" height="5"/><rect x="2" y="12" width="7" height="7"/><rect x="14" y="13" width="8" height="8"/>',
+  liquid:
+    '<path d="M10 2h4v4h2v4h2v4h2v6h-2v2H6v-2H4v-6h2v-4h2V6h2Z"/><path d="M7 14h2v4h4v2H7Z" fill="white" opacity=".28"/>',
+  gas: '<path d="M4 3h6v2h2v4h-2v2H4V9H2V5h2ZM16 7h4v2h2v4h-2v2h-4v-2h-2V9h2ZM7 15h5v2h2v4h-2v2H7v-2H5v-4h2Z"/>',
+  solid:
+    '<path d="M1 5h7v2H1ZM3 11h5v2H3ZM1 17h7v2H1ZM10 6h12v12H10Z"/><path d="M12 8h8v2h-6v6h-2Z" fill="white" opacity=".28"/>',
+  static:
+    '<path d="M2 3h9v5H2ZM13 3h9v5h-9ZM2 10h4v5H2ZM8 10h8v5H8ZM18 10h4v5h-4ZM2 17h9v5H2ZM13 17h9v5h-9Z"/>',
+  elastic:
+    '<path d="M2 2h2v4h4v2h10v2H8v2h10v2H8v2h10v2h2v4h-2v-2H8v-2H6v-4h2v-2H6V8H2Z"/>',
+  life: '<path d="M12 2h10v10h-2v4h-4v2h-4v-2H8v-4H6V8h2V6h4ZM2 20h2v-2h2v-2h2v-2h2v-2h2v-2h2V8h2v2h-2v2h-2v2h-2v2H8v2H6v2H4v2H2Z"/><path d="M10 8h2V6h8v2h-8v4h-2Z" fill="white" opacity=".28"/>',
+  explosive:
+    '<path d="M10 1h4v6h-4ZM10 17h4v6h-4ZM1 10h6v4H1ZM17 10h6v4h-6ZM3 3h4v4H3ZM17 3h4v4h-4ZM3 17h4v4H3ZM17 17h4v4h-4ZM9 9h6v6H9Z"/>',
+  energy:
+    '<path d="M12 1h8v3h-3v3h-3v3h6v3h-3v3h-3v3h-3v4H8v-8H4v-3h3V9h2V5h3Z"/>',
+  devices:
+    '<path fill-rule="evenodd" d="M9 1h6v4h4v4h4v6h-4v4h-4v4H9v-4H5v-4H1V9h4V5h4ZM9 9v6h6V9Z"/>',
+  fiction:
+    '<path d="M10 1h4v6h3v3h6v4h-6v3h-3v6h-4v-6H7v-3H1v-4h6V7h3Z"/><path d="M10 10h4v4h-4Z" fill="white" opacity=".28"/>',
+};
+
+export function materialIcon(category) {
+  return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">${materialShapes[category] || materialShapes.solid}</svg>`;
+}
+
 export function populateIcons(root = document) {
   root
     .querySelectorAll("[data-icon]")

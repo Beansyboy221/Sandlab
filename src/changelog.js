@@ -1,5 +1,14 @@
 export const changelog = [
   {
+    version: "1.6.5",
+    date: "2026-10-02",
+    title: "Pixel material icons",
+    changes: [
+      "Every material group has its own colored pixel icon: powder grains, liquid droplets, gas puffs, moving solids, static bricks, elastic springs, life leaves, explosive bursts, energy bolts, device gears, and fiction stars.",
+      "The material grid and current material details share the same icons, with centered labels on desktop and mobile.",
+    ],
+  },
+  {
     version: "1.6.4",
     date: "2026-10-02",
     title: "Centered material cards",
