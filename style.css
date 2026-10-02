@@ -636,23 +636,23 @@ kbd {
   user-select: none;
   -webkit-user-select: none;
   position: absolute;
-  bottom: calc(env(safe-area-inset-bottom) + 78px);
+  bottom: var(--joystick-bottom, calc(env(safe-area-inset-bottom) + 78px));
   background: #1d333cba;
   border: 1px solid #8fcad47a;
   border-radius: 50%;
   color: #bde7ef;
 }
 .player-joystick {
-  left: 18px;
-  width: 82px;
-  height: 82px;
+  left: var(--joystick-inset, 18px);
+  width: var(--joystick-size, 82px);
+  height: var(--joystick-size, 82px);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .player-joystick span {
-  width: 34px;
-  height: 34px;
+  width: 42%;
+  height: 42%;
   background: #81bfd477;
   border: 1px solid #a0d7e5;
   border-radius: 50%;
@@ -661,8 +661,12 @@ kbd {
 .player-controls.released .player-touch {
   display: none;
 }
-.dock-side .player-joystick {
-  bottom: 22px;
+.player-joystick[hidden] {
+  display: none;
+}
+.player-controls[data-joystick-side="right"] .player-joystick {
+  left: auto;
+  right: var(--joystick-inset, 18px);
 }
 .material-name {
   font-size: 9px;

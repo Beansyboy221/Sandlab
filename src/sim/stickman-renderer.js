@@ -60,6 +60,14 @@ export function drawStickmen(context, world, view) {
     else context.fill();
     if (!human && (p.mode === "walk" || p.mode === "hop"))
       ears(context, a, world, p.mode === "hop");
+    if (p.mode === "swim" && p.prey?.length && a.bonds[1] && a.bonds[2]) {
+      context.beginPath();
+      context.moveTo(a.x[1], a.y[1]);
+      context.lineTo(a.x[3], a.y[3]);
+      context.lineTo(a.x[2], a.y[2]);
+      context.closePath();
+      context.fill();
+    }
     if (
       p.mode === "swim" &&
       a.bonds[4] &&

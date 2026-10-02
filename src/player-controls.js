@@ -1,5 +1,7 @@
 export class PlayerControls {
-  constructor(container, world, state) {
+  constructor(container, world, state, settings) {
+    this.settings = settings;
+    this.container = container;
     this.world = world;
     this.state = state;
     this.keys = new Set();
@@ -21,17 +23,24 @@ export class PlayerControls {
     });
     const joystick = this.panel.querySelector(".player-joystick"),
       nub = joystick.querySelector("span");
+    this.joystick = joystick;
     let active = null;
     const move = (e) => {
       if (active !== e.pointerId) return;
       const b = joystick.getBoundingClientRect(),
-        x = Math.max(-1, Math.min(1, (e.clientX - b.x - b.width / 2) / 26)),
-        y = Math.max(-1, Math.min(1, (e.clientY - b.y - b.height / 2) / 26));
+        x = Math.max(
+          -1,
+          Math.min(1, (e.clientX - b.x - b.width / 2) / (b.width * 0.32)),
+        ),
+        y = Math.max(
+          -1,
+          Math.min(1, (e.clientY - b.y - b.height / 2) / (b.height * 0.32)),
+        );
       this.touchMove = Math.abs(x) < 0.15 ? 0 : x;
       this.touchCrouch = y > 0.55;
       if (y < -0.65 && !this.upHeld) this.jump = true;
       this.upHeld = y < -0.65;
-      nub.style.transform = `translate(${x * 22}px,${y * 22}px)`;
+      nub.style.transform = `translate(${x * b.width * 0.27}px,${y * b.height * 0.27}px)`;
     };
     joystick.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -42,14 +51,19 @@ export class PlayerControls {
       move(e);
     });
     joystick.addEventListener("pointermove", move);
-    const end = (e) => {
-      if (e.pointerId !== active) return;
+    this.cancelJoystick = () => {
+      const id = active;
       active = null;
       this.touchMove = 0;
       this.touchCrouch = this.upHeld = false;
       this.world.stickmen.controls.move = 0;
       this.world.stickmen.controls.crouch = false;
       nub.style.transform = "";
+      if (id !== null && joystick.hasPointerCapture(id))
+        joystick.releasePointerCapture(id);
+    };
+    const end = (e) => {
+      if (e.pointerId === active) this.cancelJoystick();
     };
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
       joystick.addEventListener(type, end);
@@ -79,9 +93,63 @@ export class PlayerControls {
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.reset();
     });
+    this.layoutObserver = new ResizeObserver(() => this.layout());
+    this.layoutObserver.observe(container);
+    this.dock = document.querySelector(".toolbox");
+    if (this.dock) this.layoutObserver.observe(this.dock);
+    settings?.subscribe((keys) => {
+      if (keys.some((key) => key.startsWith("joystick"))) {
+        this.reset();
+        this.layout();
+      }
+    });
+    this.layout();
     this.sync();
   }
+  layout() {
+    if (!this.joystick) return;
+    const size = this.settings?.get("joystickSize") ?? 82,
+      side = this.settings?.get("joystickSide") ?? "left",
+      inset = this.settings?.get("joystickInset") ?? 18,
+      raise = this.settings?.get("joystickRaise") ?? 0;
+    this.panel.dataset.joystickSide = side;
+    const box = this.container.getBoundingClientRect(),
+      dock = this.dock?.getBoundingClientRect();
+    let bottom = 12,
+      edge = inset,
+      freeWidth = box.width,
+      freeHeight = box.height;
+    if (
+      dock?.width &&
+      dock.height &&
+      dock.bottom > box.top &&
+      dock.top < box.bottom
+    ) {
+      if (document.body.classList.contains("dock-side")) {
+        freeWidth = Math.max(0, dock.left - box.left);
+        if (side === "right") edge = Math.max(edge, box.right - dock.left + 8);
+      } else {
+        freeHeight = Math.max(0, dock.top - box.top);
+        bottom = Math.max(bottom, box.bottom - dock.top + 10);
+      }
+    }
+    // An expanded landscape dock can leave less than one touch target of canvas.
+    // Hide the joystick until it closes rather than intercepting its buttons.
+    const hidden = freeWidth < size + 24 || freeHeight < size + 80;
+    if (hidden && !this.joystick.hidden) this.reset();
+    this.joystick.hidden = hidden;
+    this.panel.style.setProperty("--joystick-size", `${size}px`);
+    this.panel.style.setProperty(
+      "--joystick-inset",
+      `${Math.max(0, Math.min(edge, box.width - size - 12))}px`,
+    );
+    this.panel.style.setProperty(
+      "--joystick-bottom",
+      `${Math.max(12, Math.min(bottom + raise, box.height - size - 68))}px`,
+    );
+  }
   reset() {
+    this.cancelJoystick?.();
     this.keys.clear();
     this.touchMove = 0;
     this.touchCrouch = this.upHeld = this.jump = false;

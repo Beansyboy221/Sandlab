@@ -1,3 +1,4 @@
+import { actorProfile } from "./sim/creature-profiles.js";
 import { materials, M } from "./sim/materials.js";
 
 export function cellAt(world, point) {
@@ -8,12 +9,15 @@ export function cellAt(world, point) {
   if (x < 0 || y < 0 || x >= world.width || y >= world.height) return null;
   const index = y * world.width + x;
   const actor = world.stickmen.hit(point.x, point.y, 0.8);
+  const missile = world.missiles.hit(point.x, point.y, 0.8);
   return {
     x,
     y,
     index,
-    material: materials[actor?.material ?? world.cells[index]],
+    material:
+      materials[actor?.material ?? missile?.material ?? world.cells[index]],
     actor,
+    missile,
   };
 }
 export function cellProperties(world, point) {
@@ -21,12 +25,38 @@ export function cellProperties(world, point) {
   if (!cell) return null;
   const { x, y, index: i, material: m } = cell,
     life = world.life[i];
+  if (cell.missile && !cell.actor) {
+    const a = cell.missile;
+    return {
+      ...cell,
+      rows: [
+        ["Temperature", `${a.temperature.toFixed(1)}°C`],
+        ["Lifetime", `${a.life} ticks`],
+        ["Speed", `${Math.hypot(a.vx, a.vy).toFixed(2)} cells/tick`],
+        [
+          "Target",
+          a.target < 0
+            ? "Searching"
+            : `${materials[world.cells[a.target]].name} · ${world.temp[a.target].toFixed(0)}°C`,
+        ],
+      ],
+    };
+  }
   if (cell.actor) {
     const a = cell.actor;
     return {
       ...cell,
       rows: [
         ["Health", `${Math.round(a.health)} / 100`],
+        [
+          "Role",
+          actorProfile(a.material).prey?.length
+            ? "Predator"
+            : m.actor === "ai" || m.actor === "player"
+              ? "Character"
+              : "Prey",
+        ],
+        ["Behavior", a.alive ? a.behavior || "Patrolling" : "Ragdoll"],
         ["State", a.alive ? "Alive" : "Ragdoll"],
         ["Temperature", `${Math.max(...a.heat).toFixed(1)}°C`],
         ["Joints", `${a.bonds.filter(Boolean).length} / 8`],
@@ -36,7 +66,7 @@ export function cellProperties(world, point) {
             ? `A* · ${a.path.length} waypoints`
             : m.actor === "player"
               ? "Player"
-              : m.actor === "fish"
+              : ["fish", "shark"].includes(m.actor)
                 ? "Swimming"
                 : m.actor === "bird"
                   ? "Flying"

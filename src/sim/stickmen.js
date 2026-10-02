@@ -57,6 +57,9 @@ export class Stickmen {
       health: 100,
       grounded: false,
       cooldown: 0,
+      attackCooldown: 0,
+      behavior: "Patrolling",
+      targetId: 0,
       bonds: new Uint8Array(8).fill(1),
       path: [],
       goal: null,
@@ -268,6 +271,7 @@ export class Stickmen {
       color: a.color,
       direction: a.direction,
       cooldown: a.cooldown,
+      attackCooldown: a.attackCooldown || 0,
       bonds: Array.from(a.bonds),
       ...Object.fromEntries(bodyFields.map((f) => [f, Array.from(a[f])])),
     }));
@@ -281,6 +285,9 @@ export class Stickmen {
       color: d.color,
       grounded: false,
       cooldown: d.cooldown ?? 0,
+      attackCooldown: d.attackCooldown ?? 0,
+      targetId: 0,
+      behavior: "Patrolling",
       replan: 0,
       direction: d.direction ?? 1,
       path: [],
@@ -314,6 +321,10 @@ export function validateStickmen(data) {
       (a.direction !== undefined && ![-1, 1].includes(a.direction)) ||
       (a.cooldown !== undefined &&
         (!Number.isInteger(a.cooldown) || a.cooldown < 0 || a.cooldown > 60)) ||
+      (a.attackCooldown !== undefined &&
+        (!Number.isInteger(a.attackCooldown) ||
+          a.attackCooldown < 0 ||
+          a.attackCooldown > 30)) ||
       !Number.isFinite(a.health) ||
       a.health < 0 ||
       a.health > 100 ||

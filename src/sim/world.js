@@ -1,3 +1,5 @@
+import { Missiles } from "./missiles.js";
+import { defaultMechanics } from "./mechanics-options.js";
 import { Acoustics } from "./acoustics.js";
 import { RigidBodies, rigidFields } from "./rigid-bodies.js";
 import { Stickmen } from "./stickmen.js";
@@ -14,6 +16,7 @@ import { moveSurfaceFlame } from "./combustion.js";
 export class World {
   constructor(width = 320, height = 200, seed = 17421) {
     Object.assign(this, defaultLevel);
+    this.mechanics = { ...defaultMechanics };
     this.width = width;
     this.height = height;
     this.length = width * height;
@@ -72,6 +75,7 @@ export class World {
     this.fields = new Fields(width, height);
     this.stickmen = new Stickmen(this);
     this.sound = new Acoustics(width, height);
+    this.missiles = new Missiles(this);
     this.fallDistance = new Uint8Array(this.length);
     this.particleFields.push(this.fallDistance);
   }
@@ -97,6 +101,14 @@ export class World {
   ) {
     id = canonicalMaterial(id);
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
+    if (materials[id].projectile) {
+      this.missiles.world = this;
+      this.missiles.spawn(
+        (i % this.width) + 0.5,
+        Math.floor(i / this.width) + 0.5,
+      );
+      return;
+    }
     if (materials[id].actor) {
       this.stickmen.world = this;
       this.stickmen.spawn(
@@ -191,6 +203,7 @@ export class World {
     this.stickmen.world = this;
     this.stickmen.restore();
     this.sound.clear();
+    this.missiles.clear();
     this.fallDistance.fill(0);
     this.rigid.locations.clear();
     this.rigid.bodies = [];
@@ -530,6 +543,8 @@ export class World {
     this.elastic.step();
     this.stickmen.world = this;
     this.stickmen.step();
+    this.missiles.world = this;
+    this.missiles.step();
     this.sound.step(this);
   }
   explode(x, y, radius, product = 0) {
@@ -583,13 +598,20 @@ export class World {
     if (!Number.isFinite(temperature)) return;
     temperature = Math.max(-250, Math.min(6000, temperature));
     id = drawingPhase(id, temperature);
+    if (materials[id].projectile) {
+      this.missiles.world = this;
+      this.missiles.spawn(x + 0.5, y + 0.5, directionX, directionY);
+      return;
+    }
     if (materials[id].actor) {
       this.stickmen.world = this;
       this.stickmen.spawn(x + 0.5, y + 0.5, id);
       return;
     }
-    if (!id)
+    if (!id) {
       this.stickmen.brush("erase", x + 0.5, y + 0.5, radius, 0, 0, 1, shape);
+      this.missiles.brush("erase", x + 0.5, y + 0.5, radius, 0, 0, 1, shape);
+    }
     if (!id && this.elastic.locations.size) {
       this.elastic.world = this;
       this.elastic.cutBrush(x, y, radius, shape);

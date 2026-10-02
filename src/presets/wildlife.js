@@ -1,6 +1,6 @@
 import { M } from "../sim/materials.js";
 export function buildWildlife(world, id) {
-  if (id !== "wildlife") return false;
+  if (!["wildlife", "reserve"].includes(id)) return false;
   const { width: w, height: h, gravityX: gx, gravityY: gy } = world;
   const across = gy ? w : h,
     down = gx ? w : h;
@@ -29,9 +29,10 @@ export function buildWildlife(world, id) {
     for (let v = Math.floor(down * 0.6); v < down - 3; v++) put(u, v, M.Water);
   if (across >= 90 && down >= 45) {
     for (const [u, v, m] of [
-      [across * 0.16, floor - 1, M.Cat],
+      [across * 0.16, floor - 1, id === "reserve" ? M.Wolf : M.Cat],
       [across * 0.37, floor - 1, M.Rabbit],
       [across * 0.76, down * 0.75, M.Fish],
+      ...(id === "reserve" ? [[across * 0.66, down * 0.82, M.Shark]] : []),
       [across * 0.44, down * 0.28, M.Bird],
     ]) {
       const p = map(u, v);

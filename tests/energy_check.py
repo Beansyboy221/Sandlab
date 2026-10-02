@@ -24,7 +24,7 @@ def cell(page,x,y):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==76
+    assert page.locator('.material').count()==79
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#tool-picker-menu [role=option]').count()==14

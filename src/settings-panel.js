@@ -34,6 +34,20 @@ export class SettingsPanel {
           "Reduced quality lowers display resolution without changing the simulation.";
         panel.append(note);
       }
+      const mechanicNotes = {
+        wildlife:
+          "Cats and Wolves hunt on land; Sharks hunt Fish in water. Prey flee visible threats. Turning this off keeps creatures moving without hunting.",
+        devices:
+          "Missiles launch along your stroke and seek hot exposed material. With heat seeking off, they fly straight. Obstacles still stop them.",
+        player:
+          "Push up to jump and down to crouch. Position follows screen orientation. The joystick hides when expanded controls leave too little canvas; close them to play.",
+      };
+      if (mechanicNotes[group.id]) {
+        const note = document.createElement("p");
+        note.className = "settings-note";
+        note.textContent = mechanicNotes[group.id];
+        panel.append(note);
+      }
       if (group.id === "audio") {
         const note = document.createElement("p");
         note.className = "settings-note";

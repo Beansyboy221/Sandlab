@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.9.0",
+    date: "2026-10-02",
+    title: "Predators and heat seekers",
+    changes: [
+      "Added Wolf and Shark. Cats hunt Rabbits and Birds, Wolves hunt Rabbits and Cats, and Sharks hunt Fish. Prey flee visible predators; bites require contact, respect a cooldown and leave physical ragdolls. Wildlife settings control predation and sensing distance.",
+      "Added Heat-Seeking Missile in Devices. Rockets turn gradually toward the nearest exposed hot material, leave smoke trails and explode on swept collisions. Warm, Cool, Fan, Grab and Erase work on them; saves, Undo/Redo and resizing retain them. Missile settings control homing, heat threshold, range, speed and blast radius.",
+      "Added Predator reserve and Missile range starting worlds. Inspect shows wildlife behavior and missile target, heat, speed and remaining lifetime.",
+      "Player settings now offer left/right joystick placement, size, edge inset and vertical offset. Placement stays clear of the mobile dock, resets held inputs after rotation or changes, and keeps joystick-up jumping and desktop Space/W controls.",
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-10-02",
     title: "Creatures and echolocation",

@@ -38,6 +38,7 @@ const profiles = {
     [5, 2, -2, 3, -6, -3, 2, -3, 2],
     [-6, -4, -4, 0, -6, 0, 0, -2, -2],
     {
+      prey: ["rabbit", "bird"],
       speed: 0.16,
       jump: 1.2,
       headRadius: 1.1,
@@ -116,5 +117,29 @@ const profiles = {
     },
   ),
 };
+profiles.wolf = profile(
+  profiles.cat.x.map((v) => v * 1.25),
+  profiles.cat.y.map((v) => v * 1.25),
+  {
+    links: profiles.cat.links,
+    speed: 0.24,
+    jump: 1.4,
+    headRadius: 1.4,
+    prey: ["rabbit", "cat"],
+  },
+);
+profiles.shark = profile(
+  profiles.fish.x.map((v) => v * 1.6),
+  profiles.fish.y.map((v, n) => v * 1.6 - (n === 3 ? 2 : 0)),
+  {
+    mode: "swim",
+    links: profiles.fish.links,
+    speed: 0.18,
+    acceleration: 0.04,
+    jump: 0,
+    headRadius: 1.1,
+    prey: ["fish"],
+  },
+);
 export const actorProfile = (material) =>
   profiles[materials[material]?.actor] || humanProfile;

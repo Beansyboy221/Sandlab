@@ -1,3 +1,4 @@
+import { predatoryMotion } from "./predation.js";
 import { materials, M } from "./materials.js";
 import { blocked } from "./stickman-body.js";
 import { actorProfile } from "./creature-profiles.js";
@@ -15,6 +16,7 @@ export function creatureMotion(w, a) {
   const p = actorProfile(a.material),
     gx = w.gravityX,
     gy = w.gravityY;
+  const social = predatoryMotion(w, a);
   const x = a.x[2],
     y = a.y[2],
     sign = a.direction;
@@ -40,7 +42,10 @@ export function creatureMotion(w, a) {
       : !down
         ? -0.07
         : Math.sin((w.tick + a.id * 37) / 100) * 0.045;
-    return { move: a.direction, lift: vertical };
+    return {
+      move: a.direction * (social ? Math.abs(social.move) : 1),
+      lift: up && down && social ? social.lift : vertical,
+    };
   }
   if (turn) a.direction *= -1;
   if (p.mode === "fly") {
@@ -49,20 +54,22 @@ export function creatureMotion(w, a) {
     const target = center * 0.65 + Math.sin((w.tick + a.id * 29) / 130) * 5;
     const above = blocked(w, x - gx * 7, y - gy * 7);
     return {
-      move: a.direction,
-      lift: above
-        ? 0.12
-        : Math.max(-0.14, Math.min(0.14, (target - height) * 0.025)),
+      move: a.direction * (social ? Math.abs(social.move) : 1),
+      lift: social?.threat
+        ? -0.14
+        : above
+          ? 0.12
+          : Math.max(-0.14, Math.min(0.14, (target - height) * 0.025)),
     };
   }
   const safeGround = blocked(w, aheadX + gx * 8, aheadY + gy * 8);
   if (a.grounded && !safeGround && !turn) a.direction *= -1;
   return {
-    move: a.direction,
+    move: a.direction * (social ? Math.abs(social.move) : 1),
     jump:
       p.mode === "hop" &&
       a.grounded &&
       !a.cooldown &&
-      (w.tick + a.id * 11) % 55 === 0,
+      ((w.tick + a.id * 11) % 55 === 0 || social?.threat),
   };
 }

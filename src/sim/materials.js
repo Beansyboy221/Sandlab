@@ -835,6 +835,15 @@ definitions.push(
   ["Rabbit", "life", "#e4d4c4", 0.3, { actor: "rabbit", movable: false }],
   ["Fish", "life", "#e5ad68", 0.2, { actor: "fish", movable: false }],
   ["Bird", "life", "#9ac9bd", 0.2, { actor: "bird", movable: false }],
+  ["Wolf", "life", "#a7b4c2", 0.8, { actor: "wolf", movable: false }],
+  ["Shark", "life", "#7fa7bf", 0.5, { actor: "shark", movable: false }],
+  [
+    "Heat-Seeking Missile",
+    "special",
+    "#e5b985",
+    3,
+    { projectile: true, directed: true, movable: false },
+  ],
 );
 export const M = Object.create(null);
 export const materials = definitions.map(

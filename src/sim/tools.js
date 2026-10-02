@@ -77,6 +77,7 @@ export function applyTool(
   power = 1,
 ) {
   if (![x, y, radius, dx, dy].every(Number.isFinite)) return;
+  w.missiles.brush(tool, x, y, radius, dx, dy, power, shape);
   w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
   if (tool === "fan") {
     moveBrush(w, x, y, radius, shape, Math.sign(dx), Math.sign(dy));
@@ -122,6 +123,16 @@ export function applyTool(
     }
 }
 export function dragBrush(w, a, b, radius, shape, solids = true) {
+  w.missiles.brush(
+    "grab",
+    a.x + 0.5,
+    a.y + 0.5,
+    radius,
+    b.x - a.x,
+    b.y - a.y,
+    1,
+    shape,
+  );
   w.stickmen.brush(
     "grab",
     a.x + 0.5,

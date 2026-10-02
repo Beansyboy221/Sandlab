@@ -62,6 +62,13 @@ export function resizeLevel(world, properties, x, y) {
       }
     }
   resized.elastic.rebuild(resized);
+  resized.mechanics = { ...world.mechanics };
+  resized.missiles.restore(
+    world.missiles
+      .snapshot()
+      .map((a) => ({ ...a, x: a.x - x, y: a.y - y }))
+      .filter((a) => a.x >= 0 && a.y >= 0 && a.x < p.width && a.y < p.height),
+  );
   const actors = world.stickmen.snapshot();
   for (const a of actors)
     for (let n = 0; n < 9; n++) {

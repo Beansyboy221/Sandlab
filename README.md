@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 76 palette substances and 88 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 79 palette substances and 91 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -205,3 +205,11 @@ An isolated 5,600-node elastic comparison in this workspace measured 8.77 ms/tic
 ## Material cleanup in v1.6.3
 
 Both Fit canvas buttons have been removed. Zooming, panning, touch gestures and automatic viewport sizing remain available. Carbon Dioxide is named CO2, and Glass Dust is named Glass Shards. Plasma, Dragonfire, Frostfire, Fairy Dust, Furnace, Neutron, Nutrient Water, Mica, Sulfur Dioxide and Carbon Dioxide Foam are unavailable. Old saves map these IDs to Fire, Snow, Fertilizer, Heater, Water, Ceramic, Smoke or CO2 as appropriate; old Neutron packets disappear. Clone targets, residues, dissolved nutrition, sponge contents and solid links remain readable.
+
+### Predators and seekers (1.9.0)
+
+Life includes Wolf and Shark alongside Cat, Rabbit, Fish and Bird. Predators hunt their defined prey, prey flee, and sight is blocked by solid terrain. Bites need physical contact and have a cooldown. Dead bodies retain their physics, burning fuel and breakable joints. Settings → Wildlife controls predation and detection distance. Predator reserve demonstrates land and aquatic species.
+
+Devices includes Heat-Seeking Missile. Draw a rocket and drag to choose its initial heading. Each vehicle gradually steers toward the nearest exposed hot non-gaseous material inside its sensing range; it does not steer around obstacles. Swept collisions detonate it, while its eight-second lifetime limits missed shots. Smoke exhaust cannot attract its own seeker. Warm, Cool, Fan, Grab and Erase affect rockets; world saves, history and resize retain their state. Settings → Missiles controls homing, threshold, range, speed and blast radius. Missile range has static heated targets.
+
+Settings → Player offers joystick side, diameter, horizontal inset and vertical lift. Layout follows the available canvas and avoids the dock in portrait and landscape. Moving settings or rotating clears captured input to prevent stuck movement. Push up to jump; keyboard W/Space still work.

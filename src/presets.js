@@ -1,9 +1,24 @@
+import { buildMissileRange } from "./presets/missile-range.js";
 import { buildWildlife } from "./presets/wildlife.js";
 import { buildMaterialLab } from "./presets/material-labs.js";
 import { painter } from "./presets/painter.js";
 import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
 export const presets = [
+  {
+    id: "reserve",
+    name: "Predator reserve",
+    subtitle: "Hunters on land and in water",
+    tag: "WILDLIFE",
+    color: "#b9c59a",
+  },
+  {
+    id: "missiles",
+    name: "Missile range",
+    subtitle: "Seek exposed heat and collide",
+    tag: "HOMING",
+    color: "#e5b985",
+  },
   {
     id: "wildlife",
     name: "Wildlife pond",
@@ -164,7 +179,7 @@ export function loadPreset(world, id) {
     }
     return;
   }
-  if (buildWildlife(world, id)) return;
+  if (buildWildlife(world, id) || buildMissileRange(world, id)) return;
   if (buildMaterialLab(world, id) || buildExperiment(world, id)) return;
   if (id === "volcano") {
     rect(0, h - 10, w, 10, "Wall");

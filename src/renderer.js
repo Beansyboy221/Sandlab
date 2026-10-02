@@ -1,3 +1,4 @@
+import { drawMissiles } from "./sim/missile-renderer.js";
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
 import { drawRigidBodies } from "./sim/rigid-renderer.js";
 import { drawStickmen } from "./sim/stickman-renderer.js";
@@ -60,6 +61,7 @@ export class Renderer {
     drawElasticBodies(context, this.world, viewport, this.elasticColors);
     drawRigidBodies(context, this.world, viewport, this.elasticColors);
     drawStickmen(context, this.world, viewport);
+    drawMissiles(context, this.world, viewport);
   }
   worldImage() {
     if (

@@ -1,3 +1,4 @@
+import { defaultMechanics } from "./sim/mechanics-options.js";
 import { GameAudio } from "./audio.js";
 import { ColorPicker } from "./color-picker.js";
 import { DrawingPause } from "./drawing-pause.js";
@@ -406,7 +407,12 @@ for (const cat of categories) {
 $("search").addEventListener("input", renderMaterials);
 $("brush").addEventListener("input", (e) => state.setRadius(+e.target.value));
 $("play-btn").addEventListener("click", () => setPaused(!state.paused));
+const mechanicKeys = Object.keys(defaultMechanics);
+function syncMechanics() {
+  for (const key of mechanicKeys) world.mechanics[key] = settings.get(key);
+}
 function stepSimulation() {
+  syncMechanics();
   setPaused(true);
   if (drawingPause?.active) return;
   if (selection.dragging) selection.cancel();
@@ -509,9 +515,15 @@ const input = new Input(
   },
   drawingPause,
 );
-const playerControls = new PlayerControls($("canvas-wrap"), world, state);
+const playerControls = new PlayerControls(
+  $("canvas-wrap"),
+  world,
+  state,
+  settings,
+);
 const audio = new GameAudio(world, renderer, settings, playerControls);
 mobileDock.onOrientationChange = () => {
+  playerControls.reset();
   input.cancel();
   selection.cancel();
   inspector.nextUpdate = 0;
@@ -928,6 +940,7 @@ const settingEffects = {
     $("debug-panel").hidden = !settings.get("debug");
     $("debug-btn").setAttribute("aria-pressed", String(settings.get("debug")));
   },
+  ...Object.fromEntries(mechanicKeys.map((key) => [key, syncMechanics])),
   autosave: updateAutoTimer,
   autosaveInterval: updateAutoTimer,
 };
@@ -995,6 +1008,7 @@ function frame(now) {
   if (!document.hidden) {
     input.update();
     playerControls.update();
+    syncMechanics();
     if (!state.paused) {
       accumulator += elapsed * state.speed;
       let steps = 0;
