@@ -11,7 +11,7 @@ export function emitSpark(world, i, x, y, residue = 0) {
   );
   if (j < 0) return false;
   if (world.cells[j]) return false;
-  world.set(
+  world.transform(
     j,
     M.Spark,
     Math.max(700, world.temp[i]),
@@ -34,7 +34,7 @@ export function arcGap(world, i, x, y) {
       materials[world.cells[target]].conductive &&
       !world.cooldown[target]
     ) {
-      world.set(gap, M.Spark, 1200, 20);
+      world.transform(gap, M.Spark, 1200, 20);
       return;
     }
   }

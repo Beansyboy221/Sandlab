@@ -1,4 +1,4 @@
-import { M, materials } from "./materials.js";
+import { M, materials, canonicalMaterial } from "./materials.js";
 
 // Alternate phases remain stable simulation/save IDs, but share one palette entry.
 const families = {
@@ -13,11 +13,11 @@ const families = {
   Nitrogen: ["Liquid nitrogen"],
 };
 export const paletteBase = new Uint8Array(materials.length);
-for (const m of materials) paletteBase[m.id] = m.id;
+for (const m of materials) paletteBase[m.id] = canonicalMaterial(m.id);
 for (const [name, phases] of Object.entries(families))
   for (const phase of phases) paletteBase[M[phase]] = M[name];
 export const paletteMaterials = materials.filter(
-  (m) => m.id && paletteBase[m.id] === m.id,
+  (m) => m.id && !m.deprecated && paletteBase[m.id] === m.id,
 );
 export function materialSearchText(m) {
   return [m.name, m.category, m.paletteCategory, ...(families[m.name] || [])]

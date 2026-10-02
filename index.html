@@ -256,6 +256,16 @@
               ><span class="deselect-label">Deselect</span>
             </button>
             <div id="tool-properties" class="tool-properties" hidden>
+              <div id="fill-properties" class="property-group" hidden>
+                <label class="property-check"
+                  >Fill
+                  <select id="fill-layer" aria-label="Fill target">
+                    <option value="material">Material</option>
+                    <option value="foreground">Foreground color</option>
+                    <option value="background">Background color</option>
+                  </select>
+                </label>
+              </div>
               <div id="paint-properties" class="property-group" hidden>
                 <button
                   id="paint-color"

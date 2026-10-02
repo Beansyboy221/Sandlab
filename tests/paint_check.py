@@ -12,7 +12,7 @@ def choose(page,tool,touch=False):
     action='tap' if touch else 'click'
     getattr(page.locator('#tool-picker-toggle'),action)();getattr(page.locator(f'[data-tool-option="{tool}"]'),action)()
 def pixel(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.cursor=null;r.draw();const i=(y*sandlab.world.width+x)*4;return Array.from(r.data.data.slice(i,i+3))}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.cursor=null;r.draw();const c=document.createElement('canvas');c.width=sandlab.world.width;c.height=sandlab.world.height;const ctx=c.getContext('2d');ctx.drawImage(r.buffer,0,0);r.drawElastics(ctx,{x:0,y:0,scale:1});return Array.from(ctx.getImageData(x,y,1,1).data.slice(0,3))}''',[x,y])
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
     c=browser.new_context(viewport={'width':1440,'height':900},device_scale_factor=2);c.route('http://sandlab.test/**',serve)

@@ -1,3 +1,4 @@
+import { rigidFields } from "./rigid-bodies.js";
 import { elasticFields } from "./elasticity.js";
 // Shared by copying, movement, and persistence: every particle property travels together.
 export const particleStateFields = [
@@ -18,4 +19,5 @@ export const particleStateFields = [
   "storedLiquid",
   "storedAmount",
   ...elasticFields,
+  ...rigidFields,
 ];

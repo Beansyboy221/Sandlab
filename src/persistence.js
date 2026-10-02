@@ -1,3 +1,4 @@
+import { rigidFields } from "./sim/rigid-bodies.js";
 import { elasticFields, elasticFloatFields } from "./sim/elasticity.js";
 import {
   defaultLevel,
@@ -7,10 +8,11 @@ import {
 import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
 import { absorbable } from "./sim/absorption.js";
-import { materials, M } from "./sim/materials.js";
+import { materials, M, canonicalMaterial } from "./sim/materials.js";
 const KEY = "sandlab.saves.v1",
   AUTO = "sandlab.autosave.v1";
 const arrays = [...particleStateFields, "backgroundPaint"];
+const floatFields = [...elasticFloatFields, ...rigidFields];
 export function snapshot(world, typed = false) {
   return {
     version: 1,
@@ -74,6 +76,7 @@ export function validateSnapshot(data) {
       data.arrays?.[key] ??
       ([
         ...elasticFields,
+        ...rigidFields,
         "pigment",
         "backgroundPaint",
         "heading",
@@ -99,10 +102,14 @@ export function validateSnapshot(data) {
     const maximum =
       key === "temp"
         ? 100000
-        : elasticFloatFields.includes(key)
+        : floatFields.includes(key)
           ? key.startsWith("offset")
             ? 1.5
-            : 2
+            : key.startsWith("rest")
+              ? 2048
+              : key === "damage"
+                ? 100000
+                : 4
           : key === "elasticAnchor"
             ? 15
             : key === "heading"
@@ -124,14 +131,18 @@ export function validateSnapshot(data) {
                       ? materials.length - 1
                       : 255;
     const minimum =
-      key === "temp" ? -273 : elasticFloatFields.includes(key) ? -maximum : 0;
+      key === "temp"
+        ? -273
+        : floatFields.includes(key) && key !== "damage"
+          ? -maximum
+          : 0;
     if (
       values.some(
         (v) =>
           v < minimum ||
           v > maximum ||
           (key !== "temp" &&
-            !elasticFloatFields.includes(key) &&
+            !floatFields.includes(key) &&
             !Number.isInteger(v)),
       )
     )
@@ -143,7 +154,13 @@ export function validateSnapshot(data) {
       throw Error("Invalid foreground paint on an empty cell.");
     const id = data.arrays.elasticId?.[i];
     if (id) {
-      if (!materials[data.arrays.cells[i]]?.elasticity || elasticIds.has(id))
+      if (
+        !(
+          materials[data.arrays.cells[i]]?.elasticity ||
+          materials[data.arrays.cells[i]]?.rigid
+        ) ||
+        elasticIds.has(id)
+      )
         throw Error("Invalid elastic particle identity.");
       elasticIds.add(id);
     }
@@ -212,6 +229,9 @@ export function restore(world, data) {
   world.lastStrikeTick = -1;
   for (const key of arrays)
     world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
+  for (const key of ["cells", "clone", "residue", "storedLiquid"])
+    for (let i = 0; i < world.length; i++)
+      world[key][i] = canonicalMaterial(world[key][i]);
   world.seed = data.seed >>> 0 || 17421;
   world.tick = Number.isSafeInteger(data.tick) ? data.tick : 0;
   for (let i = 0; i < world.length; i++)
@@ -261,6 +281,7 @@ export function unpack(data) {
       data.arrays?.[key] ??
       ([
         ...elasticFields,
+        ...rigidFields,
         "pigment",
         "backgroundPaint",
         "heading",

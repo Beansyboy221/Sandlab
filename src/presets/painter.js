@@ -34,9 +34,10 @@ export function painter(world) {
     }
   };
   const cup = (x, y, width, height) => {
-    rect(x, y, 3, height + 3, "Glass");
-    rect(x + width - 3, y, 3, height + 3, "Glass");
-    rect(x, y + height, width, 3, "Glass");
+    rect(x, y, 3, height + 3, "Wall");
+    rect(x + width - 3, y, 3, height + 3, "Wall");
+    rect(x, y + height, width, 3, "Wall");
+    rect(x, y + height + 3, width, 2, "Wall");
   };
   return { put, rect, line, cup };
 }

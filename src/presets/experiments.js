@@ -17,7 +17,7 @@ export function buildExperiment(w, id) {
     ].includes(id)
   )
     return false;
-  rect(0, ground, W, H - ground, "Stone");
+  rect(0, ground, W, H - ground, "Wall");
   if (id === "garden") {
     for (let n = 0; n < 3; n++) {
       const x = Math.round(W * (0.1 + n * 0.28)),
@@ -81,7 +81,7 @@ export function buildExperiment(w, id) {
       size = Math.round(W * 0.5),
       height = ground - y;
     cup(x, y, size, height);
-    rect(x, y, size, 3, "Glass");
+    rect(x, y, size, 3, "Wall");
     rect(x + 3, ground - 15, size - 6, 15, "Water");
     rect(x + 3, ground - 3, 8, 3, "Heater");
     rect(x + size - 14, y + 3, 10, 3, "Cooler");
@@ -90,7 +90,7 @@ export function buildExperiment(w, id) {
       const x = Math.round(W * (0.12 + n * 0.44)),
         size = Math.round(W * 0.32);
       cup(x, ground - 45, size, 45);
-      rect(x + 3, ground - 30, size - 6, 30, n ? "Water" : "Hydrochloric acid");
+      rect(x + 3, ground - 30, size - 6, 30, n ? "Water" : "Acid");
       rect(x + size * 0.25, ground - 25, 5, 25, "Wood");
       rect(x + size * 0.7, ground - 25, 5, 25, "Ceramic");
     }

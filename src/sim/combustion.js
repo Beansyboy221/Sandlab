@@ -47,7 +47,11 @@ export function burnFuel(world, i, x, y, material) {
   }
   temp[i] = Math.max(650, temp[i]);
   if (--life[i] === 0) {
-    world.set(i, material.residue || material.combustionGas || M.Smoke, 120);
+    world.transform(
+      i,
+      material.residue || material.combustionGas || M.Smoke,
+      120,
+    );
     return;
   }
 
@@ -67,7 +71,7 @@ export function burnFuel(world, i, x, y, material) {
       vent = world.relativeIndex(x, y, dx, -2);
     if (above >= 0 && vent >= 0 && plumePassage(cells[above])) {
       if (!cells[vent])
-        world.set(
+        world.transform(
           vent,
           material.category === "gas" || world.random() < 0.45
             ? material.combustionGas || M.Smoke
@@ -75,7 +79,7 @@ export function burnFuel(world, i, x, y, material) {
           Math.max(120, temp[i] * 0.3),
         );
     } else if (above >= 0 && !cells[above])
-      world.set(above, material.combustionGas || M.Smoke, 180);
+      world.transform(above, material.combustionGas || M.Smoke, 180);
   }
   // Heat travels along contiguous fuel, while the exposed-face test controls ignition.
   world.eachNeighbor(x, y, (j) => {
@@ -93,7 +97,7 @@ function emitFlame(world, fuel, j, probability) {
     return;
   }
   if ((!id || id === M.Oxygen) && world.random() < probability)
-    world.set(
+    world.transform(
       j,
       M.Fire,
       Math.max(650, world.temp[fuel]),
@@ -113,14 +117,14 @@ export function reactFire(world, i, x, y) {
       temp[j] += heat;
       temp[i] -= heat;
       if (temp[j] > 100 && materials[cells[j]].dryTo === undefined) {
-        world.set(j, M.Steam, Math.max(105, temp[j]));
+        world.transform(j, M.Steam, Math.max(105, temp[j]));
         world.fields.add(x, y, 1.5);
       }
       quenched = true;
     }
   });
   if (quenched) {
-    world.set(i, M.Smoke, 100);
+    world.transform(i, M.Smoke, 100);
     return;
   }
   if (smothered >= 2) {
@@ -128,13 +132,17 @@ export function reactFire(world, i, x, y) {
     temp[i] = Math.max(100, temp[i] - 60 * smothered);
   }
   if (!life[i] || --life[i] === 0) {
-    world.set(i, world.residue[i] || (world.random() < 0.7 ? M.Smoke : 0), 120);
+    world.transform(
+      i,
+      world.residue[i] || (world.random() < 0.7 ? M.Smoke : 0),
+      120,
+    );
     return;
   }
   temp[i] = Math.max(temp[i], 550);
   world.eachNeighbor(x, y, (j) => {
     if (cells[j] === M.Oxygen) {
-      world.set(j, M.Fire, 900, 25);
+      world.transform(j, M.Fire, 900, 25);
       life[i] = Math.min(80, life[i] + 4);
     } else if (materials[cells[j]].ignite) temp[j] += 70;
   });
@@ -163,7 +171,7 @@ export function moveSurfaceFlame(world, i, x, y) {
     !world.life[below] &&
     world.temp[below] < materials[world.cells[below]].ignite + 100
   )
-    return world.random() < 0.97;
+    return true;
   const direction = world.random() < 0.5 ? -1 : 1;
   for (let side = 0; side < 2; side++) {
     const across = side ? -direction : direction;

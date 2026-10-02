@@ -63,7 +63,7 @@ export function react(world, i, x, y) {
   }
   if (id === M.Plasma || id === M.Spark) {
     if (!l[i] || --l[i] === 0) {
-      world.set(i, world.residue[i] || 0, 120);
+      world.transform(i, world.residue[i] || 0, 120);
       return;
     }
     if (id === M.Plasma) t[i] = 5000;
@@ -91,16 +91,16 @@ export function react(world, i, x, y) {
       } else if (materials[c[j]].ignite) t[j] += id === M.Plasma ? 200 : 30;
     });
     if (wetSpark) {
-      world.set(i, world.residue[i] || 0, 100);
+      world.transform(i, world.residue[i] || 0, 100);
       return;
     }
-  } else if (m.lifetime && l[i] && --l[i] === 0) world.set(i, 0);
+  } else if (m.lifetime && l[i] && --l[i] === 0) world.transform(i, 0);
   if (m.heatSource) {
     t[i] = m.temperature;
     world.eachNeighbor(x, y, (j) => {
       if (c[j]) t[j] += (t[i] - t[j]) * 0.12;
     });
-  } else if (id === M["Hydrochloric acid"]) {
+  } else if (id === M.Acid) {
     // Strong acid etches susceptible mineral/organic surfaces slowly. Glass,
     // oils, water, and unrelated devices do not vanish on contact. Metals and
     // carbonates react through the product-aware contact registry above.
@@ -114,13 +114,13 @@ export function react(world, i, x, y) {
           target = j;
       });
       if (target >= 0) {
-        world.set(target, 0);
-        world.set(i, M.Water, t[i]);
+        world.transform(target, 0);
+        world.transform(i, M.Water, t[i]);
       }
     }
   } else if (id === M.Void)
     world.eachNeighbor(x, y, (j) => {
-      if (c[j] && c[j] !== M.Void) world.set(j, 0);
+      if (c[j] && c[j] !== M.Void) world.transform(j, 0);
     });
   else if (id === M.Clone) {
     world.eachNeighbor(x, y, (j) => {
@@ -131,7 +131,7 @@ export function react(world, i, x, y) {
       )
         world.clone[i] = c[j];
       if (!c[j] && world.clone[i] && world.random() < 0.3)
-        world.set(j, world.clone[i]);
+        world.transform(j, world.clone[i]);
     });
   }
 }

@@ -32,17 +32,17 @@ function emitRays(w, x, y, id, count) {
       j = w.index(x + dx, y + dy);
     if (j < 0 || w.cells[j]) continue;
     if (!budget(w, "energyBirths", 128)) break;
-    w.set(j, id);
+    w.transform(j, id);
     if (id !== M.Neutron) w.heading[j] = heading;
     count--;
   }
 }
 export function reactEnergy(w, i, x, y, m) {
   if (m.energyRule === "ray") {
-    if (!w.life[i] || --w.life[i] === 0) w.set(i, 0);
+    if (!w.life[i] || --w.life[i] === 0) w.transform(i, 0);
   } else if (m.energyRule === "aura") {
     if (!w.life[i] || --w.life[i] === 0) {
-      w.set(i, m.aura > 0 ? M.Smoke : 0, m.aura > 0 ? 120 : 20);
+      w.transform(i, m.aura > 0 ? M.Smoke : 0, m.aura > 0 ? 120 : 20);
       return;
     }
     w.temp[i] = m.temperature;
@@ -50,8 +50,8 @@ export function reactEnergy(w, i, x, y, m) {
       if (w.cells[i] !== m.id || !w.cells[j]) return;
       const neighbor = materials[w.cells[j]];
       if (neighbor.aura && neighbor.aura * m.aura < 0) {
-        w.set(i, M.Steam, 120);
-        w.set(j, M.Steam, 120);
+        w.transform(i, M.Steam, 120);
+        w.transform(j, M.Steam, 120);
         w.fields.add(x, y, 1);
         return;
       }
@@ -64,7 +64,7 @@ export function reactEnergy(w, i, x, y, m) {
     w.fields.add(x, y, m.force);
     if (m.absorbMatter)
       w.eachNeighbor(x, y, (j) => {
-        if (materials[w.cells[j]].movable) w.set(j, 0);
+        if (materials[w.cells[j]].movable) w.transform(j, 0);
       });
   } else if (m.energyRule === "uranium") {
     if (w.random() < m.emissionChance) emitRays(w, x, y, M.Neutron, 1);
@@ -82,10 +82,10 @@ export function reactEnergy(w, i, x, y, m) {
         target = j;
     });
     if (target >= 0 && budget(w, "energyReactions", 32)) {
-      w.set(target, 0);
-      w.set(i, 0);
+      w.transform(target, 0);
+      w.transform(i, 0);
       w.explode(x, y, 5);
-      w.set(i, M.Plasma, 5000, 14);
+      w.transform(i, M.Plasma, 5000, 14);
     }
   } else if (m.energyRule === "fairy") {
     let consumed = false;
@@ -96,12 +96,12 @@ export function reactEnergy(w, i, x, y, m) {
         w.temp[j] > 45
       )
         return;
-      if (w.cells[j] === M.Seed) w.set(j, M.Plant, w.temp[j]);
+      if (w.cells[j] === M.Seed) w.transform(j, M.Plant, w.temp[j]);
       w.moisture[j] = Math.min(255, w.moisture[j] + 80);
       w.nutrition[j] = Math.min(255, w.nutrition[j] + 120);
       consumed = true;
     });
-    if (consumed) w.set(i, M.Light, 20, 18);
+    if (consumed) w.transform(i, M.Light, 20, 18);
   }
 }
 function reflect(w, i, x, y, dx, dy) {
@@ -118,7 +118,7 @@ function reflect(w, i, x, y, dx, dy) {
 }
 function fission(w, j, x, y) {
   if (!budget(w, "energyReactions", 32)) return;
-  w.set(j, M.Steel, 900);
+  w.transform(j, M.Steel, 900);
   w.fields.add(x, y, 12);
   emitRays(w, x, y, M.Neutron, 3);
 }
@@ -136,7 +136,7 @@ export function moveRay(w, i, x, y, m) {
       j = w.index(nx, ny);
     if (j < 0) {
       if (sound && w.border === "solid") reflect(w, i, x, y, dx, dy);
-      else w.set(i, 0);
+      else w.transform(i, 0);
       return;
     }
     if (j === i) return;
@@ -155,25 +155,25 @@ export function moveRay(w, i, x, y, m) {
       target.id === M.Void ||
       target.category === "special"
     ) {
-      w.set(i, 0);
+      w.transform(i, 0);
       return;
     }
     if (neutron) {
       if (target.id === M.Uranium) {
-        w.set(i, 0);
+        w.transform(i, 0);
         fission(w, j, j % w.width, Math.floor(j / w.width));
         return;
       }
       if (target.id === M.Sponge) {
         w.temp[j] = Math.min(6000, w.temp[j] + 5);
-        w.set(i, 0);
+        w.transform(i, 0);
         return;
       }
       w.temp[j] = Math.min(6000, w.temp[j] + 8);
     } else if (sound) {
       w.fields.add(j % w.width, Math.floor(j / w.width), 1.8);
       if (target.id === M.Sponge) {
-        w.set(i, 0);
+        w.transform(i, 0);
         return;
       }
       if (
@@ -182,8 +182,11 @@ export function moveRay(w, i, x, y, m) {
           w.fields.index(j % w.width, Math.floor(j / w.width))
         ] > 3.5
       )
-        w.set(j, M["Glass dust"], w.temp[j]);
-      if (["solid", "elastic", "powder"].includes(target.category)) {
+        w.transform(j, M["Glass dust"], w.temp[j]);
+      if (
+        target.static ||
+        ["solid", "elastic", "powder"].includes(target.category)
+      ) {
         reflect(w, i, x, y, dx, dy);
         w.life[i] = Math.max(1, w.life[i] - 4);
         return;
@@ -198,7 +201,7 @@ export function moveRay(w, i, x, y, m) {
         w.cooldown[j] = 18;
         w.chargedAt[j] = w.tick;
         w.temp[j] = Math.min(6000, w.temp[j] + (m.absorptionHeat || 1));
-        w.set(i, 0);
+        w.transform(i, 0);
         return;
       }
       const transparent =
@@ -211,7 +214,7 @@ export function moveRay(w, i, x, y, m) {
         w.temp[j] + (m.absorptionHeat || 1) * (transparent ? 0.08 : 1),
       );
       if (!transparent) {
-        w.set(i, 0);
+        w.transform(i, 0);
         return;
       }
       if (w.life[i] > 1) w.life[i]--;
@@ -220,5 +223,5 @@ export function moveRay(w, i, x, y, m) {
     y = Math.floor(j / w.width);
   }
   // A completely filled transparent volume has no cell available to represent a ray.
-  if (!moved) w.set(i, 0);
+  if (!moved) w.transform(i, 0);
 }

@@ -70,6 +70,24 @@ export function cellProperties(world, point) {
       ["Anchored", world.elasticAnchor[i] ? "Yes" : "No"],
     );
   }
+  if (m.rigid) {
+    rows.push(["Cell mass", `${m.density.toFixed(2)} units`]);
+    const body =
+      !world.rigid.dirty && world.rigid.bodyOf.get(world.elasticId[i]);
+    if (body)
+      rows.push(
+        ["Body mass", `${body.mass.toFixed(1)} units`],
+        ["Body size", `${body.ids.length} cells`],
+      );
+    rows.push(
+      [
+        "Speed",
+        `${Math.hypot(world.velocityX[i], world.velocityY[i]).toFixed(2)} cells/tick`,
+      ],
+      ["Impact damage", `${world.damage[i].toFixed(1)} / ${m.toughness}`],
+    );
+  }
+  if (m.static) rows.push(["Fixed", "Indestructible"]);
   if (m.ray)
     rows.push([
       "Direction",

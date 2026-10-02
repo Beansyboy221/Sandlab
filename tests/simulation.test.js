@@ -79,7 +79,10 @@ test("combustion burns fuel in place and water quenches fire", () => {
 });
 test("electric pulse crosses a wire, then recovers for another pulse", () => {
   const w = new World(30, 10);
-  for (let x = 3; x < 26; x++) w.set(index(w, x, 5), M.Steel);
+  for (let x = 3; x < 26; x++) {
+    w.set(index(w, x, 5), M.Steel);
+    w.set(index(w, x, 6), M.Wall);
+  }
   w.set(index(w, 2, 5), M.Spark);
   let reached = false;
   for (let t = 0; t < 50; t++) {
@@ -95,7 +98,7 @@ test("electric pulse crosses a wire, then recovers for another pulse", () => {
 });
 test("acid attacks stone but cannot dissolve glass", () => {
   const w = new World(10, 10);
-  w.set(55, M["Hydrochloric acid"]);
+  w.set(55, M["Acid"]);
   w.set(56, M.Wood);
   w.set(54, M.Glass);
   for (let i = 0; i < 100; i++) react(w, 55, 5, 5);
@@ -180,7 +183,7 @@ test("pressure diffusion stays finite and decays", () => {
 
 test("settled chunks wake immediately when a supporting floor is erased", () => {
   const w = new World(64, 64);
-  for (let x = 0; x < 64; x++) w.set(index(w, x, 35), M.Stone);
+  for (let x = 0; x < 64; x++) w.set(index(w, x, 35), M.Wall);
   w.brush(30, 25, 5, M.Sand);
   run(w, 120);
   const before = w.cells.slice();
@@ -193,6 +196,9 @@ test("heat sources keep working in settled chunks", () => {
   const w = new World(32, 32);
   w.set(index(w, 15, 20), M.Heater);
   w.set(index(w, 16, 20), M.Steel);
+  w.set(index(w, 16, 21), M.Wall);
+  w.set(index(w, 17, 20), M.Wall);
+  w.set(index(w, 16, 19), M.Wall);
   run(w, 120);
   assert.ok(w.temp[index(w, 16, 20)] > 200);
   w.set(index(w, 15, 20), M.Cooler);
@@ -229,7 +235,10 @@ test("malformed clone IDs and overflowing temperatures cannot corrupt a world", 
 });
 test("a cold electrical pulse cannot reach the end of a long wire in one tick", () => {
   const w = new World(40, 12);
-  for (let x = 3; x < 36; x++) w.set(index(w, x, 6), M.Steel);
+  for (let x = 3; x < 36; x++) {
+    w.set(index(w, x, 6), M.Steel);
+    w.set(index(w, x, 7), M.Wall);
+  }
   w.set(index(w, 2, 6), M.Spark);
   w.step();
   assert.equal(w.charge[index(w, 35, 6)], 0);
@@ -312,6 +321,7 @@ test("burning wood emits smoke while the source still exists, then becomes ash",
   const w = new World(40, 40),
     source = index(w, 20, 28);
   w.set(source, M.Wood, 700);
+  w.set(source + w.width, M.Wall);
   let smokeDuringBurn = false;
   for (let n = 0; n < 260; n++) {
     w.step();
@@ -330,6 +340,7 @@ test("one flame ignites a cold surface and spreads across its exposed top", () =
   const w = new World(80, 60);
   for (let y = 42; y < 45; y++)
     for (let x = 8; x < 72; x++) w.set(index(w, x, y), M.Wood);
+  for (let x = 8; x < 72; x++) w.set(index(w, x, 45), M.Wall);
   w.set(index(w, 10, 41), M.Fire);
   let farthest = 0,
     smoke = false;
@@ -371,6 +382,7 @@ test("surface flames do not jump a noncombustible break or wrap across grid edge
   const w = new World(72, 52);
   for (let x = 0; x < 72; x++)
     w.set(index(w, x, 40), x < 24 || x > 49 ? M.Wood : M.Ceramic);
+  for (let x = 0; x < 72; x++) w.set(index(w, x, 41), M.Wall);
   w.set(index(w, 0, 39), M.Fire);
   run(w, 240);
   for (let x = 50; x < 72; x++) {
@@ -380,7 +392,10 @@ test("surface flames do not jump a noncombustible break or wrap across grid edge
 });
 test("burning state survives export/import and continues deterministically", () => {
   const a = new World(40, 40);
-  for (let x = 5; x < 35; x++) a.set(index(a, x, 30), M.Wood);
+  for (let x = 5; x < 35; x++) {
+    a.set(index(a, x, 30), M.Wood);
+    a.set(index(a, x, 31), M.Wall);
+  }
   a.set(index(a, 7, 29), M.Fire);
   run(a, 80);
   assert.ok(a.life.some((v, i) => v && a.cells[i] === M.Wood));

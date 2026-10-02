@@ -41,7 +41,7 @@ export class Bloom {
         ((((i / world.width) | 0) >> 1) * width + ((i % world.width) >> 1)) * 3;
       for (let c = 0; c < 3; c++)
         source[target + c] +=
-          (materials[id].elasticity && elasticColors
+          ((materials[id].elasticity || materials[id].rigid) && elasticColors
             ? elasticColors[i * 3 + c]
             : pixels[i * 4 + c]) *
           strength *

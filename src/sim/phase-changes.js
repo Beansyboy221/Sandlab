@@ -15,8 +15,8 @@ export function changePhase(w, i, x, y, m) {
       }
     }
     if (open) {
-      w.set(i, m.dryTo, temperature);
-      if (vent >= 0) w.set(vent, M.Steam, Math.max(120, temperature));
+      w.transform(i, m.dryTo, temperature);
+      if (vent >= 0) w.transform(vent, M.Steam, Math.max(120, temperature));
       w.fields.add(x, y, 1.5);
       return true;
     }
@@ -44,7 +44,7 @@ export function changePhase(w, i, x, y, m) {
   )
     target = frozenLiquid;
   if (target === M.Water && nutrition) target = M["Nutrient water"];
-  w.set(i, target, temperature);
+  w.transform(i, target, temperature);
   w.nutrition[i] = nutrition;
   if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;
   return true;

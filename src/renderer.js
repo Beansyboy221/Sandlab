@@ -1,4 +1,5 @@
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
+import { drawRigidBodies } from "./sim/rigid-renderer.js";
 import { drawElasticBodies, drawBubbles } from "./sim/elastic-renderer.js";
 import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
@@ -56,6 +57,7 @@ export class Renderer {
   }
   drawElastics(context, viewport) {
     drawElasticBodies(context, this.world, viewport, this.elasticColors);
+    drawRigidBodies(context, this.world, viewport, this.elasticColors);
   }
   worldImage() {
     if (
@@ -302,7 +304,7 @@ export class Renderer {
         g = g * (1 - a) + 103 * a;
         b = b * (1 - a) + (force < 0 ? 230 : 130) * a;
       }
-      if (materials[id].elasticity) {
+      if (materials[id].elasticity || materials[id].rigid) {
         const colorOffset = i * 3;
         this.elasticColors[colorOffset] = r;
         this.elasticColors[colorOffset + 1] = g;

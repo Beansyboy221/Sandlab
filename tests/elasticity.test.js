@@ -14,7 +14,7 @@ import { resizeLevel } from "../src/level.js";
 const at = (w, x, y) => y * w.width + x;
 function line(name = "Rope", anchor = false) {
   const w = new World(64, 64);
-  if (anchor) w.set(at(w, 9, 10), M.Stone);
+  if (anchor) w.set(at(w, 9, 10), M.Wall);
   for (let x = 10; x < 30; x++) w.set(at(w, x, 10), M[name]);
   return w;
 }
@@ -185,7 +185,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 81);
+  assert.equal(paletteMaterials.length, 82);
   for (const [base, phase, temp] of [
     ["Salt", "Molten salt", 850],
     ["Water", "Ice", -20],

@@ -121,7 +121,7 @@ export function loadPreset(world, id) {
   const { put, rect, line, cup } = painter(world);
   if (buildMaterialLab(world, id) || buildExperiment(world, id)) return;
   if (id === "volcano") {
-    rect(0, h - 10, w, 10, "Stone");
+    rect(0, h - 10, w, 10, "Wall");
     for (let x = 0; x < w; x++)
       for (let y = Math.round(h * 0.68); y < h - 10; y++) put(x, y, "Water");
     for (let x = Math.round(w * 0.22); x < w * 0.73; x++) {
@@ -154,24 +154,42 @@ export function loadPreset(world, id) {
     rect(terminalX - 2, terminalY - 3, 2, 7, "Empty");
     put(terminalX - 1, terminalY, "Steel");
     line(terminalX - 2, terminalY - 1, terminalX, terminalY - 1, "Wood", 0);
+    rect(terminalX - 2, terminalY + 1, 3, 2, "Wall");
+    // A static channel holds the live wire in place; keep the visible arc gap open.
+    const backing = [];
+    for (let i = 0; i < world.length; i++)
+      if ([M.Steel, M.Mica].includes(world.cells[i])) {
+        const x = i % w,
+          y = Math.floor(i / w);
+        world.eachNeighbor(x, y, (j) => {
+          const jx = j % w,
+            jy = Math.floor(j / w);
+          const gap =
+            jx >= terminalX - 2 &&
+            jx <= terminalX + 10 &&
+            jy >= terminalY - 1 &&
+            jy <= terminalY;
+          if (!world.cells[j] && !gap) backing.push(j);
+        });
+      }
+    for (const i of backing) world.set(i, M.Wall);
+    rect(terminalX, Math.round(h * 0.62) + 12, 10, 2, "Wall");
     put(Math.round(w * 0.18) - 3, Math.round(h * 0.5), "Spark");
   } else if (id === "chemistry") {
     const x = Math.round(w * 0.31),
       y = Math.round(h * 0.24),
       rw = Math.round(w * 0.38),
       rh = Math.round(h * 0.64);
-    rect(x, y, 3, rh, "Glass");
-    rect(x + rw, y, 3, rh, "Glass");
-    rect(x, y + rh, rw + 3, 3, "Glass");
+    cup(x, y, rw + 3, rh);
     rect(x + 3, y + rh - 17, rw - 3, 17, "Mercury");
     rect(x + 3, y + rh - 43, rw - 3, 26, "Water");
     rect(x + 3, y + rh - 68, rw - 3, 25, "Oil");
     rect(x + 12, y - 12, rw - 22, 9, "Sand");
   } else if (id === "explosion") {
-    rect(0, h - 8, w, 8, "Concrete");
+    rect(0, h - 8, w, 8, "Wall");
     for (let n = 0; n < 5; n++)
       rect(Math.round(w * 0.24 + n * w * 0.13), h - 22, 8, 14, "TNT");
-    rect(0, h - 8, w, 8, "Ceramic");
+    rect(0, h - 8, w, 8, "Wall");
     line(w * 0.12, h - 9, w * 0.85, h - 9, "Gunpowder", 0);
     // Two layers keep this fixture connected when reflected pressure lifts grains.
     for (let x = Math.round(w * 0.12) + 2; x < w * 0.85; x++) {

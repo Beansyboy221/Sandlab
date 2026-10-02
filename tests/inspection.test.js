@@ -91,7 +91,10 @@ test("custom bindings replace defaults, preserve modifier distinctions, and expo
   assert.equal(shortcutAction({ key: "b" }, bindings), null);
   assert.equal(shortcutAction({ key: "+", shiftKey: true }), "larger");
   assert.equal(bindingConflict("k", "step", bindings).id, "pause");
-  assert.equal(bindingConflict("k", "pause", bindings), undefined);
+  assert.equal(
+    bindingConflict("k", "pause", { ...bindings, fill: [] }),
+    undefined,
+  );
   assert.equal(normalizeChord("Shift+Mod+Z"), "Mod+Shift+z");
   assert.equal(normalizeChord("Mod+Mod+z"), null);
 });

@@ -1,6 +1,9 @@
 import { materials } from "./materials.js";
 const airBlockage = Float32Array.from(materials, (m) =>
-  m.category === "solid" || m.category === "elastic" || m.category === "special"
+  m.static ||
+  m.category === "solid" ||
+  m.category === "elastic" ||
+  m.category === "special"
     ? 1 - (m.airPermeability || 0)
     : 0,
 );

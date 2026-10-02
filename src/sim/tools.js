@@ -1,6 +1,7 @@
 import { materials, M } from "./materials.js";
 export const brushTools = [
   ["paint", "Draw", "brush"],
+  ["fill", "Fill", "bucket"],
   ["recolor", "Paint", "palette"],
   ["erase", "Erase", "eraser"],
   ["warm", "Warm", "warm"],
@@ -18,6 +19,8 @@ export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
   dx = Math.round(dx);
   dy = Math.round(dy);
   if (!dx && !dy) return;
+  if (w.rigid.dirty) w.rigid.rebuild();
+  const movedBodies = new Set();
   const cx = Math.round(x),
     cy = Math.round(y);
   // Traverse leading edges first so each particle moves once and packed shapes stay intact.
@@ -34,8 +37,25 @@ export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
       const i = sy * w.width + sx,
         j = w.index(tx, ty),
         m = materials[w.cells[i]];
+      if (m.rigid) {
+        const body = w.rigid.bodyOf.get(w.elasticId[i]);
+        if (body && !movedBodies.has(body)) {
+          movedBodies.add(body);
+          if (solids) w.rigid.translate(body, dx, dy);
+          else {
+            const pose = w.rigid.pose(body);
+            if (pose) {
+              pose.vx += dx / Math.sqrt(body.mass);
+              pose.vy += dy / Math.sqrt(body.mass);
+              w.rigid.sync(body, pose);
+            }
+          }
+        }
+        continue;
+      }
       if (
         m.id &&
+        !m.static &&
         m.category !== "special" &&
         (solids || m.movable) &&
         (j < 0 ? w.border === "void" : !w.cells[j])
@@ -80,7 +100,12 @@ export function applyTool(
       )
         w.fields.heat(nx, ny, (tool === "warm" ? 12 : -12) * power);
       if (tool === "erase-mobile") {
-        if (w.cells[i] && materials[w.cells[i]].movable) w.set(i, 0);
+        if (
+          w.cells[i] &&
+          materials[w.cells[i]].movable &&
+          !materials[w.cells[i]].rigid
+        )
+          w.set(i, 0);
       } else if (tool === "pressure" || tool === "vacuum") {
         if ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
           w.fields.add(nx, ny, (tool === "pressure" ? 3 : -3) * power);

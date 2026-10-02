@@ -198,11 +198,17 @@ const definitions = [
     },
   ],
   [
-    "Hydrochloric acid",
+    "Acid",
     "liquid",
     "#b8dc63",
     1.1,
-    { conductivity: 0.2, conductive: true, aqueous: true },
+    {
+      conductivity: 0.2,
+      conductive: true,
+      aqueous: true,
+      acidic: true,
+      absorbable: true,
+    },
   ],
   [
     "Lava",
@@ -809,10 +815,42 @@ const definitions = [
     },
   ],
 ];
+// Historical acid slots stay readable in old saves, but are never palette entries.
+for (const id of [59, 91]) {
+  definitions[id] = [...definitions[20]];
+  definitions[id][4] = {
+    ...definitions[20][4],
+    deprecated: true,
+    canonicalId: 20,
+  };
+}
+definitions.push(
+  [
+    "Wall",
+    "static",
+    "#b7c2cb",
+    99,
+    { static: true, resistance: 1, conductivity: 0.08 },
+  ],
+  ["Rubble", "powder", "#8d8b82", 2.4, { melt: 1200, meltTo: "Lava" }],
+  [
+    "Wood chips",
+    "powder",
+    "#bc8c58",
+    0.55,
+    {
+      organic: true,
+      ignite: 280,
+      burn: 90,
+      residue: "Ash",
+      combustionGas: "Carbon dioxide",
+    },
+  ],
+);
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {
-    M[name] = id;
+    if (!properties.deprecated) M[name] = id;
     return {
       id,
       name,
@@ -823,7 +861,8 @@ export const materials = definitions.map(
       resistance: 0,
       viscosity: 1,
       temperature: 20,
-      movable: !["solid", "special"].includes(category),
+      movable: !["static", "special"].includes(category),
+      rigid: category === "solid",
       gas: category === "gas" || category === "energy",
       ...properties,
     };
@@ -849,6 +888,7 @@ export const categories = [
   "liquid",
   "gas",
   "solid",
+  "static",
   "elastic",
   "life",
   "explosive",
@@ -862,6 +902,7 @@ export const categoryLabels = {
   liquid: "Liquids",
   gas: "Gases",
   solid: "Solids",
+  static: "Static",
   elastic: "Elastics",
   life: "Life",
   explosive: "Explosives",
@@ -893,7 +934,7 @@ for (const name of ["Water", "Brine"])
     waterLike: true,
     absorbable: true,
   });
-materials[M["Hydrochloric acid"]].acidic = true;
+materials[M["Acid"]].acidic = true;
 for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid wax"])
   materials[M[name]].organic = true;
 
@@ -921,3 +962,26 @@ for (const name of [
 ])
   materials[M[name]].combustionGas ??= M["Carbon dioxide"];
 materials[M.Sponge].airPermeability = 0.8;
+
+export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
+// Toughness is impact energy per exposed cell, separate from chemical resistance.
+for (const m of materials)
+  if (m.rigid) {
+    m.toughness = m.conductive ? 26 : 9;
+    if ([M.Stone, M.Concrete, M.Brick, M.Ceramic, M.Mica].includes(m.id))
+      m.breakInto = M.Rubble;
+    if (m.id === M.Glass) {
+      m.toughness = 1.8;
+      m.breakInto = M["Glass dust"];
+    }
+    if (m.id === M.Ice) {
+      m.toughness = 3;
+      m.breakInto = M.Snow;
+    }
+    if (m.id === M.Wood) {
+      m.toughness = 10;
+      m.breakInto = M["Wood chips"];
+    }
+    if (m.id === M.Steel) m.breakInto = M["Steel powder"];
+    if (m.resistance === 1) m.resistance = 0.97;
+  }

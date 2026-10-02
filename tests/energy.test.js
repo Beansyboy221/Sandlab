@@ -138,10 +138,10 @@ test("dragonfire boils water, frostfire freezes it, and opposed fictional flames
 test("black holes absorb mobile matter, repulsors push through pressure, fairy dust grows seeds, and antimatter annihilates solids", () => {
   const hole = packet("Black hole");
   hole.set(251, M.Sand);
-  hole.set(249, M.Stone);
+  hole.set(249, M.Wall);
   react(hole, 250, 10, 10);
   assert.equal(hole.cells[251], 0);
-  assert.equal(hole.cells[249], M.Stone);
+  assert.equal(hole.cells[249], M.Wall);
   assert.ok(hole.fields.pressure.some((v) => v < 0));
   const repulsor = packet("Repulsor");
   react(repulsor, 250, 10, 10);

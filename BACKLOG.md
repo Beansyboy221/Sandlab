@@ -1,5 +1,6 @@
 # Sandlab backlog
 
+- Improve rigid collision manifolds on concave contacts and sustained load damage; benchmark dense piles of independently cut fragments.
 - Improve coarse atmospheric boundaries for walls that divide a single air tile, and model sustained confined gas pressure separately from damped pressure pulses.
 - Add finite ambient oxygen transport so sealed fuel can exhaust implicit air; explicit gases already affect ignition and suppression.
 - Introduce latent heat and calibrated heat capacities before adding more physical phase transitions.

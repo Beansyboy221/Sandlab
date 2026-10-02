@@ -16,7 +16,7 @@ test("specific substance names preserve original save IDs without a generic gas 
   for (const [name, id] of [
     ["Steel", 11],
     ["Steel powder", 19],
-    ["Hydrochloric acid", 20],
+    ["Acid", 20],
     ["Kerosene", 23],
     ["Methane", 30],
     ["Mica", 33],
@@ -27,7 +27,7 @@ test("specific substance names preserve original save IDs without a generic gas 
     "Metal",
     "Metal dust",
     "Fuel",
-    "Acid",
+    "Vinegar",
     "Insulator",
   ])
     assert.equal(M[name], undefined);
@@ -84,8 +84,8 @@ test("thin solid walls stop atmospheric fields, openings reconnect them, and voi
 });
 test("neutralization heats and pressurizes locally, metal acid reactions create hydrogen without erasing inert liquids", () => {
   for (const [acid, target] of [
-    ["Vinegar", "Lye"],
-    ["Hydrochloric acid", "Steel"],
+    ["Acid", "Lye"],
+    ["Acid", "Steel"],
   ]) {
     const w = new World(24, 24);
     w.random = () => 0;
@@ -106,14 +106,14 @@ test("neutralization heats and pressurizes locally, metal acid reactions create 
   ]) {
     const w = new World(24, 24);
     w.random = () => 0;
-    w.set(300, M["Hydrochloric acid"]);
+    w.set(300, M["Acid"]);
     w.set(301, target);
     react(w, 300, 12, 12);
     assert.equal(w.cells[301], target);
   }
 });
 test("baking soda creates energetic but finite foam with CO2 and no fire, in all gravity directions", () => {
-  for (const acid of [M.Vinegar, M["Hydrochloric acid"]])
+  for (const acid of [M.Acid, M["Acid"]])
     for (const gravity of [
       [0, 1],
       [1, 0],

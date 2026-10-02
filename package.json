@@ -1,11 +1,11 @@
 {
   "name": "sandlab",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "python3 -m http.server 3000 --bind 0.0.0.0",
-    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js tests/elasticity.test.js tests/canvas-view.test.js tests/paint.test.js tests/atmosphere.test.js",
+    "test": "node --test tests/simulation.test.js tests/presets.test.js tests/selection.test.js tests/settings.test.js tests/materials.test.js tests/security.test.js tests/editor.test.js tests/ignition.test.js tests/inspection.test.js tests/level.test.js tests/energy.test.js tests/elasticity.test.js tests/canvas-view.test.js tests/paint.test.js tests/atmosphere.test.js tests/bodies-fill.test.js",
     "bench": "node tests/benchmark.js",
     "test:browser": "python3 tests/browser_check.py",
     "format": "prettier --write \"src/**/*.js\" \"tests/*.js\" index.html style.css README.md",
@@ -20,7 +20,8 @@
     "test:elastics": "python3 tests/elastics_check.py",
     "test:contacts": "python3 tests/elastic_contacts_check.py",
     "test:atmosphere": "python3 tests/atmosphere_check.py",
-    "test:paint": "python3 tests/paint_check.py"
+    "test:paint": "python3 tests/paint_check.py",
+    "test:fill": "python3 tests/fill_bodies_check.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"

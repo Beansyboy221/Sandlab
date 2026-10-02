@@ -16,7 +16,7 @@ export function grow(w, i, x, y) {
       ) {
         nutrition[i] = Math.min(255, nutrition[i] + nutrition[j]);
         moisture[i] = Math.min(255, moisture[i] + 80);
-        w.set(j, 0);
+        w.transform(j, 0);
       } else if (
         w.cells[j] === M.Sponge &&
         (w.storedLiquid[j] === M.Water ||
@@ -37,7 +37,7 @@ export function grow(w, i, x, y) {
         w.random() < 0.04
       ) {
         nutrition[i] += 64;
-        w.set(j, 0);
+        w.transform(j, 0);
       } else if (
         id === M.Plant &&
         w.cells[j] === M["Carbon dioxide"] &&
@@ -48,7 +48,7 @@ export function grow(w, i, x, y) {
         !w.cells[above] &&
         w.random() < 0.06
       ) {
-        w.set(j, M.Oxygen, w.temp[j]);
+        w.transform(j, M.Oxygen, w.temp[j]);
         moisture[i] -= 2;
       } else if (porous(w.cells[j])) {
         if (nutrition[i] > nutrition[j] + 4 && moisture[i]) {
@@ -73,7 +73,7 @@ export function grow(w, i, x, y) {
       const food = Math.min(16, nutrition[below]),
         carried = nutrition[i];
       nutrition[below] -= food;
-      w.set(i, M.Plant);
+      w.transform(i, M.Plant);
       nutrition[i] = Math.min(255, carried + food);
       moisture[i] = Math.min(80, moisture[below]);
       moisture[below] -= 24;
@@ -95,7 +95,7 @@ export function grow(w, i, x, y) {
       const remaining = Math.max(0, nutrition[i] - 4),
         food = remaining >> 1;
       nutrition[i] = remaining - food;
-      w.set(j, M.Plant);
+      w.transform(j, M.Plant);
       nutrition[j] = food;
       moisture[j] = share;
       w.growth[j] = depth;

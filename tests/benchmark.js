@@ -39,5 +39,14 @@ measure("Pottery kiln", (w) => loadPreset(w, "pottery"));
 measure("Elastic bodies", (w) => {
   for (let y = 15; y < 85; y++)
     for (let x = 90; x < 170; x++) w.set(y * w.width + x, M.Rubber);
-  for (let x = 0; x < w.width; x++) w.set(185 * w.width + x, M.Stone);
+  for (let x = 0; x < w.width; x++) w.set(185 * w.width + x, M.Wall);
+});
+
+measure("Rigid solids", (w) => {
+  for (let x = 0; x < w.width; x++) w.set(185 * w.width + x, M.Wall);
+  for (let y = 20; y < 120; y += 22)
+    for (let x = 40; x < 280; x += 30)
+      for (let dy = 0; dy < 12; dy++)
+        for (let dx = 0; dx < 18; dx++)
+          w.set((y + dy) * w.width + x + dx, M.Steel);
 });

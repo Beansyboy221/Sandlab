@@ -46,6 +46,7 @@ export class Elasticity {
     this.world = world;
     this.locations = new Map();
     this.nextId = 1;
+    this.topologyDirty = true;
     this.bonds = [world.bond0, world.bond1, world.bond2, world.bond3];
     this.indices = new Int32Array(world.length);
     this.nodeIds = new Uint32Array(world.length);
@@ -56,7 +57,10 @@ export class Elasticity {
     this.delta = new Float64Array(2);
   }
   allocate() {
-    while (this.locations.has(this.nextId))
+    while (
+      this.locations.has(this.nextId) ||
+      this.world.rigid?.locations.has(this.nextId)
+    )
       this.nextId = (this.nextId % 4294967295) + 1;
     const id = this.nextId;
     this.nextId = (id % 4294967295) + 1;
@@ -68,6 +72,7 @@ export class Elasticity {
       y = Math.floor(i / w.width);
     w.elasticId[i] = this.allocate();
     this.locations.set(w.elasticId[i], i);
+    this.topologyDirty = true;
     if (!connect) return;
     for (let d = 0; d < 4; d++) {
       const [dx, dy] = directions[d];
@@ -90,15 +95,25 @@ export class Elasticity {
     this.world = world;
     const w = world;
     this.locations.clear();
+    w.rigid.world = w;
+    w.rigid.locations.clear();
+    w.rigid.bodyOf.clear();
+    w.rigid.fresh.clear();
+    w.rigid.dirty = true;
+    this.topologyDirty = true;
     for (let i = 0; i < w.length; i++)
       if (materials[w.cells[i]].elasticity && w.elasticId[i])
         this.locations.set(w.elasticId[i], i);
+      else if (materials[w.cells[i]].rigid && w.elasticId[i])
+        w.rigid.locations.set(w.elasticId[i], i);
     // Old saves contain rubber without spring metadata.
     for (let i = 0; i < w.length; i++)
       if (materials[w.cells[i]].elasticity && !w.elasticId[i]) this.add(i);
+      else if (materials[w.cells[i]].rigid && !w.elasticId[i]) w.rigid.add(i);
   }
   cutBrush(x, y, radius, shape) {
     if (!this.locations.size) return;
+    this.topologyDirty = true;
     const w = this.world,
       reach = Math.ceil(radius + 12),
       cx = Math.round(x) + 0.5,
@@ -175,19 +190,31 @@ export class Elasticity {
     let connections = 0,
       stretch = 0,
       tension = 0;
-    for (const k of this.locations.values())
-      for (let d = 0; d < 4; d++) {
-        const j = this.locations.get(this.bonds[d][k]);
-        if (j === undefined || (k !== i && j !== i)) continue;
-        connections++;
-        linkDelta(w, k, j, this.delta);
-        const rest = d < 2 ? 1 : Math.SQRT2,
-          extension = Math.hypot(...this.delta) - rest;
-        stretch = Math.max(stretch, extension / rest);
-        tension = Math.max(
-          tension,
-          extension * materials[w.cells[k]].elasticity * 12,
-        );
+    const visited =
+      w.border === "looping" && (w.width < 25 || w.height < 25)
+        ? new Set()
+        : null;
+    const x = i % w.width,
+      y = Math.floor(i / w.width);
+    for (let dy = -12; dy <= 12; dy++)
+      for (let dx = -12; dx <= 12; dx++) {
+        const k = w.index(x + dx, y + dy);
+        if (k < 0 || !materials[w.cells[k]].elasticity || visited?.has(k))
+          continue;
+        visited?.add(k);
+        for (let d = 0; d < 4; d++) {
+          const j = this.locations.get(this.bonds[d][k]);
+          if (j === undefined || (k !== i && j !== i)) continue;
+          connections++;
+          linkDelta(w, k, j, this.delta);
+          const rest = d < 2 ? 1 : Math.SQRT2,
+            extension = Math.hypot(...this.delta) - rest;
+          stretch = Math.max(stretch, extension / rest);
+          tension = Math.max(
+            tension,
+            extension * materials[w.cells[k]].elasticity * 12,
+          );
+        }
       }
     return { connections, stretch, tension };
   }
@@ -210,7 +237,7 @@ export class Elasticity {
     for (const i of locations.values()) {
       indices[count++] = i;
       fx[i] = fy[i] = 0;
-      this.parents[i] = i;
+      if (this.topologyDirty) this.parents[i] = i;
     }
     indices.subarray(0, count).sort();
     for (let n = 0; n < count; n++) this.nodeIds[n] = w.elasticId[indices[n]];
@@ -223,6 +250,7 @@ export class Elasticity {
         const bonds = this.bonds[d],
           j = locations.get(bonds[i]);
         if (j === undefined) {
+          if (bonds[i]) this.topologyDirty = true;
           bonds[i] = 0;
           continue;
         }
@@ -232,12 +260,11 @@ export class Elasticity {
         const distance = Math.hypot(dx, dy),
           rest = d < 2 ? 1 : Math.SQRT2;
         if (distance > rest * m.tearAt) {
+          this.topologyDirty = true;
           bonds[i] = 0;
           continue;
         }
-        const a = this.root(i),
-          b = this.root(j);
-        if (a !== b) this.parents[b] = a;
+
         if (distance < 0.001) continue;
         const relativeSpeed =
           ((w.velocityX[j] - w.velocityX[i]) * dx +
@@ -254,11 +281,23 @@ export class Elasticity {
         fy[j] -= dy * tension;
       }
     }
-    // Components follow surviving links, so cutting immediately restores
-    // collisions between the detached pieces. They travel with grid swaps.
-    for (let n = 0; n < count; n++) {
-      const i = indices[n];
-      this.components[i] = w.elasticId[this.root(i)];
+    if (this.topologyDirty) {
+      // Rebuild connectivity only after an edit or a torn link, not every solver pass.
+      for (let n = 0; n < count; n++) this.parents[indices[n]] = indices[n];
+      for (let n = 0; n < count; n++)
+        for (const bonds of this.bonds) {
+          const i = indices[n],
+            j = locations.get(bonds[i]);
+          if (j === undefined) continue;
+          const a = this.root(i),
+            b = this.root(j);
+          if (a !== b) this.parents[b] = a;
+        }
+      for (let n = 0; n < count; n++) {
+        const i = indices[n];
+        this.components[i] = w.elasticId[this.root(i)];
+      }
+      this.topologyDirty = false;
     }
     // All forces are computed before any grid cell moves, avoiding scan bias.
     for (let n = 0; n < count; n++) {

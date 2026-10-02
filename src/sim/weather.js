@@ -69,7 +69,7 @@ export function strike(w, x, y) {
         w.fields.add(bx, by, 4);
         return;
       }
-      w.set(i, M.Lightning, 1800, 6 + Math.floor(w.random() * 6));
+      w.transform(i, M.Lightning, 1800, 6 + Math.floor(w.random() * 6));
       w.clone[i] = 1;
     }
     x = nx + gx;
@@ -82,19 +82,19 @@ export function weather(w, i, x, y) {
   if (id === M.Lightning) {
     if (!w.clone[i]) strike(w, x, y);
     if (w.cells[i] === M.Lightning && (!w.life[i] || --w.life[i] === 0))
-      w.set(i, 0);
+      w.transform(i, 0);
   } else if (id === M.Storm) {
     if (!w.life[i]) w.life[i] = 240 + Math.floor(w.random() * 180);
     if (--w.life[i] === 0) strike(w, x + w.gravityX, y + w.gravityY);
     if (below >= 0 && !w.cells[below] && w.random() < 0.04)
-      w.set(below, M.Cloud);
+      w.transform(below, M.Cloud);
   } else {
     if (!w.life[i] || --w.life[i] === 0) {
-      w.set(i, 0);
+      w.transform(i, 0);
       return;
     }
     if (below >= 0 && !w.cells[below] && w.random() < 0.008) {
-      w.set(below, M.Water);
+      w.transform(below, M.Water);
       w.life[i] = Math.max(1, w.life[i] - 25);
     }
   }

@@ -38,7 +38,7 @@ with sync_playwright() as p:
     desktop = browser.new_context(viewport={'width':1440, 'height':900}, device_scale_factor=1)
     page, errors = init(desktop)
     page.wait_for_timeout(1200)
-    assert page.locator('.material').count() == 81
+    assert page.locator('.material').count() == 82
     assert page.locator('.tagline, .canvas-note, .palette-foot').count() == 0
     assert page.locator('.material-detail p, .material[title]').count() == 0
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -138,12 +138,12 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '81 materials · 93 simulation forms'
+    assert page.locator('#app-content-count').inner_text() == '82 materials · 94 simulation forms'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 15
+    assert page.locator('.changelog-release').count() == 16
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -189,7 +189,7 @@ with sync_playwright() as p:
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
     page.set_viewport_size({'width':1440,'height':900})
     page.locator('#search').fill('')
-    page.evaluate('''() => {const w=sandlab.world;w.clear();for(let y=150;y<165;y++)for(let x=45;x<275;x++)w.set(y*w.width+x,4);for(let x=60;x<270;x+=25)w.set(149*w.width+x,5);for(let n=0;n<120;n++)w.step();sandlab.renderer.draw();}''')
+    page.evaluate('''() => {const w=sandlab.world;w.clear();for(let y=150;y<165;y++)for(let x=45;x<275;x++)w.set(y*w.width+x,4);for(let x=45;x<275;x++)w.set(165*w.width+x,94);for(let x=60;x<270;x+=25)w.set(149*w.width+x,5);for(let n=0;n<120;n++)w.step();sandlab.renderer.draw();}''')
     assert page.evaluate('sandlab.world.cells.some(v=>v===9)')
     assert page.evaluate('sandlab.world.cells.some(v=>v===5)')
     page.screenshot(path=str(ARTIFACTS / 'fire-surfaces.png'))

@@ -30,7 +30,7 @@ with sync_playwright() as p:
             assert max(t['h'] for t in tiles)-min(t['h'] for t in tiles)<1
             assert min(t['h'] for t in tiles)==76
             page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'elastic-palette-{width}.png'))
-        assert page.locator('.material').count()==81
+        assert page.locator('.material').count()==82
         for name in ['Molten salt','Molten copper','Steam','Ice','Liquid nitrogen']:
             assert page.get_by_role('button',name=name,exact=True).count()==0
         page.locator('#search').fill('molten salt');assert page.locator('.material').count()==1

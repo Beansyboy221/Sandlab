@@ -6,7 +6,7 @@ export function buildMaterialLab(w, id) {
     W = w.width,
     H = w.height;
   const ground = Math.round(H * 0.82);
-  rect(0, ground, W, H - ground, "Stone");
+  rect(0, ground, W, H - ground, "Wall");
   if (id === "reactions") {
     const size = Math.round(W * 0.23),
       depth = Math.round(H * 0.24);
@@ -20,10 +20,10 @@ export function buildMaterialLab(w, id) {
         rect(x + 3, ground - 14, size - 6, 14, "Water");
         put(x + Math.round(size * 0.5), ground - 15, "Sodium");
       } else if (n === 1) {
-        rect(x + 3, ground - 13, size - 6, 13, "Vinegar");
+        rect(x + 3, ground - 13, size - 6, 13, "Acid");
         rect(x + 7, ground - 16, size - 14, 3, "Baking soda");
       } else {
-        rect(x + 3, ground - 12, size - 6, 12, "Vinegar");
+        rect(x + 3, ground - 12, size - 6, 12, "Acid");
         rect(
           x + Math.round(size * 0.4),
           ground - 20,

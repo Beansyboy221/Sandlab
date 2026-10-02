@@ -47,7 +47,8 @@ test("copy and paste preserve complete independent particle state including spon
   assert.equal(copied.arrays.temp[0], 83);
   assert.equal(copied.arrays.storedAmount[0], 19);
   assert.equal(pasteRegion(w, copied, 12, 12), 2);
-  for (const field of particleStateFields)
+  assert.notEqual(w.elasticId[at(w, 12, 12)], copied.arrays.elasticId[0]);
+  for (const field of particleStateFields.filter((f) => f !== "elasticId"))
     assert.equal(w[field][at(w, 12, 12)], copied.arrays[field][0], field);
   assert.equal(w.clone[at(w, 13, 12)], M.Water);
   const restored = new World(24, 24);

@@ -4,7 +4,6 @@ export const absorbable = (id) =>
   !!materials[id]?.absorbable || id === M.Oil || id === M.Kerosene;
 function mixWater(a, b) {
   if (a === M.Brine || b === M.Brine) return M.Brine;
-  if (a === M.Vinegar || b === M.Vinegar) return M.Vinegar;
   if (a === M["Nutrient water"] || b === M["Nutrient water"])
     return M["Nutrient water"];
   return b;
@@ -48,7 +47,7 @@ export function absorb(w, i, x, y) {
       const temperature = w.temp[j];
       type = watery(type) && watery(liquid) ? mixWater(type, liquid) : liquid;
       w.temp[i] = (w.temp[i] * (amount + 1) + temperature) / (amount + 2);
-      w.set(j, 0);
+      w.transform(j, 0);
       amount++;
     });
   if (amount) {
@@ -63,7 +62,7 @@ export function absorb(w, i, x, y) {
           j = w.relativeIndex(x, y, dx, dy);
         if ((j < 0 && w.border !== "void") || (j >= 0 && w.cells[j])) continue;
         if (j >= 0)
-          w.set(
+          w.transform(
             j,
             boiling
               ? materials[type].dryTo !== undefined

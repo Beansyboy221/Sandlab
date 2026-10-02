@@ -448,7 +448,9 @@
   flex: 1;
   max-width: none;
 }
-.mobile-layout .toolbox.expanded:not([data-tool="paint"]) .material-controls {
+.mobile-layout
+  .toolbox.expanded[data-material-tool="false"]
+  .material-controls {
   display: none;
 }
 .mobile-layout .toolbox.expanded .utility-controls,

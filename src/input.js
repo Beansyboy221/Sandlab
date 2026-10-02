@@ -1,3 +1,4 @@
+import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
 import { stampGesture } from "./drawing-gesture.js";
 import { M, materials } from "./sim/materials.js";
@@ -56,6 +57,28 @@ export class Input {
         const tool = state.tool;
         this.pointers.set(e.pointerId, { ...point, readOnly: tool });
         onRead?.(tool, point);
+        this.hover(point);
+        return;
+      }
+      if (state.tool === "fill") {
+        if (this.pointers.size) return;
+        fillRegion(
+          world,
+          point.x,
+          point.y,
+          {
+            layer: state.fillLayer || "material",
+            material: state.material,
+            replace: state.replace,
+            erase:
+              e.button === 2 ||
+              (state.colorErase && state.fillLayer !== "material"),
+            color: parseInt(state.color.slice(1), 16),
+            opacity: state.colorOpacity,
+          },
+          this.onStroke,
+        );
+        this.pointers.set(e.pointerId, { ...point, readOnly: "fill" });
         this.hover(point);
         return;
       }
@@ -224,6 +247,12 @@ export class Input {
     this.renderer.gesture = null;
   }
   hover(point, erasing = false, refine = false) {
+    if (this.state.tool === "fill") {
+      this.canvas.style.cursor = "crosshair";
+      this.renderer.cursor = null;
+      this.onHover(point);
+      return;
+    }
     if (readTools.has(this.state.tool)) {
       this.canvas.style.cursor =
         this.state.tool === "inspect" ? "zoom-in" : "crosshair";

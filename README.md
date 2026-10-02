@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 81 palette substances and 93 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 82 palette substances and 94 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -73,6 +73,7 @@ npm run test:energy
 npm run test:experiments
 npm run test:inspection
 npm run test:security
+npm run test:fill
 ```
 
 Simulation tests use Node.js 20+. Browser tests use Python Playwright and Chromium (`/usr/bin/chromium` by default). The browser harness intercepts local requests and blocks external traffic, so it needs no running server. It checks desktop drawing, undo, wheel controls, views, export/import, local saves, canvas creation and positioned resizing, mobile layouts, rotation, and simultaneous touch pointers. Internal preset fixtures remain available to the rendering and simulation checks. Screenshots are written to `tests/artifacts/`.
@@ -99,7 +100,7 @@ Burning fuels retain their material and use the particle lifetime field as a rem
 
 ## Absorbent solids
 
-Sponge stores up to 48 cells of water, brine, oil, or kerosene per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and kerosene can burn, while stored water protects the sponge as it evaporates. Hydrochloric acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Wet a sponge with different liquids, then warm or squeeze it to release the stored contents.
+Sponge stores up to 48 cells of water, brine, Acid, oil, or kerosene per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and kerosene can burn, while stored water protects the sponge as it evaporates. Acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Wet a sponge with different liquids, then warm or squeeze it to release the stored contents.
 
 ## Selection and copying
 
@@ -109,7 +110,7 @@ Drag from any selected cell, including empty selected cells, to move the selecte
 
 Selecting pauses the world so the copied region stays still. Copy captures all particle state; Paste shows a preview, then a click or tap places it. Empty clipboard cells stay transparent. Existing particles are protected unless Replace is enabled. Use `Ctrl/⌘ C`, `Ctrl/⌘ V`, and `Escape` to copy, paste, and cancel placement. Tapping Paste again also cancels the preview on touch devices. Undo restores a pasted world. The in-game clipboard stays local to the current session and supports repeat placements.
 
-The materials button appears only for Draw. Other tools expose their controls on the drawing toolbar: heat/cooling/force strength, fan direction, whether Grab/Erase includes solids, and selection copy/paste controls.
+The materials button appears for Draw and material Fill. Other tools expose their controls on the drawing toolbar: heat/cooling/force strength, fan direction, whether Grab/Erase includes solids, and selection copy/paste controls.
 
 ## Settings
 
@@ -117,9 +118,9 @@ The gear in the top-right opens Rendering, Simulation, Brush, Storage, Keyboard,
 
 ## Chemistry and new materials
 
-The palette contains 81 substances, with 93 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Steel and steel powder rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to steel.
+The palette contains 82 substances, with 94 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Steel and steel powder rust on exposed wet surfaces, faster in brine. Acid cleans oxides, and hot coal reduces rust back to steel.
 
-Hydrochloric acid or vinegar plus baking soda releases carbon dioxide and a finite, expanding foam burst. Foam traps gas briefly, raises local pressure, and collapses into water and CO₂. Gas creation/absorption, reaction heat, boiling, condensation, and combustion generate signed pressure changes. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form sulfurous acid. Rubber insulates electricity and heat but burns.
+Acid plus baking soda releases carbon dioxide and a finite, expanding foam burst. Foam traps gas briefly, raises local pressure, and collapses into water and CO₂. Gas creation/absorption, reaction heat, boiling, condensation, and combustion generate signed pressure changes. Acid neutralizes lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form Acid. Rubber insulates electricity and heat but burns.
 
 Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into nutrient water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Nutrient water works with sponges, retains nutrition through freezing, and dries back into fertilizer. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Combine these materials to explore reactions and ceramic firing.
 
@@ -131,7 +132,7 @@ Undo and Redo retain eight edits, including complete particle and pressure state
 
 Gunpowder burns in place, using its own oxidizer, emitting embers and pressure instead of instantly blasting a large radius. Dense burning regions can reach its pressure trigger. TNT requires 45 hot simulation ticks before reacting; cooling cancels the countdown. A strong pressure spike bypasses the delay. Liquid fuel burns at exposed surfaces without directly detonating. Hydrogen and flammable gas require both oxygen/air and higher ignition temperatures. Electrical arcs bridge one empty cell between conductors; ordinary conducting metal does not instantly ignite adjacent fuel. Hot embers deposit ash and heat without conducting electricity. Cold water quenches fire and sparks while warming; it does not all instantly flash into steam. Brine evaporation separates salt and steam, and frozen aqueous mixtures retain their original liquid through melting.
 
-This is a qualitative cellular simulation. Relative density, heat transport, exposed combustion, phase thresholds, pressure diffusion, and reaction products follow reusable rules. Temperature changes and particle volumes are approximate; the grid does not implement calibrated thermodynamics, molecular chemistry, or structural mechanics.
+This is a qualitative cellular simulation. Relative density, heat transport, exposed combustion, phase thresholds, pressure diffusion, and reaction products follow reusable rules. Temperature changes and particle volumes are approximate; the grid does not implement calibrated thermodynamics, molecular chemistry, or calibrated structural mechanics.
 
 ## GitHub Pages
 
@@ -164,3 +165,13 @@ Elastics use three physics substeps per simulation tick. Internal spring damping
 The world fills the display, including previously saved worlds, without automatically cropping content. Changing mobile resolution uses the crop/expansion placement preview and stays undoable. Connected elastic contact preserves both velocity and temporarily delayed raster displacement; disconnected fragments still collide. A swept path test prevents retained displacement from jumping through walls. Fertilizer is grouped under Powders.
 
 Paint uses packed RGBA foreground coatings that travel with particle state and a fixed-coordinate background overlay. Stroke stamps prevent overlap from compounding opacity; the foreground stamp travels with the particle too. Both layers are validated, run-length encoded, saved, undoable, and preserved on resize. Legacy saves default to transparent overlays. Paint's eraser restores the underlying appearance without changing occupancy or physics.
+
+## Bucket fill and body physics
+
+Fill (`K`, rebindable) fills a four-connected region once per click/tap, including across looping edges. Material fill matches the starting material, protects occupied cells unless Replace is enabled, and right-click deletes that connected region. Foreground color fill matches material and existing coating, ignores empty space, and preserves all physics. Background color fill matches the existing background coating. Color, opacity, removal, and Undo/Redo use the same controls as Paint. An iterative typed-array queue bounds memory and avoids recursive stack overflow.
+
+Wall is the sole Static palette material. It blocks particles and atmospheric flow, cannot fall or be destroyed by simulation effects, and remains removable through editing. Ordinary solids form connected rigid bodies from their drawn shape. Gravity, pressure, buoyancy, mass, rotational inertia, and impact momentum move each body; a separate rendering pass preserves its continuous shape. Rest coordinates and permanent links survive saves, cropping, and copying. Grab moves the complete connected body, and erasing splits it into independent fragments. Glass, ice, wood, and mineral solids have distinct impact toughness and fracture products. This is a qualitative grid contact solver, not calibrated engineering stress analysis.
+
+Elastics remain the only spring materials. Three stable integration substeps are retained; cached connectivity avoids rebuilding components unless editing or tearing changes their links. Acid is now the sole acidic palette entry. Historic acid IDs are migrated when loading, including clone targets, residues, and sponge contents.
+
+An isolated 5,600-node elastic comparison in this workspace measured 8.77 ms/tick on v1.5.0 and 8.26 ms/tick with cached connectivity (6% less simulation time). These are development-machine measurements, not phone guarantees.

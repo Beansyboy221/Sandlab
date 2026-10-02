@@ -1,9 +1,10 @@
+import { RigidBodies, rigidFields } from "./rigid-bodies.js";
 import { drawingPhase } from "./material-families.js";
 import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
 import { moveRay, rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
-import { materials, M } from "./materials.js";
+import { materials, M, canonicalMaterial } from "./materials.js";
 import { Fields } from "./fields.js";
 import { react } from "./reactions.js";
 import { moveSurfaceFlame } from "./combustion.js";
@@ -48,12 +49,16 @@ export class World {
             ? Uint8Array
             : Uint32Array
       )(this.length);
+    for (const key of rigidFields) this[key] = new Float32Array(this.length);
     this.elastic = new Elasticity(this);
+    this.rigid = new RigidBodies(this);
     this.particleFields = particleStateFields
-      .filter((name) => !elasticFields.includes(name))
+      .filter((name) => ![...elasticFields, ...rigidFields].includes(name))
       .map((name) => this[name]);
     this.particleFields.push(this.paintMark);
-    this.elasticParticleFields = elasticFields.map((name) => this[name]);
+    this.elasticParticleFields = [...elasticFields, ...rigidFields].map(
+      (name) => this[name],
+    );
     this.chunkWidth = Math.ceil(width / 16);
     this.chunks = new Uint16Array(this.chunkWidth * Math.ceil(height / 16));
     this.motionStamp = new Uint32Array(this.chunks.length);
@@ -84,6 +89,7 @@ export class World {
     lifetime = materials[id].lifetime || 0,
     connectElastic = true,
   ) {
+    id = canonicalMaterial(id);
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
     if (!this.cells[i] && id) {
       this.chunks[this.chunk(i)]++;
@@ -93,7 +99,10 @@ export class World {
       this.count--;
     }
     if (this.elasticId[i]) {
-      this.elastic.locations.delete(this.elasticId[i]);
+      if (this.elastic.locations.delete(this.elasticId[i]))
+        this.elastic.topologyDirty = true;
+      if (this.rigid.locations.has(this.elasticId[i]))
+        this.rigid.remove(this.elasticId[i]);
       for (const field of this.elasticParticleFields) field[i] = 0;
     }
     this.elastic.components[i] = 0;
@@ -132,8 +141,14 @@ export class World {
       this.elastic.world = this;
       this.elastic.add(i, connectElastic);
     }
+    if (materials[id].rigid) this.rigid.add(i, connectElastic);
     this.updated[i] = this.tick;
     this.wake(i);
+  }
+  transform(i, id, ...state) {
+    if (i < 0 || materials[this.cells[i]]?.static) return false;
+    this.set(i, id, ...state);
+    return true;
   }
   wake(i) {
     const chunk = this.chunk(i),
@@ -157,10 +172,16 @@ export class World {
     }
   }
   clear() {
+    this.rigid.locations.clear();
+    this.rigid.bodies = [];
+    this.rigid.bodyOf.clear();
+    this.rigid.fresh.clear();
+    this.rigid.dirty = true;
+    this.elastic.topologyDirty = true;
     this.elastic.locations.clear();
     this.elastic.components.fill(0);
     this.elastic.nextId = 1;
-    for (const key of elasticFields) this[key].fill(0);
+    for (const key of [...elasticFields, ...rigidFields]) this[key].fill(0);
     for (const key of [
       "cells",
       "pigment",
@@ -275,8 +296,13 @@ export class World {
     this.elastic.components[j] = component;
     this.updated[i] = this.tick;
     this.updated[j] = this.tick;
-    if (this.elasticId[i]) this.elastic.locations.set(this.elasticId[i], i);
-    if (this.elasticId[j]) this.elastic.locations.set(this.elasticId[j], j);
+    for (const k of [i, j])
+      if (this.elasticId[k]) {
+        const owner = materials[this.cells[k]].rigid
+          ? this.rigid
+          : this.elastic;
+        owner.locations.set(this.elasticId[k], k);
+      }
     this.wake(i);
     this.wake(j);
   }
@@ -285,6 +311,7 @@ export class World {
       b = materials[this.cells[j]];
     if (!b.id) return true;
     if (
+      b.static ||
       b.category === "solid" ||
       b.category === "elastic" ||
       b.category === "special" ||
@@ -298,7 +325,7 @@ export class World {
   move(i, x, y) {
     const m = materials[this.cells[i]],
       cat = m.category;
-    if (!m.movable || m.elasticity) return;
+    if (!m.movable || m.elasticity || m.rigid) return;
     if (m.ray) {
       moveRay(this, i, x, y, m);
       return;
@@ -373,6 +400,7 @@ export class World {
   }
   step() {
     this.elastic.world = this;
+    this.rigid.world = this;
     this.tick++;
     this.fields.border = this.border;
     this.fields.update(this);
@@ -406,7 +434,13 @@ export class World {
               const j = this.index(nx, y),
                 next = this.index(nx + 1, y);
               if (j < 0) break;
-              if (this.cells[j] && materials[this.cells[j]].movable) {
+              if (j >= 0 && materials[this.cells[j]].rigid)
+                this.velocityX[j] += 0.08;
+              if (
+                this.cells[j] &&
+                materials[this.cells[j]].movable &&
+                !materials[this.cells[j]].rigid
+              ) {
                 if (next < 0 && this.border === "void") this.set(j, 0);
                 else if (next >= 0 && !this.cells[next]) this.swap(j, next);
               }
@@ -425,6 +459,7 @@ export class World {
         }
       }
     }
+    this.rigid.step();
     this.elastic.step();
   }
   explode(x, y, radius, product = 0) {
@@ -443,7 +478,8 @@ export class World {
         const i = this.index(nx, ny);
         if (i < 0 || d2 > r2) continue;
         const m = materials[this.cells[i]];
-        if (m.category === "special" || m.resistance === 1) continue;
+        if (m.static || m.category === "special" || m.resistance === 1)
+          continue;
         if (m.explosive && d2 > 1) {
           this.temp[i] = Math.max(this.temp[i], m.ignite + 100);
           continue;
@@ -453,12 +489,13 @@ export class World {
           !["solid", "elastic"].includes(m.category) ||
           this.random() > (m.resistance || 0.6)
         ) {
-          this.set(i, M.Fire, 850, 15 + this.random() * 30);
+          this.transform(i, M.Fire, 850, 15 + this.random() * 30);
           if (product) this.residue[i] = product;
         } else this.temp[i] += 500 * (1 - d2 / r2);
       }
-    this.set(this.index(x, y), M.Fire, 1100, 50);
-    if (product) this.residue[this.index(x, y)] = product;
+    const center = this.index(x, y);
+    if (this.transform(center, M.Fire, 1100, 50) && product)
+      this.residue[center] = product;
   }
   brush(
     x,

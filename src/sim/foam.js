@@ -20,7 +20,7 @@ export function reactFoam(w, i, x, y) {
         )
           continue;
       }
-      w.set(j, M["Carbon dioxide foam"], w.temp[i]);
+      w.transform(j, M["Carbon dioxide foam"], w.temp[i]);
       w.residue[j] = M["Carbon dioxide"];
       w.clone[i]--;
       w.fields.add(x, y, 0.65);
@@ -35,7 +35,7 @@ export function reactFoam(w, i, x, y) {
     w.temp[i] < -5 ||
     pressure > 25
   ) {
-    w.set(i, w.residue[i] || M["Carbon dioxide"], w.temp[i]);
+    w.transform(i, w.residue[i] || M["Carbon dioxide"], w.temp[i]);
     w.fields.add(x, y, -0.15);
   }
   return true;

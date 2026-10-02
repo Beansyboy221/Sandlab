@@ -1,5 +1,19 @@
 export const changelog = [
   {
+    version: "1.6.0",
+    date: "2026-10-02",
+    title: "Bucket fill and moving solid bodies",
+    changes: [
+      "Added Fill (K) with Material, Foreground color, and Background color targets. The bucket fills connected areas with a single click or tap; material replacement is explicit, and right-click erases a region. Each fill supports Undo/Redo.",
+      "Added Static materials with Wall: fixed, indestructible to reactions and impacts, and still editable with drawing, erasing, and selection tools. Preset frames use Wall where they need permanent support.",
+      "Solids now fall as connected rigid shapes with mass, rotation, buoyancy, pressure forces, and collision momentum. Heavy impacts damage brittle surfaces; glass shatters, mineral solids form rubble, and wood can splinter into chips. Resting contact does not cause damage.",
+      "Rigid shapes keep their geometry when moved with Grab, cut into separate pieces, copied, resized, saved, or restored. They render as continuous bodies and Inspect reports mass, speed, and impact damage.",
+      "Simplified elastic connectivity: component membership is rebuilt only after links change, while gravity and spring integration continue every tick. Inspection queries nearby links instead of scanning the entire elastic world.",
+      "Consolidated hydrochloric acid, vinegar, and sulfurous acid into one Acid material. Old save IDs and absorbed liquids migrate automatically; foaming, hydrogen production, neutralization, and corrosion use the shared Acid rules.",
+      "Fixed diagonal body movement through wall corners, balanced support contacts, and updated containers and circuit fixtures for movable solids. Surface flames retain contact long enough to ignite cold fuel reliably.",
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-10-02",
     title: "Fitted canvases, rotating gravity, and foaming chemistry",

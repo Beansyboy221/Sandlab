@@ -60,6 +60,7 @@ const state = {
   color: "#73b8ef",
   colorOpacity: 1,
   colorLayer: "foreground",
+  fillLayer: "material",
   colorErase: false,
   power: 1,
   includeSolids: true,
@@ -174,15 +175,22 @@ function updateToolProperties() {
   if (selection.dragging && !state.paused) setPaused(true);
   const tool = state.tool;
   document.querySelector(".toolbox").dataset.tool = tool;
-  $("palette-toggle").hidden = tool !== "paint";
-  $("replace-property").hidden = tool !== "paint";
+  const materialTool =
+    tool === "paint" || (tool === "fill" && state.fillLayer === "material");
+  document.querySelector(".toolbox").dataset.materialTool =
+    String(materialTool);
+  $("palette-toggle").hidden = !materialTool;
+  $("replace-property").hidden = !materialTool;
   $("tool-properties").hidden = tool === "paint";
   $("selection-properties").hidden = tool !== "select";
   $("inspection-properties").hidden = tool !== "inspect";
-  $("paint-properties").hidden = tool !== "recolor";
+  $("fill-properties").hidden = tool !== "fill";
+  const colorFill = tool === "fill" && state.fillLayer !== "material";
+  $("paint-properties").hidden = tool !== "recolor" && !colorFill;
+  $("paint-layer").hidden = colorFill;
   $("eyedropper-property").hidden = tool !== "eyedropper";
   const reading = tool === "inspect" || tool === "eyedropper";
-  $("shape-btn").hidden = reading;
+  $("shape-btn").hidden = reading || tool === "fill";
   $("canvas-tip").hidden = reading;
   $("clear-btn").hidden = tool === "select";
   $("deselect-selection").hidden = tool !== "select";
@@ -198,7 +206,7 @@ function updateToolProperties() {
   $("direction-property").hidden = tool !== "fan";
   const shape = tool === "select" ? state.selectionShape : state.shape;
   $("brush-control").hidden =
-    reading || (tool === "select" && shape === "square");
+    reading || tool === "fill" || (tool === "select" && shape === "square");
   const shapeButton = $("shape-btn"),
     selecting = tool === "select";
   if (
@@ -325,7 +333,7 @@ mobileDock = new MobileDock(
 function selectMaterial(id) {
   id = paletteBase[id];
   state.material = id;
-  setTool(false);
+  setTool(state.tool === "fill" ? "fill" : false);
   const m = materials[id];
   renderMaterials();
   const details = $("material-detail");
@@ -527,6 +535,10 @@ function closeDialog(dialog) {
     setPaused(dialogPrevious.get(dialog) ?? false);
   lastTime = performance.now();
 }
+$("fill-layer").addEventListener("change", (e) => {
+  state.fillLayer = e.target.value;
+  updateToolProperties();
+});
 const colorPicker = new ColorPicker(state, openDialog);
 for (const dialog of document.querySelectorAll("dialog")) {
   dialog
@@ -555,7 +567,7 @@ $("settings-btn").addEventListener("click", () =>
 $("about-btn").addEventListener("click", () => openDialog("about-dialog"));
 $("app-version").textContent = `Version ${changelog[0].version}`;
 $("app-content-count").textContent =
-  `${paletteMaterials.length} materials · ${materials.length - 1} simulation forms`;
+  `${paletteMaterials.length} materials · ${materials.filter((m) => m.id && !m.deprecated).length} simulation forms`;
 for (const release of changelog) {
   const section = document.createElement("section"),
     heading = document.createElement("h3"),
@@ -795,6 +807,7 @@ const shortcutHandlers = {
   },
   paint: () => setTool(false),
   recolor: () => setTool("recolor"),
+  fill: () => setTool("fill"),
   erase: () => setTool(true),
   select: () => setTool("select"),
   warm: () => setTool("warm"),

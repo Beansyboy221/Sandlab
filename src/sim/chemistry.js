@@ -16,7 +16,7 @@ pair(M["Nutrient water"], M.Dirt, 0, M.Mud, {
   chance: 0.035,
   hydrateSoil: true,
 });
-for (const acid of materials.filter((m) => m.acidic)) {
+for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
   pair(
     acid.id,
     M["Baking soda"],
@@ -29,7 +29,7 @@ for (const acid of materials.filter((m) => m.acidic)) {
   );
   pair(acid.id, M.Lye, M.Water, M.Brine, { heat: 35 });
   pair(acid.id, M.Steel, M.Brine, M.Hydrogen, {
-    chance: acid.id === M.Vinegar ? 0.004 : 0.05,
+    chance: 0.05,
     heat: 12,
   });
   pair(acid.id, M["Steel powder"], M.Brine, M.Hydrogen, {
@@ -42,7 +42,7 @@ for (const acid of materials.filter((m) => m.acidic)) {
 for (const sodium of materials.filter((m) => m.reactsWithWater))
   for (const water of materials.filter((m) => m.aqueous))
     pair(sodium.id, water.id, M.Lye, M.Hydrogen, { heat: 600, pressure: 2 });
-pair(M["Sulfur dioxide"], M.Water, 0, M["Sulfurous acid"], { chance: 0.1 });
+pair(M["Sulfur dioxide"], M.Water, 0, M.Acid, { chance: 0.1 });
 pair(M.Chlorine, M.Steel, 0, M.Rust, { chance: 0.04 });
 pair(M.Chlorine, M.Copper, 0, M.Patina, { chance: 0.04 });
 pair(M.Rust, M.Coal, M.Steel, M["Carbon dioxide"], {
@@ -64,17 +64,17 @@ function contact(w, i, j, row, x, y) {
       soil = forward ? j : i;
     const food = Math.min(255, w.nutrition[soil] + w.nutrition[water]);
     w.moisture[soil] = Math.min(255, w.moisture[soil] + 64);
-    if (w.moisture[soil] > 220) w.set(soil, M.Mud, w.temp[soil]);
+    if (w.moisture[soil] > 220) w.transform(soil, M.Mud, w.temp[soil]);
     w.nutrition[soil] = food;
-    w.set(water, 0);
+    w.transform(water, 0);
     return true;
   }
   const temperature = Math.min(
     6000,
     (w.temp[i] + w.temp[j]) * 0.5 + (rule.heat || 0),
   );
-  w.set(i, forward ? rule.resultA : rule.resultB, temperature);
-  w.set(j, forward ? rule.resultB : rule.resultA, temperature);
+  w.transform(i, forward ? rule.resultA : rule.resultB, temperature);
+  w.transform(j, forward ? rule.resultB : rule.resultA, temperature);
   if (rule.foam) {
     const foam = forward ? i : j;
     w.clone[foam] = 8;
@@ -122,14 +122,14 @@ export function oxidize(w, i, x, y, material) {
     if (id === M.Brine) salty = true;
   });
   if (wet && oxygen && w.random() < material.oxidationRate * (salty ? 4 : 1))
-    w.set(i, material.oxidizeTo, w.temp[i]);
+    w.transform(i, material.oxidizeTo, w.temp[i]);
 }
 export function dissolveOrganic(w, i, x, y) {
   if (w.random() >= 0.06) return;
   w.eachNeighbor(x, y, (j) => {
     if (w.cells[i] === M.Lye && materials[w.cells[j]].organic) {
-      w.set(j, 0);
-      w.set(i, M.Water, w.temp[i]);
+      w.transform(j, 0);
+      w.transform(i, M.Water, w.temp[i]);
     }
   });
 }
