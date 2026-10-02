@@ -909,6 +909,9 @@ function syncShortcutTitles() {
   }
 }
 const settingEffects = {
+  lightBounces: () => {
+    renderer.lightBounces = settings.get("lightBounces");
+  },
   shortcuts: syncShortcutTitles,
   bloom: () => (renderer.bloom = settings.get("bloom")),
   bloomIntensity: () =>

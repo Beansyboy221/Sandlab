@@ -1,3 +1,4 @@
+import { LightOverlay } from "./lighting-renderer.js";
 import { drawMissiles } from "./sim/missile-renderer.js";
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
 import { drawRigidBodies } from "./sim/rigid-renderer.js";
@@ -46,6 +47,8 @@ export class Renderer {
     this.brushOutline = true;
     this.background = "";
     this.glow = new Bloom();
+    this.lighting = new LightOverlay();
+    this.lightBounces = 0.1;
     this.cursor = null;
     this.zoom = 1;
     this.rotation = 0;
@@ -71,8 +74,16 @@ export class Renderer {
       this.composite.width = this.world.width;
       this.composite.height = this.world.height;
     }
+    if (this.mode === "normal" && !this.lighting.shade)
+      this.lighting.update(this.world, this.lightBounces);
     this.compositeContext.drawImage(this.buffer, 0, 0);
     this.drawElastics(this.compositeContext, { x: 0, y: 0, scale: 1 });
+    if (this.mode === "normal")
+      this.lighting.draw(this.compositeContext, this.world, {
+        x: 0,
+        y: 0,
+        scale: 1,
+      });
     return this.composite;
   }
   resize() {
@@ -330,6 +341,8 @@ export class Renderer {
       p[o + 2] = b;
       p[o + 3] = 255;
     }
+    if (this.mode === "normal")
+      this.lighting.update(this.world, this.lightBounces);
     this.ctx.putImageData(this.data, 0, 0);
     if (this.mode === "normal") {
       drawBubbles(this.ctx, this.world);
@@ -342,6 +355,7 @@ export class Renderer {
     c.setTransform(...this.view.matrix);
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
     this.drawElastics(c, v);
+    if (this.mode === "normal") this.lighting.draw(c, this.world, v);
     if (this.bloom && !thermal && !pressure && !echo)
       this.glow.draw(
         c,

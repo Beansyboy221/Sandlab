@@ -31,11 +31,15 @@ export class LevelEditor {
         this.starter.append(option);
       }
     this.inputs = Object.fromEntries(
-      ["name", "border", "background"].map((key) => [
+      ["name", "border", "background", "ambientLight"].map((key) => [
         key,
         dialog.querySelector(`#level-${key}`),
       ]),
     );
+    this.ambientOutput = dialog.querySelector("#level-ambientLight-value");
+    this.inputs.ambientLight.addEventListener("input", () => {
+      this.ambientOutput.value = `${this.inputs.ambientLight.value}%`;
+    });
     this.resolution = dialog.querySelector("#level-resolution");
     this.preview = dialog.querySelector("#resize-preview");
     this.context = this.preview.getContext("2d", { alpha: false });
@@ -142,7 +146,9 @@ export class LevelEditor {
     const values = levelProperties(this.world);
     if (!editing) values.name = "Untitled canvas";
     for (const [key, input] of Object.entries(this.inputs))
-      input.value = values[key];
+      input.value =
+        key === "ambientLight" ? Math.round(values[key] * 100) : values[key];
+    this.ambientOutput.value = `${this.inputs.ambientLight.value}%`;
     this.dialog.querySelector("h2").textContent = editing
       ? "Canvas properties"
       : "New canvas";
@@ -199,7 +205,10 @@ export class LevelEditor {
   values() {
     return validateLevelProperties({
       ...Object.fromEntries(
-        Object.entries(this.inputs).map(([key, input]) => [key, input.value]),
+        Object.entries(this.inputs).map(([key, input]) => [
+          key,
+          key === "ambientLight" ? Number(input.value) / 100 : input.value,
+        ]),
       ),
       ...this.dimensions(),
     });
@@ -234,7 +243,7 @@ export class LevelEditor {
         Object.assign(this.world, created);
       } else {
         if (
-          ["name", "border", "background"].some(
+          ["name", "border", "background", "ambientLight"].some(
             (key) => values[key] !== this.world[key],
           )
         ) {

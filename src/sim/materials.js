@@ -845,6 +845,13 @@ definitions.push(
     { projectile: true, directed: true, movable: false },
   ],
 );
+definitions.push([
+  "Lamp",
+  "special",
+  "#ffe4ad",
+  2,
+  { movable: false, lightEmission: 1.4, glow: 0.65, resistance: 0.7 },
+]);
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {

@@ -31,6 +31,7 @@ export function snapshot(world, typed = false) {
       name: world.name,
       border: world.border,
       background: world.background,
+      ambientLight: world.ambientLight,
     },
     width: world.width,
     height: world.height,

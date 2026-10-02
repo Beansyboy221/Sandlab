@@ -18,6 +18,17 @@ export const settingGroups = [
         depends: "bloom",
         suffix: "×",
       },
+      {
+        key: "lightBounces",
+        label: "Reflected light",
+        type: "range",
+        min: 0,
+        max: 0.25,
+        step: 0.05,
+        default: 0.1,
+        displayScale: 100,
+        suffix: "%",
+      },
       { key: "grid", label: "Grid overlay", type: "toggle", default: false },
       {
         key: "view",

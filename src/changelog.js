@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.10.0",
+    date: "2026-10-02",
+    title: "Local light and dark canvases",
+    changes: [
+      "Added Lamp to Devices. Lamps, fire, sparks, lightning, electrical charge, burning material, hot surfaces and missile exhaust illuminate nearby matter with radial falloff. Opaque surfaces cast shadows; glass and water transmit light.",
+      "Added a faint reflected-light pass that picks up surface color and travels around nearby corners without leaking through sealed walls. Settings → Rendering → Reflected light controls the bounce amount; Bloom remains a separate glow effect.",
+      "New canvas and Canvas properties now include Ambient light. At 0%, unilluminated areas are black; low levels keep them near black. Ambient light survives saves, exports, Undo/Redo and resizing. Legacy saves retain full ambient light.",
+      "Lighting shades particles, elastic/rigid bodies, creatures, missiles and painted backgrounds together in Natural view. Inspect lenses and world thumbnails share it; Temperature, Pressure and Echolocation remain readable. The bounded optical field updates at half the display rate.",
+    ],
+  },
+  {
     version: "1.9.0",
     date: "2026-10-02",
     title: "Predators and heat seekers",

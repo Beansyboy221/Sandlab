@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 79 palette substances and 91 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 80 palette substances and 92 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -213,3 +213,11 @@ Life includes Wolf and Shark alongside Cat, Rabbit, Fish and Bird. Predators hun
 Devices includes Heat-Seeking Missile. Draw a rocket and drag to choose its initial heading. Each vehicle gradually steers toward the nearest exposed hot non-gaseous material inside its sensing range; it does not steer around obstacles. Swept collisions detonate it, while its eight-second lifetime limits missed shots. Smoke exhaust cannot attract its own seeker. Warm, Cool, Fan, Grab and Erase affect rockets; world saves, history and resize retain their state. Settings → Missiles controls homing, threshold, range, speed and blast radius. Missile range has static heated targets.
 
 Settings → Player offers joystick side, diameter, horizontal inset and vertical lift. Layout follows the available canvas and avoids the dock in portrait and landscape. Moving settings or rotating clears captured input to prevent stuck movement. Push up to jump; keyboard W/Space still work.
+
+### Local lighting (1.10.0)
+
+New canvas and Canvas properties provide Ambient light (0–100%). Full ambient light preserves the existing appearance; at zero, unlit foreground and background are black. These properties are saved with the world and survive history, import/export and resize. Old saves without an ambient value use 100%. Diagnostic views remain readable regardless of ambient light.
+
+Lamp in Devices is a stationary, warm light source. Fire, sparks, lightning, charge, burning material, incandescent surfaces, hot creatures and missile engines also emit light. Local illumination uses radial falloff and coarse shadow visibility. Glass and clear liquids transmit light; opaque surfaces block it. A short, attenuated surface reflection picks up material/pigment color. Settings → Rendering → Reflected light ranges from no bounce to a subtle 25%; Bloom controls a separate soft halo.
+
+Optics use four-pixel tiles, a maximum of 96 spatially merged sources, and one short diffuse bounce. They update every other displayed frame, including paused edits, rather than slowing or changing physics. Thin walls block their entire optical tile, so shadows are conservative at this resolution. Dense emissive fields merge spatially without dropping entire parts of the scene. Lighting applies after all material and actor drawing and also appears in Inspect and world thumbnails. This is an approximate visual model, not spectral ray tracing.

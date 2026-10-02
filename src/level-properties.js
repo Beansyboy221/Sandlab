@@ -2,6 +2,7 @@ export const defaultLevel = Object.freeze({
   name: "Untitled canvas",
   border: "solid",
   background: "#111b20",
+  ambientLight: 1,
 });
 export const borderTypes = ["solid", "looping", "void"];
 export function validateCanvasSize(width, height) {
@@ -29,7 +30,19 @@ export function validateLevelMetadata(value) {
     !/^#[0-9a-f]{6}$/i.test(value.background)
   )
     throw Error("Invalid canvas properties.");
+  const ambientLight =
+    value.ambientLight === undefined
+      ? defaultLevel.ambientLight
+      : value.ambientLight;
+  if (
+    typeof ambientLight !== "number" ||
+    !Number.isFinite(ambientLight) ||
+    ambientLight < 0 ||
+    ambientLight > 1
+  )
+    throw Error("Choose an ambient light level between 0% and 100%.");
   return {
+    ambientLight,
     name: value.name.trim(),
     border: value.border,
     background: value.background.toLowerCase(),
@@ -42,6 +55,7 @@ export function levelProperties(world) {
     height: world.height,
     border: world.border,
     background: world.background,
+    ambientLight: world.ambientLight,
   };
 }
 export function validateLevelProperties(value) {
