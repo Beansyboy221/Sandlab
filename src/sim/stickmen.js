@@ -160,6 +160,16 @@ export class Stickmen {
       } else if (a.alive && materials[a.material].actor !== "ai") {
         ({ move = 0, jump = false, lift = 0 } = creatureMotion(w, a));
       } else if (a.alive) {
+        const following = this.player,
+          arrived =
+            following &&
+            Math.hypot(a.x[2] - following.x[2], a.y[2] - following.y[2]) < 6;
+        // Follow within walking distance rather than chasing the target's exact
+        // center and repeatedly pushing an idle player through body collisions.
+        if (arrived) {
+          a.path.length = 0;
+          a.replan = w.tick;
+        }
         const supported = [5, 6].find((n) =>
           blocked(w, a.x[n] + w.gravityX * 0.8, a.y[n] + w.gravityY * 0.8),
         );
@@ -167,9 +177,9 @@ export class Stickmen {
           supported === undefined
             ? { x: (a.x[5] + a.x[6]) / 2, y: (a.y[5] + a.y[6]) / 2 }
             : { x: a.x[supported], y: a.y[supported] };
-        if (a.grounded && w.tick >= a.replan && plans < 1) {
+        if (!arrived && a.grounded && w.tick >= a.replan && plans < 1) {
           plans++;
-          const player = this.player;
+          const player = following;
           a.goal = player
             ? {
                 x: (player.x[5] + player.x[6]) / 2,

@@ -47,6 +47,14 @@ with sync_playwright() as p:
             page.locator('#world').focus();page.keyboard.down('d');page.wait_for_timeout(550);page.keyboard.up('d')
         after=position();assert after['across']>before['across']+5,(width,before,after)
         assert page.evaluate('sandlab.world.stickmen.bodies.length')==1
+        page.wait_for_timeout(80);assert page.evaluate('sandlab.world.stickmen.controls.move')==0
+        page.wait_for_timeout(450);stopped=position();page.wait_for_timeout(900)
+        assert abs(position()['across']-stopped['across'])<.08,(width,stopped,position())
+        if not touch:
+            page.keyboard.down('a');page.wait_for_timeout(550);page.keyboard.up('a')
+            page.wait_for_timeout(80);assert page.evaluate('sandlab.world.stickmen.controls.move')==0
+            page.wait_for_timeout(450);stopped=position();page.wait_for_timeout(900)
+            assert abs(position()['across']-stopped['across'])<.08,(width,stopped,position())
         # Jump is independent from movement and must not toggle sandbox pause.
         before=position()
         if touch:

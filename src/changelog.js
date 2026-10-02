@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.10.1",
+    date: "2026-10-02",
+    title: "Planted feet after walking",
+    changes: [
+      "Grounded characters now resolve static foot grip after pose and joint corrections, preventing those corrections from reintroducing a sideways drift after walking stops. Keyboard and joystick release both benefit. AI followers stop nearby instead of walking into a stationary player and pushing them. Jump momentum, strong external pushes, moving supports, detached limbs and ragdolls retain their physics.",
+    ],
+  },
+  {
     version: "1.10.0",
     date: "2026-10-02",
     title: "Local light and dark canvases",

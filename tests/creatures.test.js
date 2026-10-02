@@ -138,3 +138,109 @@ test("A* walkers preserve momentum and cross short planned gaps", () => {
   run(w, 400);
   assert.ok(w.stickmen.bodies[0].x[2] > 65 && w.stickmen.bodies[0].alive);
 });
+
+test("standing feet stop residual drift after releasing either walking direction, in every gravity orientation", () => {
+  for (const [gx, gy] of [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ])
+    for (const direction of [-1, 1]) {
+      const w = new World(200, 200);
+      w.setGravity(gx, gy);
+      const map = (u, v) => ({
+        x: gy * u + gx * v + (gy < 0 || gx < 0 ? 199 : 0),
+        y: -gx * u + gy * v + (gx > 0 || gy < 0 ? 199 : 0),
+      });
+      for (let u = 0; u < 200; u++)
+        for (let v = 160; v < 200; v++) {
+          const p = map(u, v);
+          w.set(p.y * 200 + p.x, M.Wall);
+        }
+      const spawn = map(100, 158);
+      w.stickmen.spawn(spawn.x, spawn.y, M.Player);
+      run(w, 100);
+      const a = w.stickmen.player,
+        across = () => a.x[2] * gy - a.y[2] * gx;
+      w.stickmen.controls.move = direction;
+      run(w, 90);
+      w.stickmen.controls.move = 0;
+      const release = across();
+      run(w, 30);
+      const stopped = across();
+      run(w, 600);
+      assert.ok(
+        Math.abs(stopped - release) < 0.25,
+        `Braking ${gx},${gy},${direction}`,
+      );
+      assert.ok(
+        Math.abs(across() - stopped) < 0.03,
+        `Idle drift ${gx},${gy},${direction}`,
+      );
+      assert.ok(a.alive && a.grounded && a.bonds.every(Boolean));
+    }
+});
+test("idle grip does not cancel airborne momentum, fan impulses or detached-limb motion", () => {
+  for (const direction of [-1, 1]) {
+    const w = arena();
+    w.stickmen.spawn(90, 78, M.Player);
+    run(w, 100);
+    const a = w.stickmen.player;
+    w.stickmen.controls.move = direction;
+    run(w, 45);
+    w.stickmen.controls.jump = true;
+    w.step();
+    w.stickmen.controls.move = 0;
+    const x = a.x[2];
+    run(w, 8);
+    assert.ok(
+      !a.grounded && direction * (a.x[2] - x) > 0.4,
+      "airborne inertia survives release",
+    );
+    run(w, 100);
+    const before = a.x[2];
+    w.stickmen.brush("fan", a.x[2], a.y[2], 20, direction * 4, 0, 1);
+    run(w, 4);
+    assert.ok(
+      direction * (a.x[2] - before) > 0.3,
+      "strong external forces overcome grip",
+    );
+  }
+  const w = arena();
+  w.stickmen.spawn(80, 78, M.Player);
+  run(w, 100);
+  const a = w.stickmen.player;
+  a.bonds[2] = 0;
+  const x = a.x[3];
+  a.px[3] -= 1;
+  run(w, 5);
+  assert.ok(a.x[3] > x + 2, "a detached arm remains physical");
+});
+
+test("a following stickman stops nearby instead of continuously pushing an idle player", () => {
+  const w = new World(300, 100);
+  loadPreset(w, "stickmen");
+  run(w, 100);
+  const player = w.stickmen.player,
+    follower = w.stickmen.bodies[0];
+  w.stickmen.controls.move = 1;
+  run(w, 90);
+  w.stickmen.controls.move = 0;
+  run(w, 30);
+  const stopped = player.x[2];
+  run(w, 900);
+  assert.ok(Math.abs(player.x[2] - stopped) < 0.03);
+  const distance = Math.hypot(
+    player.x[2] - follower.x[2],
+    player.y[2] - follower.y[2],
+  );
+  assert.ok(distance > 3 && distance < 7);
+  const x = follower.x[2];
+  w.stickmen.controls.move = 1;
+  run(w, 120);
+  assert.ok(
+    follower.x[2] > x + 8,
+    "following resumes when the player walks away",
+  );
+});

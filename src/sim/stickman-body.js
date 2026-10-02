@@ -61,7 +61,9 @@ export function integrateBody(
     { links, lengths, x: restX, y: restY } = profile;
   const gx = w.gravityX,
     gy = w.gravityY,
-    grounded = a.grounded;
+    grounded = a.grounded,
+    stance5 = a.x[5] * gy - a.y[5] * gx,
+    stance6 = a.x[6] * gy - a.y[6] * gx;
   a.grounded = false;
   a.cooldown = Math.max(0, a.cooldown - 1);
   if (a.alive && grounded && jump && !a.cooldown) {
@@ -278,6 +280,40 @@ export function integrateBody(
       collide(w, a, u, a.x[u] + dx * correction, a.y[u] + dy * correction);
       collide(w, a, v, a.x[v] - dx * correction, a.y[v] - dy * correction);
     }
+  // Pose and link projection run after integration, and can reintroduce a small
+  // sideways velocity after contact friction. Resolve static foot grip last.
+  if (
+    a.alive &&
+    a.grounded &&
+    !drive &&
+    !jump &&
+    a.bonds[0] &&
+    a.bonds[1] &&
+    (profile.mode === "walk" || profile.mode === "hop")
+  ) {
+    gripFoot(w, a, 5, stance5, profile.acceleration);
+    gripFoot(w, a, 6, stance6, profile.acceleration);
+  }
   a.health = Math.max(0, a.health);
   if (!a.health || !a.bonds[0] || !a.bonds[1]) a.alive = false;
+}
+
+function gripFoot(w, a, n, stance, friction) {
+  const first = n === 5 ? 4 : 6;
+  if (!a.bonds[first] || !a.bonds[first + 1]) return;
+  const gx = w.gravityX,
+    gy = w.gravityY;
+  const i = w.index(
+    Math.floor(a.x[n] + gx * 0.8),
+    Math.floor(a.y[n] + gy * 0.8),
+  );
+  if (!blocked(w, a.x[n] + gx * 0.8, a.y[n] + gy * 0.8)) return;
+  // A moving support or an external impulse must still be able to move a body.
+  if (i >= 0 && Math.hypot(w.velocityX[i], w.velocityY[i]) > 0.001) return;
+  const slip = a.x[n] * gy - a.y[n] * gx - stance;
+  if (Math.abs(slip) > friction) return;
+  collide(w, a, n, a.x[n] - gy * slip, a.y[n] + gx * slip);
+  const tangent = (a.x[n] - a.px[n]) * gy - (a.y[n] - a.py[n]) * gx;
+  a.px[n] += gy * tangent;
+  a.py[n] -= gx * tangent;
 }
