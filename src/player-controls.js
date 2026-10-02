@@ -10,7 +10,7 @@ export class PlayerControls {
     this.panel = document.createElement("div");
     this.panel.className = "player-controls";
     this.panel.hidden = true;
-    this.panel.innerHTML = `<div class="player-hud"><span id="player-status"></span><button id="player-control-toggle" type="button">Release controls</button></div><div class="player-touch"><div class="player-joystick" role="group" aria-label="Player movement joystick"><span></span></div><button class="player-jump" type="button" aria-label="Jump">↑</button></div>`;
+    this.panel.innerHTML = `<div class="player-hud"><span id="player-status"></span><button id="player-control-toggle" type="button">Release controls</button></div><div class="player-touch"><div class="player-joystick" role="group" aria-label="Player joystick: left and right to move, up to jump, down to crouch"><span></span></div></div>`;
     container.append(this.panel);
     this.status = this.panel.querySelector("#player-status");
     this.toggle = this.panel.querySelector("#player-control-toggle");
@@ -53,16 +53,6 @@ export class PlayerControls {
     };
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"])
       joystick.addEventListener(type, end);
-    const jump = this.panel.querySelector(".player-jump");
-    jump.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.jump = true;
-      jump.setPointerCapture(e.pointerId);
-    });
-    jump.addEventListener("click", (e) => {
-      if (e.detail === 0) this.jump = true;
-    });
     window.addEventListener(
       "keydown",
       (e) => {

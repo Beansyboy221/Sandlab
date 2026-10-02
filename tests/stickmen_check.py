@@ -50,18 +50,27 @@ with sync_playwright() as p:
         # Jump is independent from movement and must not toggle sandbox pause.
         before=position()
         if touch:
-            jump_box=page.locator('.player-jump').bounding_box()
-            jx=jump_box['x']+jump_box['width']/2;jy=jump_box['y']+jump_box['height']/2
+            assert page.locator('.player-jump').count()==0
             session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x+24,y=y,id=1)]))
-            session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x+24,y=y,id=1),dict(x=jx,y=jy,id=2)]))
+            session.send('Input.dispatchTouchEvent',dict(type='touchMove',touchPoints=[dict(x=x+24,y=y-24,id=1)]))
             page.wait_for_timeout(30)
-            session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[dict(x=jx,y=jy,id=2)]))
             assert page.evaluate('sandlab.world.stickmen.controls.move')>.5
             session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[]))
         else:page.keyboard.press('Space')
         page.wait_for_timeout(150);after=position()
         assert not page.evaluate('sandlab.state.paused')
         assert after['down']<before['down']-4,(width,before,after)
+        page.wait_for_timeout(900)
+        # Releasing the joystick re-arms jump; desktop W also retains its binding.
+        before=position()
+        if touch:
+            session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x,y=y-24,id=1)]))
+            page.wait_for_timeout(30)
+            session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[]))
+        else:page.keyboard.press('w')
+        page.wait_for_timeout(150);after=position()
+        assert after['down']<before['down']-4,(width,before,after)
+        assert not page.evaluate('sandlab.state.paused')
         page.wait_for_timeout(900)
         if not touch:
             page.locator('#player-control-toggle').click();page.locator('#world').focus();page.keyboard.press('Space')

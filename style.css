@@ -630,8 +630,7 @@ kbd {
 .mobile-layout .player-touch {
   display: block;
 }
-.player-joystick,
-.player-jump {
+.player-joystick {
   pointer-events: auto;
   touch-action: none;
   user-select: none;
@@ -659,18 +658,8 @@ kbd {
   border-radius: 50%;
   pointer-events: none;
 }
-.player-jump {
-  right: 18px;
-  width: 64px;
-  height: 64px;
-  font-size: 30px;
-}
 .player-controls.released .player-touch {
   display: none;
-}
-.dock-side .player-jump {
-  right: 68px;
-  bottom: 22px;
 }
 .dock-side .player-joystick {
   bottom: 22px;

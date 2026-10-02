@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.7.1",
+    date: "2026-10-02",
+    title: "Joystick jumping",
+    changes: [
+      "Removed the separate mobile Jump button. Push the joystick up to jump, or diagonally up to jump while moving. Down crouches; desktop W and Space still jump.",
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-10-02",
     title: "Stickmen and player controls",
