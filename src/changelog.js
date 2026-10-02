@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.6.3",
+    date: "2026-10-02",
+    title: "Material cleanup",
+    changes: [
+      "Removed both Fit canvas buttons. Mouse, touch, zoom and pan controls remain available.",
+      "Removed Plasma, Dragonfire, Frostfire, Fairy Dust, Furnace, Neutron, Nutrient Water, Mica, Sulfur Dioxide and Carbon Dioxide Foam from the palette and active reactions.",
+      "Carbon Dioxide is now CO2; Glass Dust is now Glass Shards. Every word in material names starts with a capital letter.",
+      "Old save IDs migrate to remaining materials. Fertilizer dissolves into ordinary Water; Acid and Baking Soda produce Water, CO2 and local pressure. Preset fixtures use remaining materials.",
+    ],
+  },
+  {
     version: "1.6.2",
     date: "2026-10-02",
     title: "Rolling solids and faster physics",

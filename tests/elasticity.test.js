@@ -30,7 +30,7 @@ test("only elastics have springs and every material has one meaningful palette g
     materials.filter((m) => m.elasticity).map((m) => m.name),
     ["Rubber", "Rope", "Jelly"],
   );
-  for (const m of materials.slice(1))
+  for (const m of materials.filter((m) => m.id && !m.deprecated))
     assert.ok(categories.includes(m.paletteCategory), m.name);
   assert.equal(materials[M.TNT].category, "solid");
   assert.equal(materials[M.TNT].paletteCategory, "explosive");
@@ -150,7 +150,7 @@ test("soap dissolves in water, heated soapy water forms bubbles, and bubbles ris
   w.set(211, M.Water);
   react(w, 210, 10, 10);
   assert.equal(w.cells[210], 0);
-  assert.equal(w.cells[211], M["Soapy water"]);
+  assert.equal(w.cells[211], M["Soapy Water"]);
   w.temp[211] = 70;
   w.tick = 6;
   w.random = () => 0;
@@ -185,15 +185,15 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 82);
+  assert.equal(paletteMaterials.length, 72);
   for (const [base, phase, temp] of [
-    ["Salt", "Molten salt", 850],
+    ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],
     ["Water", "Steam", 150],
     ["Stone", "Lava", 1400],
-    ["Copper", "Molten copper", 1150],
-    ["Nitrogen", "Liquid nitrogen", -210],
-    ["Wax", "Liquid wax", 80],
+    ["Copper", "Molten Copper", 1150],
+    ["Nitrogen", "Liquid Nitrogen", -210],
+    ["Wax", "Liquid Wax", 80],
   ]) {
     assert.equal(paletteBase[M[phase]], M[base]);
     assert.ok(!paletteMaterials.some((m) => m.id === M[phase]));

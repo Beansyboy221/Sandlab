@@ -4,7 +4,7 @@ export function reactBubbles(w, i, x, y) {
   if (w.cells[i] === M.Soap) {
     w.eachNeighbor(x, y, (j) => {
       if (w.cells[i] === M.Soap && materials[w.cells[j]].waterLike) {
-        w.transform(j, M["Soapy water"], w.temp[j]);
+        w.transform(j, M["Soapy Water"], w.temp[j]);
         w.transform(i, 0);
       }
     });
@@ -30,7 +30,7 @@ export function reactBubbles(w, i, x, y) {
     if (!liquid) w.life[i] = Math.max(0, w.life[i] - 4);
     return true;
   }
-  if (w.cells[i] === M["Soapy water"] && w.tick % 6 === 0) {
+  if (w.cells[i] === M["Soapy Water"] && w.tick % 6 === 0) {
     const pressure = Math.abs(w.fields.pressure[w.fields.index(x, y)]);
     if ((pressure > 0.6 || w.temp[i] > 65) && w.random() < 0.06) {
       // Replace a liquid cell rather than creating unlimited free particles.

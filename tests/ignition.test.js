@@ -41,7 +41,7 @@ test("gunpowder deflagrates using its own oxidizer while liquid fuel burns witho
   }
   const w = new World(30, 30);
   w.set(465, M.Gunpowder, 650);
-  for (const i of [464, 466, 435, 495]) w.set(i, M["Carbon dioxide"]);
+  for (const i of [464, 466, 435, 495]) w.set(i, M["CO2"]);
   for (let n = 0; n < 12 && !w.life[465]; n++) react(w, 465, 15, 15);
   assert.ok(w.life[465] > 0);
 });

@@ -70,7 +70,7 @@ export const presets = [
     [
       "foundry",
       "Foundry",
-      "Melting metal and a cooling mold",
+      "Hot metal and a cooling mold",
       "METALLURGY",
       "#f3a576",
     ],
@@ -146,7 +146,7 @@ export function loadPreset(world, id) {
     line(w * 0.38, h * 0.3, w * 0.62, h * 0.3, "Steel", 2);
     line(w * 0.62, h * 0.3, w * 0.62, h * 0.65, "Steel", 2);
     line(w * 0.62, h * 0.65, w * 0.8, h * 0.65, "Steel", 2);
-    line(w * 0.18, h * 0.52, w * 0.38, h * 0.52, "Mica", 1);
+    line(w * 0.18, h * 0.52, w * 0.38, h * 0.52, "Ceramic", 1);
     rect(Math.round(w * 0.81), Math.round(h * 0.62), 10, 12, "TNT");
     const terminalX = Math.round(w * 0.81),
       terminalY = Math.round(h * 0.65);
@@ -161,7 +161,7 @@ export function loadPreset(world, id) {
     // A static channel holds the live wire in place; keep the visible arc gap open.
     const backing = [];
     for (let i = 0; i < world.length; i++)
-      if ([M.Steel, M.Mica].includes(world.cells[i])) {
+      if ([M.Steel, M.Ceramic].includes(world.cells[i])) {
         const x = i % w,
           y = Math.floor(i / w);
         world.eachNeighbor(x, y, (j) => {

@@ -25,7 +25,6 @@ export class Bloom {
       const energy =
         id === M.Fire ||
         id === M.Lightning ||
-        id === M.Plasma ||
         id === M.Spark ||
         world.charge[i];
       const strength =

@@ -24,24 +24,24 @@ def cell(page,x,y):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==82
+    assert page.locator('.material').count()==72
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
-    assert page.locator('#tool-picker-menu [role=option]').count()==13
-    assert page.locator('#tool-picker-menu [role=option] > svg').count()==13
-    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==13
+    assert page.locator('#tool-picker-menu [role=option]').count()==14
+    assert page.locator('#tool-picker-menu [role=option] > svg').count()==14
+    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==14
     assert page.locator('#tool-picker-toggle').get_attribute('aria-expanded')=='true'
     page.screenshot(path=str(ARTIFACTS/'tool-icons-desktop.png'))
     page.keyboard.press('End');assert page.locator('[data-tool-option=squeeze]').evaluate('e=>e===document.activeElement')
-    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowRight');page.keyboard.press('Enter')
+    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowRight');page.keyboard.press('ArrowLeft');page.keyboard.press('Enter')
     assert page.evaluate('sandlab.state.tool')=='warm'
     assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Warm'
     page.keyboard.press('b');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Draw'
-    page.locator('#tool-picker-toggle').click();page.keyboard.press('f');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='fan'
+    page.locator('#tool-picker-toggle').click();page.keyboard.press('f');page.keyboard.press('f');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='fan'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#categories').get_by_role('button',name='Fiction',exact=True).click()
-    assert page.locator('.material').count()==6
+    assert page.locator('.material').count()==3
     page.locator('#categories').get_by_role('button',name='All',exact=True).click()
     page.locator('#search').fill('Laser');page.get_by_role('button',name='Laser',exact=True).click()
     a=cell(page,100,80);b=cell(page,100,90)
@@ -68,13 +68,13 @@ with sync_playwright() as p:
       for(let y=55;y<120;y++)w.set(y*w.width+140,M.Glass);
       for(let y=65;y<110;y+=3){w.set(y*w.width+65,M.Laser);w.heading[y*w.width+65]=0;}
       for(let y=110;y<155;y++)for(let x=230;x<255;x++)w.set(y*w.width+x,M.Water);
-      w.brush(230,108,4,M.Frostfire);w.brush(260,110,4,M.Dragonfire);
-      w.brush(60,150,8,M['Fairy dust']);
+      w.brush(230,108,4,M.Cooler);w.brush(260,110,4,M.Fire);
+      w.brush(60,150,8,M.Light);
       for(let n=0;n<22;n++)w.step();sandlab.renderer.draw();
     }''')
     page.screenshot(path=str(ARTIFACTS/'energy-materials-desktop.png'))
     assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Laser)')
-    assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Ice)')
+    assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Fire)')
     benchmark=page.evaluate('''()=>{const w=sandlab.world,r=sandlab.renderer,M=energyM;w.clear();for(let y=20;y<180;y+=2)for(let x=10;x<310;x+=2)w.set(y*w.width+x,M.Light);const times=[];for(let n=0;n<20;n++){const t=performance.now();w.step();times.push(performance.now()-t);}r.draw();return {particles:w.count,meanTickMs:times.reduce((a,b)=>a+b,0)/times.length};}''')
     assert page.evaluate('sandlab.world.count===sandlab.world.chunks.reduce((a,b)=>a+b,0)')
     assert not errors,errors
@@ -89,11 +89,11 @@ with sync_playwright() as p:
     page.locator('[data-tool-option=eyedropper]').tap();assert page.evaluate('sandlab.state.tool')=='eyedropper'
     page.locator('#tool-picker-toggle').tap();page.locator('[data-tool-option=paint]').tap()
     page.locator('#palette-toggle').tap();page.locator('#categories').get_by_role('button',name='Fiction',exact=True).tap()
-    assert page.locator('.material').count()==6
-    page.get_by_role('button',name='Dragonfire',exact=True).tap()
+    assert page.locator('.material').count()==3
+    page.get_by_role('button',name='Antimatter',exact=True).tap()
     assert not page.locator('#palette').evaluate('e=>e.classList.contains("open")')
     target=cell(page,100,140);page.touchscreen.tap(target['x'],target['y'])
-    assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Dragonfire)')
+    page.wait_for_function('sandlab.world.cells.some(id=>id===energyM.Antimatter)')
     page.set_viewport_size({'width':844,'height':390})
     page.locator('#tool-picker-toggle').tap()
     assert page.locator('#tool-picker-menu').evaluate('e=>{const b=e.getBoundingClientRect();return b.x>=0&&b.y>=0&&b.right<=innerWidth&&b.bottom<=innerHeight;}')

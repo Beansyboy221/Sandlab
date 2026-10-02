@@ -15,11 +15,10 @@ const run = (w, n) => {
 test("specific substance names preserve original save IDs without a generic gas alias", () => {
   for (const [name, id] of [
     ["Steel", 11],
-    ["Steel powder", 19],
+    ["Steel Powder", 19],
     ["Acid", 20],
     ["Kerosene", 23],
     ["Methane", 30],
-    ["Mica", 33],
   ])
     assert.equal(M[name], id);
   for (const name of [
@@ -32,8 +31,8 @@ test("specific substance names preserve original save IDs without a generic gas 
   ])
     assert.equal(M[name], undefined);
   assert.equal(materials[M.Hydrogen].combustionGas, M.Steam);
-  assert.equal(materials[M.Methane].combustionGas, M["Carbon dioxide"]);
-  assert.equal(materials[M.Glass].meltTo, M["Molten glass"]);
+  assert.equal(materials[M.Methane].combustionGas, M["CO2"]);
+  assert.equal(materials[M.Glass].meltTo, M["Molten Glass"]);
 });
 test("ambient atmosphere is stable; heater and cooler create local air temperature and signed pressure", () => {
   const empty = new World(48, 32);
@@ -101,7 +100,7 @@ test("neutralization heats and pressurizes locally, metal acid reactions create 
     M.Water,
     M.Oil,
     M.Kerosene,
-    M.Mica,
+    M.Ceramic,
     M.Copper,
   ]) {
     const w = new World(24, 24);
@@ -112,38 +111,33 @@ test("neutralization heats and pressurizes locally, metal acid reactions create 
     assert.equal(w.cells[301], target);
   }
 });
-test("baking soda creates energetic but finite foam with CO2 and no fire, in all gravity directions", () => {
-  for (const acid of [M.Acid, M["Acid"]])
-    for (const gravity of [
-      [0, 1],
-      [1, 0],
-      [0, -1],
-      [-1, 0],
-    ]) {
-      const w = new World(48, 48);
-      w.setGravity(...gravity);
-      w.set(at(w, 24, 24), acid);
-      w.set(at(w, 25, 24), M["Baking soda"]);
-      react(w, at(w, 24, 24), 24, 24);
-      assert.equal(w.cells[at(w, 25, 24)], M["Carbon dioxide"]);
-      assert.equal(w.cells[at(w, 24, 24)], M["Carbon dioxide foam"]);
-      assert.ok(w.fields.pressure.some((v) => v >= 4));
-      const saved = pack(snapshot(w)),
-        loaded = new World();
-      restore(loaded, unpack(saved));
-      assert.deepEqual(snapshot(loaded), snapshot(w));
-      let peak = 0;
-      for (let n = 0; n < 200; n++) {
-        w.step();
-        peak = Math.max(peak, w.count);
-        assert.ok(w.count <= 10);
-      }
-      assert.ok(peak >= 6, `burst only ${peak}`);
-      assert.equal(w.cells.includes(M["Carbon dioxide foam"]), false);
-      assert.equal(w.cells.includes(M.Fire), false);
-      assert.ok(w.cells.includes(M.Water));
-      assert.ok(w.cells.filter((v) => v === M["Carbon dioxide"]).length >= 5);
+test("baking soda and acid create water, CO2 and pressure without removed foam, in all gravity directions", () => {
+  for (const gravity of [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ]) {
+    const w = new World(48, 48);
+    w.setGravity(...gravity);
+    w.set(at(w, 24, 24), M.Acid);
+    w.set(at(w, 25, 24), M["Baking Soda"]);
+    react(w, at(w, 24, 24), 24, 24);
+    assert.equal(w.cells[at(w, 24, 24)], M.Water);
+    assert.equal(w.cells[at(w, 25, 24)], M.CO2);
+    assert.ok(w.fields.pressure.some((v) => v >= 4));
+    const loaded = new World();
+    restore(loaded, unpack(pack(snapshot(w))));
+    assert.deepEqual(snapshot(loaded), snapshot(w));
+    for (let n = 0; n < 200; n++) {
+      w.step();
+      assert.equal(w.count, 2);
+      assert.ok(w.cells.every((id) => !materials[id].deprecated));
     }
+    assert.ok(w.cells.includes(M.Water));
+    assert.ok(w.cells.includes(M.CO2));
+    assert.equal(w.cells.includes(M.Fire), false);
+  }
 });
 test("air temperature survives save, undo-style restore, positioned resizing, and old saves; invalid fields are rejected before mutation", () => {
   const w = new World(32, 32);
@@ -189,7 +183,7 @@ test("Warm and Cool act on empty air as well as particles, causing signed pressu
 });
 
 test("room-temperature oxygen and CO2 are heavier than ambient air, while methane and hydrogen rise", () => {
-  for (const id of [M.Oxygen, M["Carbon dioxide"], M.Methane, M.Hydrogen]) {
+  for (const id of [M.Oxygen, M["CO2"], M.Methane, M.Hydrogen]) {
     const w = new World(24, 24);
     w.set(12 * 24 + 12, id);
     w.move(12 * 24 + 12, 12, 12);

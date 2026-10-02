@@ -116,7 +116,11 @@ export function reactFire(world, i, x, y) {
       const heat = Math.min(60, Math.max(0, (temp[i] - temp[j]) * 0.1));
       temp[j] += heat;
       temp[i] -= heat;
-      if (temp[j] > 100 && materials[cells[j]].dryTo === undefined) {
+      if (
+        temp[j] > 100 &&
+        !world.nutrition[j] &&
+        materials[cells[j]].dryTo === undefined
+      ) {
         world.transform(j, M.Steam, Math.max(105, temp[j]));
         world.fields.add(x, y, 1.5);
       }

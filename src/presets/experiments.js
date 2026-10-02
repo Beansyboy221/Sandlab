@@ -66,15 +66,15 @@ export function buildExperiment(w, id) {
       height = ground - y;
     rect(x, y, 3, height, "Ceramic");
     rect(x + size, y, 3, height, "Ceramic");
-    rect(x, y + height - 3, size + 3, 3, "Furnace");
-    rect(x + 3, y + height - 15, size - 3, 12, "Steel powder");
-    rect(x + 3, y + height - 22, size - 3, 7, "Molten steel");
+    rect(x, y + height - 3, size + 3, 3, "Heater");
+    rect(x + 3, y + height - 15, size - 3, 12, "Molten Steel");
+    rect(x + 3, y + height - 22, size - 3, 7, "Molten Steel");
     for (let yy = y; yy < ground; yy++)
       for (let xx = x; xx <= x + size + 2; xx++)
         if (w.cells[yy * W + xx] === M.Ceramic) w.temp[yy * W + xx] = 1200;
     cup(W * 0.64, ground - 25, W * 0.22, 25);
     rect(W * 0.64 + 3, ground - 3, W * 0.22 - 6, 3, "Cooler");
-    rect(W * 0.64 + 3, ground - 12, W * 0.22 - 6, 9, "Molten steel");
+    rect(W * 0.64 + 3, ground - 12, W * 0.22 - 6, 9, "Molten Steel");
   } else if (id === "phase") {
     const x = Math.round(W * 0.25),
       y = Math.round(H * 0.3),

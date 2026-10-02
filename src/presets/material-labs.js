@@ -21,7 +21,7 @@ export function buildMaterialLab(w, id) {
         put(x + Math.round(size * 0.5), ground - 15, "Sodium");
       } else if (n === 1) {
         rect(x + 3, ground - 13, size - 6, 13, "Acid");
-        rect(x + 7, ground - 16, size - 14, 3, "Baking soda");
+        rect(x + 7, ground - 16, size - 14, 3, "Baking Soda");
       } else {
         rect(x + 3, ground - 12, size - 6, 12, "Acid");
         rect(
@@ -52,14 +52,14 @@ export function buildMaterialLab(w, id) {
       );
       // Spaced wet patches leave steam escape channels during the drying stage.
       for (let dx = 0; dx < Math.max(3, Math.round((size - 24) / 5)); dx += 4)
-        put(left + dx, ground - depth + 4, "Wet clay");
+        put(left + dx, ground - depth + 4, "Wet Clay");
     }
     // A preheated chamber warms the complete slab before the lower heater fires
     // it. Cold dry clay otherwise pulls its wet surface below the drying point.
     for (let yy = ground - depth; yy < ground; yy++)
       for (let xx = x + 3; xx < x + size - 3; xx++) {
         const i = yy * W + xx;
-        if (w.cells[i] === M.Clay || w.cells[i] === M["Wet clay"])
+        if (w.cells[i] === M.Clay || w.cells[i] === M["Wet Clay"])
           w.temp[i] = 130;
         w.fields.temperature[w.fields.index(xx, yy)] = 130;
       }

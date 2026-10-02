@@ -80,7 +80,7 @@ const definitions = [
     2.1,
     {
       melt: 800,
-      meltTo: "Molten salt",
+      meltTo: "Molten Salt",
     },
   ],
   [
@@ -126,7 +126,7 @@ const definitions = [
       conductive: true,
       conductivity: 0.48,
       melt: 1450,
-      meltTo: "Molten steel",
+      meltTo: "Molten Steel",
       resistance: 0.98,
     },
   ],
@@ -138,7 +138,7 @@ const definitions = [
     {
       conductivity: 0.035,
       melt: 1700,
-      meltTo: "Molten glass",
+      meltTo: "Molten Glass",
       resistance: 1,
     },
   ],
@@ -186,7 +186,7 @@ const definitions = [
   ],
   ["Cement", "powder", "#b8b6a1", 1.8, {}],
   [
-    "Steel powder",
+    "Steel Powder",
     "powder",
     "#96a6b7",
     5,
@@ -194,7 +194,7 @@ const definitions = [
       conductive: true,
       conductivity: 0.4,
       melt: 1450,
-      meltTo: "Molten steel",
+      meltTo: "Molten Steel",
     },
   ],
   [
@@ -270,7 +270,7 @@ const definitions = [
     },
   ],
   [
-    "Molten steel",
+    "Molten Steel",
     "liquid",
     "#ffc170",
     6.5,
@@ -284,7 +284,7 @@ const definitions = [
     },
   ],
   [
-    "Molten salt",
+    "Molten Salt",
     "liquid",
     "#e6bc8a",
     1.9,
@@ -342,13 +342,10 @@ const definitions = [
   ],
   [
     "Mica",
-    "solid",
-    "#a26c89",
-    2,
-    {
-      resistance: 1,
-      conductivity: 0.002,
-    },
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Ceramic" },
   ],
   [
     "Ceramic",
@@ -373,13 +370,10 @@ const definitions = [
   ],
   [
     "Plasma",
-    "energy",
-    "#df93f8",
-    -0.5,
-    {
-      temperature: 5000,
-      lifetime: 65,
-    },
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Fire" },
   ],
   [
     "TNT",
@@ -458,14 +452,14 @@ const definitions = [
     0.9,
     {
       melt: 60,
-      meltTo: "Liquid wax",
+      meltTo: "Liquid Wax",
       ignite: 260,
       burn: 170,
       conductivity: 0.02,
     },
   ],
   [
-    "Liquid wax",
+    "Liquid Wax",
     "liquid",
     "#d9b97c",
     0.85,
@@ -491,10 +485,10 @@ const definitions = [
   ["Cloud", "gas", "#a4b4c3", -0.12, { lifetime: 700 }],
   [
     "Furnace",
-    "special",
-    "#ffb176",
-    99,
-    { temperature: 1800, resistance: 1, heatSource: true },
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Heater" },
   ],
   [
     "Sponge",
@@ -519,13 +513,13 @@ const definitions = [
       conductivity: 0.62,
       resistance: 0.93,
       melt: 1085,
-      meltTo: "Molten copper",
+      meltTo: "Molten Copper",
       oxidizeTo: "Patina",
       oxidationRate: 0.0008,
     },
   ],
   [
-    "Molten copper",
+    "Molten Copper",
     "liquid",
     "#ffbc77",
     8,
@@ -547,7 +541,7 @@ const definitions = [
       conductivity: 0.02,
       resistance: 0.75,
       melt: 1085,
-      meltTo: "Molten copper",
+      meltTo: "Molten Copper",
     },
   ],
   [
@@ -559,7 +553,7 @@ const definitions = [
       conductivity: 0.025,
       resistance: 0.1,
       melt: 1550,
-      meltTo: "Molten steel",
+      meltTo: "Molten Steel",
     },
   ],
   [
@@ -571,12 +565,12 @@ const definitions = [
       conductive: true,
       conductivity: 0.32,
       melt: 98,
-      meltTo: "Liquid sodium",
+      meltTo: "Liquid Sodium",
       reactsWithWater: true,
     },
   ],
   [
-    "Liquid sodium",
+    "Liquid Sodium",
     "liquid",
     "#f1dd99",
     0.92,
@@ -619,9 +613,9 @@ const definitions = [
       freezeTo: "Ice",
     },
   ],
-  ["Baking soda", "powder", "#e5e7ce", 1.4, { carbonate: true }],
+  ["Baking Soda", "powder", "#e5e7ce", 1.4, { carbonate: true }],
   [
-    "Carbon dioxide",
+    "CO2",
     "gas",
     "#71989b",
     0.12,
@@ -635,7 +629,7 @@ const definitions = [
     { bake: 650, bakeTo: "Brick", conductivity: 0.1 },
   ],
   [
-    "Wet clay",
+    "Wet Clay",
     "liquid",
     "#987766",
     1.9,
@@ -650,22 +644,11 @@ const definitions = [
   ],
   ["Fertilizer", "powder", "#c4a77b", 1.3, {}],
   [
-    "Nutrient water",
-    "liquid",
-    "#6eaa72",
-    1.08,
-    {
-      conductivity: 0.24,
-      conductive: true,
-      aqueous: true,
-      absorbable: true,
-      waterLike: true,
-      nutrition: 96,
-      dry: 110,
-      dryTo: "Fertilizer",
-      freeze: -2,
-      freezeTo: "Ice",
-    },
+    "Nutrient Water",
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Water" },
   ],
   [
     "Rubber",
@@ -692,11 +675,17 @@ const definitions = [
     {
       ignite: 230,
       burn: 90,
-      residue: "Sulfur dioxide",
-      combustionGas: "Sulfur dioxide",
+      residue: "Smoke",
+      combustionGas: "Smoke",
     },
   ],
-  ["Sulfur dioxide", "gas", "#b9c589", 0.18, { conductivity: 0.03 }],
+  [
+    "Sulfur Dioxide",
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Smoke" },
+  ],
   [
     "Nitrogen",
     "gas",
@@ -706,11 +695,11 @@ const definitions = [
       conductivity: 0.025,
       suppressesFlame: true,
       condense: -200,
-      condenseTo: "Liquid nitrogen",
+      condenseTo: "Liquid Nitrogen",
     },
   ],
   [
-    "Liquid nitrogen",
+    "Liquid Nitrogen",
     "liquid",
     "#b1e3e9",
     0.81,
@@ -752,7 +741,7 @@ const definitions = [
   ],
   ["Soap", "powder", "#d9c9ec", 0.7, { conductivity: 0.03 }],
   [
-    "Soapy water",
+    "Soapy Water",
     "liquid",
     "#94c7da",
     1.01,
@@ -789,20 +778,14 @@ const definitions = [
     { acidic: true, aqueous: true, conductive: true, conductivity: 0.2 },
   ],
   [
-    "Carbon dioxide foam",
-    "gas",
-    "#e7edd2",
-    -0.18,
-    {
-      lifetime: 100,
-      lifetimeVariation: 0.3,
-      conductivity: 0.06,
-      bubble: true,
-      suppressesFlame: true,
-    },
+    "Carbon Dioxide Foam",
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "CO2" },
   ],
   [
-    "Molten glass",
+    "Molten Glass",
     "liquid",
     "#efb98f",
     2.3,
@@ -834,7 +817,7 @@ definitions.push(
   ],
   ["Rubble", "powder", "#8d8b82", 2.4, { melt: 1200, meltTo: "Lava" }],
   [
-    "Wood chips",
+    "Wood Chips",
     "powder",
     "#bc8c58",
     0.55,
@@ -843,17 +826,20 @@ definitions.push(
       ignite: 280,
       burn: 90,
       residue: "Ash",
-      combustionGas: "Carbon dioxide",
+      combustionGas: "CO2",
     },
   ],
 );
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {
-    if (!properties.deprecated) M[name] = id;
+    const displayName = name.replace(/\b[a-z]/g, (letter) =>
+      letter.toUpperCase(),
+    );
+    if (!properties.deprecated) M[name] = M[displayName] = id;
     return {
       id,
-      name,
+      name: displayName,
       category,
       color,
       density,
@@ -917,7 +903,7 @@ for (const m of materials)
     ? "fiction"
     : m.explosive
       ? "explosive"
-      : ["Plant", "Seed", "Nutrient water"].includes(m.name)
+      : ["Plant", "Seed"].includes(m.name)
         ? "life"
         : m.category === "special"
           ? "devices"
@@ -925,7 +911,7 @@ for (const m of materials)
 
 for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 
-for (const name of ["Steel", "Steel powder"])
+for (const name of ["Steel", "Steel Powder"])
   Object.assign(materials[M[name]], {
     oxidizeTo: M.Rust,
     oxidationRate: 0.0015,
@@ -937,7 +923,7 @@ for (const name of ["Water", "Brine"])
     absorbable: true,
   });
 materials[M["Acid"]].acidic = true;
-for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid wax"])
+for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid Wax"])
   materials[M[name]].organic = true;
 
 for (const name of ["Hydrogen", "Methane"])
@@ -949,8 +935,8 @@ materials[M.Wood].sparkChance = 0.006;
 // Ambient air is implicit. Real gases share buoyancy and pressure rules, with
 // their own chemistry and products; fiction remains explicitly categorized.
 materials[M.Hydrogen].combustionGas = M.Steam;
-materials[M.Methane].combustionGas = M["Carbon dioxide"];
-materials[M.Kerosene].combustionGas = M["Carbon dioxide"];
+materials[M.Methane].combustionGas = M["CO2"];
+materials[M.Kerosene].combustionGas = M["CO2"];
 for (const name of [
   "Oil",
   "Wood",
@@ -959,10 +945,10 @@ for (const name of [
   "Rope",
   "Plant",
   "Wax",
-  "Liquid wax",
+  "Liquid Wax",
   "Seed",
 ])
-  materials[M[name]].combustionGas ??= M["Carbon dioxide"];
+  materials[M[name]].combustionGas ??= M["CO2"];
 materials[M.Sponge].airPermeability = 0.8;
 
 export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
@@ -970,11 +956,11 @@ export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
 for (const m of materials)
   if (m.rigid) {
     m.toughness = m.conductive ? 26 : 9;
-    if ([M.Stone, M.Concrete, M.Brick, M.Ceramic, M.Mica].includes(m.id))
+    if ([M.Stone, M.Concrete, M.Brick, M.Ceramic].includes(m.id))
       m.breakInto = M.Rubble;
     if (m.id === M.Glass) {
       m.toughness = 1.8;
-      m.breakInto = M["Glass dust"];
+      m.breakInto = M["Glass Shards"];
     }
     if (m.id === M.Ice) {
       m.toughness = 3;
@@ -982,9 +968,9 @@ for (const m of materials)
     }
     if (m.id === M.Wood) {
       m.toughness = 10;
-      m.breakInto = M["Wood chips"];
+      m.breakInto = M["Wood Chips"];
     }
-    if (m.id === M.Steel) m.breakInto = M["Steel powder"];
+    if (m.id === M.Steel) m.breakInto = M["Steel Powder"];
     if (m.resistance === 1) m.resistance = 0.97;
   }
 
@@ -1010,3 +996,21 @@ for (const m of materials) {
     m.boil ?? Infinity,
   );
 }
+
+// Reserved slots keep historical numeric saves readable without retaining old
+// behavior or making removed materials available to the palette or reactions.
+for (const m of materials)
+  if (m.retired) {
+    const id = m.id,
+      retiredName = m.name,
+      canonicalId = M[m.replacement];
+    if (canonicalId === undefined)
+      throw Error(`Unknown replacement for ${retiredName}`);
+    Object.assign(m, materials[canonicalId], {
+      id,
+      name: retiredName,
+      deprecated: true,
+      retired: true,
+      canonicalId,
+    });
+  }

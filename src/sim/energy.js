@@ -24,42 +24,9 @@ function budget(w, key, limit) {
   w[key]++;
   return true;
 }
-function emitRays(w, x, y, id, count) {
-  const start = Math.floor(w.random() * 8);
-  for (let n = 0; n < 8 && count; n++) {
-    const heading = (start + n) % 8,
-      [dx, dy] = rayDirections[heading],
-      j = w.index(x + dx, y + dy);
-    if (j < 0 || w.cells[j]) continue;
-    if (!budget(w, "energyBirths", 128)) break;
-    w.transform(j, id);
-    if (id !== M.Neutron) w.heading[j] = heading;
-    count--;
-  }
-}
 export function reactEnergy(w, i, x, y, m) {
   if (m.energyRule === "ray") {
     if (!w.life[i] || --w.life[i] === 0) w.transform(i, 0);
-  } else if (m.energyRule === "aura") {
-    if (!w.life[i] || --w.life[i] === 0) {
-      w.transform(i, m.aura > 0 ? M.Smoke : 0, m.aura > 0 ? 120 : 20);
-      return;
-    }
-    w.temp[i] = m.temperature;
-    w.eachNeighbor(x, y, (j) => {
-      if (w.cells[i] !== m.id || !w.cells[j]) return;
-      const neighbor = materials[w.cells[j]];
-      if (neighbor.aura && neighbor.aura * m.aura < 0) {
-        w.transform(i, M.Steam, 120);
-        w.transform(j, M.Steam, 120);
-        w.fields.add(x, y, 1);
-        return;
-      }
-      if (!neighbor.heatSource)
-        w.temp[j] = Math.max(-250, Math.min(6000, w.temp[j] + m.aura));
-      if (m.aura < 0 && w.cells[j] === M.Fire)
-        w.life[j] = Math.max(1, w.life[j] - 8);
-    });
   } else if (m.energyRule === "gravity") {
     w.fields.add(x, y, m.force);
     if (m.absorbMatter)
@@ -67,7 +34,10 @@ export function reactEnergy(w, i, x, y, m) {
         if (materials[w.cells[j]].movable) w.transform(j, 0);
       });
   } else if (m.energyRule === "uranium") {
-    if (w.random() < m.emissionChance) emitRays(w, x, y, M.Neutron, 1);
+    if (w.random() < m.emissionChance) {
+      w.temp[i] = Math.min(6000, w.temp[i] + 8);
+      w.fields.heat(x, y, 0.5);
+    }
   } else if (m.energyRule === "antimatter") {
     let target = -1;
     w.eachNeighbor(x, y, (j) => {
@@ -85,23 +55,8 @@ export function reactEnergy(w, i, x, y, m) {
       w.transform(target, 0);
       w.transform(i, 0);
       w.explode(x, y, 5);
-      w.transform(i, M.Plasma, 5000, 14);
+      w.transform(i, M.Fire, 2500, 14);
     }
-  } else if (m.energyRule === "fairy") {
-    let consumed = false;
-    w.eachNeighbor(x, y, (j) => {
-      if (
-        ![M.Plant, M.Seed].includes(w.cells[j]) ||
-        w.temp[j] < 5 ||
-        w.temp[j] > 45
-      )
-        return;
-      if (w.cells[j] === M.Seed) w.transform(j, M.Plant, w.temp[j]);
-      w.moisture[j] = Math.min(255, w.moisture[j] + 80);
-      w.nutrition[j] = Math.min(255, w.nutrition[j] + 120);
-      consumed = true;
-    });
-    if (consumed) w.transform(i, M.Light, 20, 18);
   }
 }
 function reflect(w, i, x, y, dx, dy) {
@@ -116,16 +71,9 @@ function reflect(w, i, x, y, dx, dy) {
   }
   w.heading[i] = rayHeading(dx, dy);
 }
-function fission(w, j, x, y) {
-  if (!budget(w, "energyReactions", 32)) return;
-  w.transform(j, M.Steel, 900);
-  w.fields.add(x, y, 12);
-  emitRays(w, x, y, M.Neutron, 3);
-}
 export function moveRay(w, i, x, y, m) {
   const [dx, dy] = rayDirections[w.heading[i]],
-    sound = m.ray === "sound",
-    neutron = m.ray === "neutron";
+    sound = m.ray === "sound";
   let moved = 0,
     traversed = 0;
   // Transparent matter occupies the same grid as rays. Skip its cells without
@@ -158,19 +106,7 @@ export function moveRay(w, i, x, y, m) {
       w.transform(i, 0);
       return;
     }
-    if (neutron) {
-      if (target.id === M.Uranium) {
-        w.transform(i, 0);
-        fission(w, j, j % w.width, Math.floor(j / w.width));
-        return;
-      }
-      if (target.id === M.Sponge) {
-        w.temp[j] = Math.min(6000, w.temp[j] + 5);
-        w.transform(i, 0);
-        return;
-      }
-      w.temp[j] = Math.min(6000, w.temp[j] + 8);
-    } else if (sound) {
+    if (sound) {
       w.fields.add(j % w.width, Math.floor(j / w.width), 1.8);
       if (target.id === M.Sponge) {
         w.transform(i, 0);
@@ -182,7 +118,7 @@ export function moveRay(w, i, x, y, m) {
           w.fields.index(j % w.width, Math.floor(j / w.width))
         ] > 3.5
       )
-        w.transform(j, M["Glass dust"], w.temp[j]);
+        w.transform(j, M["Glass Shards"], w.temp[j]);
       if (
         target.static ||
         ["solid", "elastic", "powder"].includes(target.category)

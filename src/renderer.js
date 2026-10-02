@@ -215,7 +215,6 @@ export class Renderer {
           }
           if (
             id === M.Fire ||
-            id === M.Plasma ||
             id === M.Spark ||
             id === M.Lightning ||
             materials[id].glow

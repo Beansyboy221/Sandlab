@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
-import { M } from "../src/sim/materials.js";
+import { M, materials } from "../src/sim/materials.js";
 import { presets, loadPreset } from "../src/presets.js";
 import { painter } from "../src/presets/painter.js";
 const run = (w, n) => {
@@ -25,6 +25,10 @@ for (const [width, height] of [
       );
       assert.ok(w.temp.every(Number.isFinite), preset.id);
       assert.ok(w.fields.pressure.every(Number.isFinite), preset.id);
+      assert.ok(
+        w.cells.every((id) => !materials[id].deprecated),
+        preset.id,
+      );
       if (preset.id === "blank") assert.equal(w.count, 0);
     }
   });
@@ -54,7 +58,7 @@ test("supported fuse ignites every TNT block, and live wire reaches its payload"
     assert.equal(count(w, M.TNT), 0, id);
   }
 });
-test("garden grows from seeds, storm strikes its rod, foundry melts and casts metal", () => {
+test("garden grows from seeds, storm strikes its rod, foundry cools and casts molten metal", () => {
   const garden = new World();
   loadPreset(garden, "garden");
   run(garden, 400);
@@ -69,9 +73,10 @@ test("garden grows from seeds, storm strikes its rod, foundry melts and casts me
   assert.ok(charged);
   const foundry = new World();
   loadPreset(foundry, "foundry");
+  assert.ok(count(foundry, M["Molten Steel"]) > 0);
+  const cold = count(foundry, M.Steel);
   run(foundry, 350);
-  assert.ok(count(foundry, M["Molten steel"]) > 0);
-  assert.ok(count(foundry, M.Steel) > 0);
+  assert.ok(count(foundry, M.Steel) > cold + 100);
 });
 test("preset painter clips rounded edges and handles zero-length lines", () => {
   const w = new World(16, 16),
@@ -91,13 +96,13 @@ test("reaction bench reacts and pottery kiln dries and fires without melting its
     const chemistry = new World(width, height);
     loadPreset(chemistry, "reactions");
     run(chemistry, 120);
-    assert.ok(count(chemistry, M["Carbon dioxide"]) > 0);
+    assert.ok(count(chemistry, M["CO2"]) > 0);
     assert.equal(count(chemistry, M.Sodium), 0);
     const pottery = new World(width, height);
     loadPreset(pottery, "pottery");
     run(pottery, 400);
     assert.ok(count(pottery, M.Brick) > 10);
-    assert.equal(count(pottery, M["Wet clay"]), 0);
+    assert.equal(count(pottery, M["Wet Clay"]), 0);
     assert.equal(count(pottery, M.Lava), 0);
   }
 });

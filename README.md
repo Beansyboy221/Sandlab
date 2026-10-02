@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 82 palette substances and 94 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 72 palette substances and 84 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -12,7 +12,7 @@ Open **http://localhost:3000**. The development server uses Python 3. For deploy
 
 ## Play
 
-Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Shift-drag previews a straight line. Control-drag previews a circle (center at the starting point) or rectangle outline using the current brush shape; release to draw or press Escape to cancel. Scroll over the canvas or use `[` / `]` to resize the brush. Control-scroll zooms at the pointer, middle-drag pans, and Fit resets the camera. On phones and tablets, use one finger to draw; use two fingers to pan and pinch to zoom. Both fingers must lift before drawing resumes, and camera gestures leave the world and edit history unchanged. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
+Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Shift-drag previews a straight line. Control-drag previews a circle (center at the starting point) or rectangle outline using the current brush shape; release to draw or press Escape to cancel. Scroll over the canvas or use `[` / `]` to resize the brush. Control-scroll zooms at the pointer, middle-drag pans. On phones and tablets, use one finger to draw; use two fingers to pan and pinch to zoom. Both fingers must lift before drawing resumes, and camera gestures leave the world and edit history unchanged. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
 
 - `Space`: pause or resume; `.`: one simulation step.
 - `B` / `E`: draw or erase; `1` / `2` / `3`: sand, water, fire.
@@ -65,7 +65,7 @@ The engine uses structure-of-arrays storage rather than objects per particle. Em
 
 The simulation advances at a fixed 60 Hz target. Catch-up work is capped to keep interaction responsive under load. Rendering uses a low-resolution ImageData buffer scaled without smoothing; the display canvas respects device pixel ratio with a 2× cap. Thermal colors are precomputed. Seeded randomness and saved activity timestamps support reproducible continuation.
 
-To add a material, append its definition to the registry. **Never reorder existing definitions**, because saves refer to their numeric IDs. Movement, conductivity, combustion, and phase changes follow properties. Add contact chemistry in `reactions.js` only when an existing physical rule cannot express the interaction.
+To add a material, append its definition to the registry. **Never reorder existing definitions**, because saves refer to their numeric IDs. Removed substances reserve their numeric slots and migrate old saves to remaining materials; they have no active palette entry or reaction behavior. Material names automatically capitalize the first letter of each word. Movement, conductivity, combustion, and phase changes follow properties. Add contact chemistry in `reactions.js` only when an existing physical rule cannot express the interaction.
 
 ## Verify
 
@@ -136,11 +136,11 @@ The gear in the top-right opens Rendering, Simulation, Brush, Storage, Keyboard,
 
 ## Chemistry and new materials
 
-The palette contains 82 substances, with 94 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Steel and steel powder rust on exposed wet surfaces, faster in brine. Acid cleans oxides, and hot coal reduces rust back to steel.
+The palette contains 72 substances, with 84 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Steel and steel powder rust on exposed wet surfaces, faster in brine. Acid cleans oxides, and hot coal reduces rust back to steel.
 
-Acid plus baking soda releases carbon dioxide and a finite, expanding foam burst. Foam traps gas briefly, raises local pressure, and collapses into water and CO₂. Gas creation/absorption, reaction heat, boiling, condensation, and combustion generate signed pressure changes. Acid neutralizes lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form Acid. Rubber insulates electricity and heat but burns.
+Acid plus Baking Soda releases CO2 and Water with a local pressure burst. Gas creation/absorption, reaction heat, boiling, condensation, and combustion generate signed pressure changes. Acid neutralizes lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning Sulfur produces Smoke. Rubber insulates electricity and heat but burns.
 
-Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into nutrient water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Nutrient water works with sponges, retains nutrition through freezing, and dries back into fertilizer. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Combine these materials to explore reactions and ceramic firing.
+Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into ordinary Water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Dissolved nutrition travels through sponges and freezing; evaporation separates Steam and Fertilizer. There is no separate Nutrient Water material. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Combine these materials to explore reactions and ceramic firing.
 
 ## Edit history, shortcuts, and changelog
 
@@ -162,9 +162,9 @@ This repository and its GitHub Pages site are public. Local worlds and preferenc
 
 Light and lasers travel as directional packets. Glass, water, and gases transmit them, mirrors reflect them, and opaque materials absorb them. Solar cells convert incoming light into charge that travels through connected conductors. Lasers aim along the stroke direction and deposit more heat than ordinary light. Heading is a compact particle field included in copying, resizing, history, and saves; legacy saves initialize it safely.
 
-Sound is a visible mechanical pulse, with no audible playback. It deposits pressure as it travels, reflects from solid surfaces, and can shatter glass into glass dust after repeated impacts. Sponge damps sound. Neutrons penetrate and heat matter, are absorbed by sponge, and cause uranium to become hot metal while releasing pressure and secondary neutrons. Uranium occasionally emits neutrons. These are qualitative gameplay models, rather than calibrated optics, acoustics, or nuclear physics.
+Sound is a visible mechanical pulse, with no audible playback. It deposits pressure as it travels, reflects from solid surfaces, and can shatter glass into Glass Shards after repeated impacts. Sponge damps sound. Uranium occasionally warms itself and nearby air through a bounded decay-heating rule. It does not emit neutron particles. These are qualitative gameplay models, rather than calibrated optics, acoustics, or nuclear physics.
 
-The Fiction filter groups six experimental substances. Dragonfire heats nearby matter and boils water; frostfire freezes liquids and weakens ordinary flames. Touching dragonfire and frostfire cancel into steam. Antimatter annihilates neighboring matter in a plasma-producing blast. Black holes pull through the pressure field and consume adjacent movable particles; repulsors push through that field. Fairy dust hydrates and fertilizes plants and makes seeds sprout without soil, consuming itself into light.
+The Fiction filter groups three experimental substances. Antimatter annihilates neighboring matter in a fiery blast. Black Holes pull through the pressure field and consume adjacent movable particles; Repulsors push through that field.
 
 Ray travel, transparent-volume scanning, new emissions, and fission/annihilation events have fixed work limits. No interaction starts recursive simulation work or creates an unbounded list of effects. All effects remain local to the browser and use the existing bloom renderer.
 
@@ -193,3 +193,7 @@ Wall is the sole Static palette material. It blocks particles and atmospheric fl
 Elastics remain the only spring materials. Three stable integration substeps are retained; cached connectivity avoids rebuilding components unless editing or tearing changes their links. Acid is now the sole acidic palette entry. Historic acid IDs are migrated when loading, including clone targets, residues, and sponge contents.
 
 An isolated 5,600-node elastic comparison in this workspace measured 8.77 ms/tick on v1.5.0 and 8.26 ms/tick with cached connectivity (6% less simulation time). These are development-machine measurements, not phone guarantees.
+
+## Material cleanup in v1.6.3
+
+Both Fit canvas buttons have been removed. Zooming, panning, touch gestures and automatic viewport sizing remain available. Carbon Dioxide is named CO2, and Glass Dust is named Glass Shards. Plasma, Dragonfire, Frostfire, Fairy Dust, Furnace, Neutron, Nutrient Water, Mica, Sulfur Dioxide and Carbon Dioxide Foam are unavailable. Old saves map these IDs to Fire, Snow, Fertilizer, Heater, Water, Ceramic, Smoke or CO2 as appropriate; old Neutron packets disappear. Clone targets, residues, dissolved nutrition, sponge contents and solid links remain readable.

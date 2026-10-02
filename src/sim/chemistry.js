@@ -9,30 +9,19 @@ function pair(a, b, resultA, resultB, options = {}) {
 }
 pair(M.Water, M.Salt, M.Brine, 0);
 pair(M.Water, M.Cement, 0, M.Concrete);
-pair(M.Water, M.Clay, 0, M["Wet clay"]);
-pair(M.Water, M.Fertilizer, 0, M["Nutrient water"]);
+pair(M.Water, M.Clay, 0, M["Wet Clay"]);
+pair(M.Water, M.Fertilizer, M.Water, 0, { dissolveNutrition: true });
 pair(M.Water, M.Dirt, 0, M.Mud, { chance: 0.035, hydrateSoil: true });
-pair(M["Nutrient water"], M.Dirt, 0, M.Mud, {
-  chance: 0.035,
-  hydrateSoil: true,
-});
 for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
-  pair(
-    acid.id,
-    M["Baking soda"],
-    M["Carbon dioxide foam"],
-    M["Carbon dioxide"],
-    {
-      pressure: 4,
-      foam: true,
-    },
-  );
+  pair(acid.id, M["Baking Soda"], M.Water, M["CO2"], {
+    pressure: 4,
+  });
   pair(acid.id, M.Lye, M.Water, M.Brine, { heat: 35 });
   pair(acid.id, M.Steel, M.Brine, M.Hydrogen, {
     chance: 0.05,
     heat: 12,
   });
-  pair(acid.id, M["Steel powder"], M.Brine, M.Hydrogen, {
+  pair(acid.id, M["Steel Powder"], M.Brine, M.Hydrogen, {
     chance: 0.12,
     heat: 12,
   });
@@ -42,10 +31,9 @@ for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
 for (const sodium of materials.filter((m) => m.reactsWithWater))
   for (const water of materials.filter((m) => m.aqueous))
     pair(sodium.id, water.id, M.Lye, M.Hydrogen, { heat: 600, pressure: 2 });
-pair(M["Sulfur dioxide"], M.Water, 0, M.Acid, { chance: 0.1 });
 pair(M.Chlorine, M.Steel, 0, M.Rust, { chance: 0.04 });
 pair(M.Chlorine, M.Copper, 0, M.Patina, { chance: 0.04 });
-pair(M.Rust, M.Coal, M.Steel, M["Carbon dioxide"], {
+pair(M.Rust, M.Coal, M.Steel, M["CO2"], {
   minimumTemperature: 700,
   chance: 0.04,
   pressure: 0.5,
@@ -62,6 +50,16 @@ function contact(w, i, j, row, x, y) {
   )
     return false;
   const forward = w.cells[i] === rule.a;
+  if (rule.dissolveNutrition) {
+    const water = forward ? i : j,
+      fertilizer = forward ? j : i;
+    w.nutrition[water] = Math.min(
+      255,
+      w.nutrition[water] + (w.nutrition[fertilizer] || 96),
+    );
+    w.transform(fertilizer, 0);
+    return true;
+  }
   if (rule.hydrateSoil) {
     const water = forward ? i : j,
       soil = forward ? j : i;
@@ -78,11 +76,6 @@ function contact(w, i, j, row, x, y) {
   );
   w.transform(i, forward ? rule.resultA : rule.resultB, temperature);
   w.transform(j, forward ? rule.resultB : rule.resultA, temperature);
-  if (rule.foam) {
-    const foam = forward ? i : j;
-    w.clone[foam] = 8;
-    w.residue[foam] = M.Water;
-  }
   const reactantGases =
     Number(materials[rule.a].category === "gas") +
     Number(materials[rule.b].category === "gas");

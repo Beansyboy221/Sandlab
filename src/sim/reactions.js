@@ -1,4 +1,3 @@
-import { reactFoam } from "./foam.js";
 import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
 import { arcGap } from "./sparks.js";
@@ -26,10 +25,9 @@ const continuousRules = Uint8Array.from(materials, (m) =>
       m.explosive ||
       m.heatSource ||
       [
-        M["Carbon dioxide foam"],
         M.Soap,
         M.Bubble,
-        M["Soapy water"],
+        M["Soapy Water"],
         M.Sponge,
         M.Lightning,
         M.Storm,
@@ -39,7 +37,6 @@ const continuousRules = Uint8Array.from(materials, (m) =>
         M.Dirt,
         M.Mud,
         M.Fire,
-        M.Plasma,
         M.Spark,
         M.Acid,
         M.Void,
@@ -69,9 +66,8 @@ export function react(world, i, x, y) {
     reactEnergy(world, i, x, y, m);
     return;
   }
-  if (id === M["Carbon dioxide foam"] && reactFoam(world, i, x, y)) return;
   if (
-    (id === M.Soap || id === M.Bubble || id === M["Soapy water"]) &&
+    (id === M.Soap || id === M.Bubble || id === M["Soapy Water"]) &&
     reactBubbles(world, i, x, y)
   )
     return;
@@ -107,8 +103,8 @@ export function react(world, i, x, y) {
     reactFire(world, i, x, y);
     return;
   }
-  if (id === M.Plasma || id === M.Spark) {
-    if (transientEnergy(world, i, x, y, id)) return;
+  if (id === M.Spark) {
+    if (reactSpark(world, i, x, y)) return;
   } else if (m.lifetime && l[i] && --l[i] === 0) world.transform(i, 0);
   if (m.heatSource) heatSource(world, i, x, y, m);
   else if (id === M.Acid) etch(world, i, x, y);
@@ -132,35 +128,27 @@ function conduct(world, i, x, y, m) {
   world.eachNeighbor(x, y, propagate);
   if (m.rigid) world.rigid.connections.each(i, propagate);
 }
-function transientEnergy(world, i, x, y, id) {
+function reactSpark(world, i, x, y) {
   const { cells: c, temp: t, life: l, charge: q, cooldown: cd } = world;
   if (!l[i] || --l[i] === 0) {
     world.transform(i, world.residue[i] || 0, 120);
     return true;
   }
-  if (id === M.Plasma) t[i] = 5000;
   let wetSpark = false;
   world.eachNeighbor(x, y, (j) => {
     if (materials[c[j]].waterLike) {
-      t[j] += id === M.Plasma ? 200 : 30;
-      if (id === M.Spark) {
-        wetSpark = true;
-        if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
-          q[j] = 6;
-          cd[j] = 18;
-          world.chargedAt[j] = world.tick;
-        }
+      t[j] += 30;
+      wetSpark = true;
+      if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
+        q[j] = 6;
+        cd[j] = 18;
+        world.chargedAt[j] = world.tick;
       }
-    } else if (
-      id === M.Spark &&
-      !world.residue[i] &&
-      materials[c[j]].conductive &&
-      !cd[j]
-    ) {
+    } else if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
       q[j] = 6;
       cd[j] = 18;
       world.chargedAt[j] = world.tick;
-    } else if (materials[c[j]].ignite) t[j] += id === M.Plasma ? 200 : 30;
+    } else if (materials[c[j]].ignite) t[j] += 30;
   });
   if (wetSpark) {
     world.transform(i, world.residue[i] || 0, 100);

@@ -439,10 +439,8 @@ $("debug-btn").addEventListener("click", () =>
 $("exit-focus-btn").addEventListener("click", () =>
   $("fullscreen-btn").click(),
 );
-$("reset-view-btn").addEventListener("click", () => renderer.resetView());
 $("zoom-in-btn").addEventListener("click", () => zoomCenter(1.3));
 $("zoom-out-btn").addEventListener("click", () => zoomCenter(1 / 1.3));
-$("zoom-fit-btn").addEventListener("click", () => renderer.resetView());
 function zoomCenter(factor) {
   const box = $("world").getBoundingClientRect();
   renderer.zoomAt(factor, box.left + box.width / 2, box.top + box.height / 2);

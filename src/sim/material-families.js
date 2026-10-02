@@ -3,14 +3,14 @@ import { M, materials, canonicalMaterial } from "./materials.js";
 // Alternate phases remain stable simulation/save IDs, but share one palette entry.
 const families = {
   Water: ["Ice", "Steam", "Snow", "Cloud"],
-  Glass: ["Molten glass"],
+  Glass: ["Molten Glass"],
   Stone: ["Lava"],
-  Steel: ["Molten steel"],
-  Salt: ["Molten salt"],
-  Copper: ["Molten copper"],
-  Sodium: ["Liquid sodium"],
-  Wax: ["Liquid wax"],
-  Nitrogen: ["Liquid nitrogen"],
+  Steel: ["Molten Steel"],
+  Salt: ["Molten Salt"],
+  Copper: ["Molten Copper"],
+  Sodium: ["Liquid Sodium"],
+  Wax: ["Liquid Wax"],
+  Nitrogen: ["Liquid Nitrogen"],
 };
 export const paletteBase = new Uint8Array(materials.length);
 for (const m of materials) paletteBase[m.id] = canonicalMaterial(m.id);

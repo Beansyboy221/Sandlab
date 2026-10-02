@@ -232,6 +232,17 @@ export function restore(world, data) {
   for (const key of ["cells", "clone", "residue", "storedLiquid"])
     for (let i = 0; i < world.length; i++)
       world[key][i] = canonicalMaterial(world[key][i]);
+  for (let i = 0; i < world.length; i++) {
+    const old = data.arrays.cells[i];
+    if (materials[old].retired) {
+      const lifetime = materials[world.cells[i]].lifetime;
+      world.life[i] = lifetime ? world.life[i] || lifetime : 0;
+    }
+    // Older sponge saves stored the dissolved liquid's type, before nutrition
+    // became a property of ordinary water. Keep that finite food supply readable.
+    if (data.arrays.storedLiquid?.[i] === 66 && !world.nutrition[i])
+      world.nutrition[i] = Math.min(255, world.storedAmount[i] * 96);
+  }
   world.seed = data.seed >>> 0 || 17421;
   world.tick = Number.isSafeInteger(data.tick) ? data.tick : 0;
   for (let i = 0; i < world.length; i++)

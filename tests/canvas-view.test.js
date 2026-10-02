@@ -187,7 +187,7 @@ test("fire vents and smoke plumes, plants, and sponge release respect gravity", 
     w.set(i, M.Wood, 700, 100);
     burnFuel(w, i, 16, 16, materials[M.Wood]);
     assert.equal(w.cells[w.relativeIndex(16, 16, 0, -1)], M.Fire);
-    assert.equal(w.cells[w.relativeIndex(16, 16, -1, -2)], M["Carbon dioxide"]);
+    assert.equal(w.cells[w.relativeIndex(16, 16, -1, -2)], M["CO2"]);
     w.clear();
     w.set(i, M.Plant);
     w.moisture[i] = 120;

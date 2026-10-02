@@ -56,7 +56,7 @@ test("registry phase transitions: water, steam, ice, lava, snow and metal", () =
     [M.Ice, 10, M.Water],
     [M.Lava, 600, M.Stone],
     [M.Snow, 10, M.Water],
-    [M.Steel, 1500, M["Molten steel"]],
+    [M.Steel, 1500, M["Molten Steel"]],
   ]) {
     const w = new World(10, 10);
     w.set(55, id, temp);

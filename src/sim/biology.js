@@ -9,26 +9,21 @@ export function grow(w, i, x, y) {
     below = w.relativeIndex(x, y, 0, 1);
   if ((i + w.tick) % 4 === 0)
     w.eachNeighbor(x, y, (j) => {
-      if (
-        (w.cells[j] === M.Water || w.cells[j] === M["Nutrient water"]) &&
-        moisture[i] < 160 &&
-        w.random() < 0.08
-      ) {
+      if (w.cells[j] === M.Water && moisture[i] < 160 && w.random() < 0.08) {
         nutrition[i] = Math.min(255, nutrition[i] + nutrition[j]);
         moisture[i] = Math.min(255, moisture[i] + 80);
         w.transform(j, 0);
       } else if (
         w.cells[j] === M.Sponge &&
-        (w.storedLiquid[j] === M.Water ||
-          w.storedLiquid[j] === M.Brine ||
-          w.storedLiquid[j] === M["Nutrient water"]) &&
+        (w.storedLiquid[j] === M.Water || w.storedLiquid[j] === M.Brine) &&
         w.storedAmount[j] &&
         moisture[i] < 160 &&
         w.random() < 0.08
       ) {
         moisture[i] = Math.min(255, moisture[i] + 64);
-        if (w.storedLiquid[j] === M["Nutrient water"])
-          nutrition[i] = Math.min(255, nutrition[i] + 96);
+        const food = Math.ceil(nutrition[j] / w.storedAmount[j]);
+        nutrition[j] -= food;
+        nutrition[i] = Math.min(255, nutrition[i] + food);
         if (--w.storedAmount[j] === 0) w.storedLiquid[j] = 0;
       } else if (
         w.cells[j] === M.Fertilizer &&
@@ -40,7 +35,7 @@ export function grow(w, i, x, y) {
         w.transform(j, 0);
       } else if (
         id === M.Plant &&
-        w.cells[j] === M["Carbon dioxide"] &&
+        w.cells[j] === M["CO2"] &&
         moisture[i] >= 32 &&
         w.temp[i] >= 5 &&
         w.temp[i] <= 45 &&

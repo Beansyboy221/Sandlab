@@ -59,7 +59,7 @@ test("lasers heat absorbing surfaces, solar cells turn light into circuit charge
   assert.equal(laser.temp[251], 85);
   assert.equal(laser.cells[250], 0);
   const solar = packet("Light");
-  solar.set(251, M["Solar cell"]);
+  solar.set(251, M["Solar Cell"]);
   solar.set(252, M.Steel);
   move(solar);
   assert.equal(solar.charge[251], 6);
@@ -75,7 +75,7 @@ test("sound makes traveling pressure pulses, shatters glass under repeated impac
   assert.equal(w.heading[250], 4);
   w.heading[250] = 0;
   move(w);
-  assert.equal(w.cells[251], M["Glass dust"]);
+  assert.equal(w.cells[251], M["Glass Shards"]);
   assert.ok(w.fields.pressure.some((value) => value > 3.5));
   const sponge = packet("Sound");
   sponge.set(251, M.Sponge);
@@ -88,55 +88,18 @@ test("sound makes traveling pressure pulses, shatters glass under repeated impac
   assert.equal(water.temp[251], 20);
   assert.ok(water.cells.includes(M.Sound));
 });
-test("neutrons heat matter, trigger finite uranium fission, and are absorbed by sponge", () => {
-  const w = packet("Neutron");
-  w.set(251, M.Uranium);
-  move(w);
-  assert.equal(w.cells[251], M.Steel);
-  assert.equal(w.temp[251], 900);
-  assert.ok(w.fields.pressure.some((value) => value >= 12));
-  assert.ok(w.cells.filter((id) => id === M.Neutron).length <= 3);
-  const shield = packet("Neutron");
-  shield.set(251, M.Sponge);
-  move(shield);
-  assert.equal(shield.count, 1);
-  assert.equal(shield.temp[251], 25);
-  const radiation = new World(32, 32);
-  radiation.random = () => 0;
-  for (let y = 1; y < 32; y += 3)
-    for (let x = 1; x < 32; x += 3)
-      radiation.set(cell(radiation, x, y), M.Uranium);
-  for (let i = 0; i < radiation.length; i++)
-    if (radiation.cells[i] === M.Uranium)
-      reactEnergy(
-        radiation,
-        i,
-        i % 32,
-        Math.floor(i / 32),
-        materials[M.Uranium],
-      );
-  assert.ok(radiation.energyBirths <= 128);
+test("uranium retains bounded decay heating without emitting removed neutron particles", () => {
+  const w = new World(24, 24);
+  w.set(250, M.Uranium);
+  w.random = () => 0;
+  for (let n = 0; n < 10; n++) react(w, 250, 10, 10);
+  assert.equal(w.cells[250], M.Uranium);
+  assert.equal(w.count, 1);
+  assert.ok(w.temp[250] > 20 && w.temp[250] <= 6000);
+  assert.ok(w.fields.temperature.some((t) => t > 20));
 });
-test("dragonfire boils water, frostfire freezes it, and opposed fictional flames cancel into steam", () => {
-  const hot = packet("Dragonfire");
-  hot.set(251, M.Water);
-  react(hot, 250, 10, 10);
-  react(hot, 251, 11, 10);
-  assert.equal(hot.cells[251], M.Steam);
-  assert.equal(hot.cells[250], M.Dragonfire);
-  const cold = packet("Frostfire");
-  cold.set(251, M.Water);
-  react(cold, 250, 10, 10);
-  react(cold, 251, 11, 10);
-  assert.equal(cold.cells[251], M.Ice);
-  const opposed = packet("Dragonfire");
-  opposed.set(251, M.Frostfire);
-  react(opposed, 250, 10, 10);
-  assert.equal(opposed.cells[250], M.Steam);
-  assert.equal(opposed.cells[251], M.Steam);
-});
-test("black holes absorb mobile matter, repulsors push through pressure, fairy dust grows seeds, and antimatter annihilates solids", () => {
-  const hole = packet("Black hole");
+test("black holes absorb mobile matter, repulsors push through pressure, and antimatter annihilates solids", () => {
+  const hole = packet("Black Hole");
   hole.set(251, M.Sand);
   hole.set(249, M.Wall);
   react(hole, 250, 10, 10);
@@ -146,16 +109,10 @@ test("black holes absorb mobile matter, repulsors push through pressure, fairy d
   const repulsor = packet("Repulsor");
   react(repulsor, 250, 10, 10);
   assert.ok(repulsor.fields.pressure.some((v) => v > 0));
-  const fairy = packet("Fairy dust");
-  fairy.set(251, M.Seed);
-  react(fairy, 250, 10, 10);
-  assert.equal(fairy.cells[251], M.Plant);
-  assert.equal(fairy.nutrition[251], 120);
-  assert.equal(fairy.cells[250], M.Light);
   const antimatter = packet("Antimatter");
   antimatter.set(251, M.Stone);
   react(antimatter, 250, 10, 10);
-  assert.equal(antimatter.cells[250], M.Plasma);
+  assert.equal(antimatter.cells[250], M.Fire);
   assert.notEqual(antimatter.cells[251], M.Stone);
   assert.ok(antimatter.fields.pressure.some((v) => v > 0));
 });
@@ -187,7 +144,7 @@ test("energy worlds continue deterministically after a save and rays expire in c
   a.set(10, M.Light);
   a.set(30, M.Sound);
   a.set(300, M.Uranium);
-  a.set(400, M.Dragonfire);
+  a.set(400, M.Laser);
   for (let n = 0; n < 20; n++) a.step();
   restore(b, unpack(pack(snapshot(a))));
   for (let n = 0; n < 80; n++) {

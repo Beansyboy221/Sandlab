@@ -1,7 +1,8 @@
 import { M, materials } from "./materials.js";
 export function changePhase(w, i, x, y, m) {
   const temperature = w.temp[i];
-  if (m.dry !== undefined && temperature > m.dry) {
+  const dissolved = m.id === M.Water && w.nutrition[i] && temperature > m.boil;
+  if (dissolved || (m.dry !== undefined && temperature > m.dry)) {
     // The dissolved/wet particle separates into vapor and dry material only when
     // vapor has space to escape; sealed vessels retain their contents.
     let vent = -1,
@@ -15,11 +16,14 @@ export function changePhase(w, i, x, y, m) {
       }
     }
     if (open) {
-      w.transform(i, m.dryTo, temperature);
+      const nutrition = w.nutrition[i];
+      w.transform(i, dissolved ? M.Fertilizer : m.dryTo, temperature);
+      if (dissolved) w.nutrition[i] = nutrition;
       if (vent >= 0) w.transform(vent, M.Steam, Math.max(120, temperature));
       w.fields.add(x, y, 1.5);
       return true;
     }
+    if (dissolved) return false;
   }
   let target;
   if (m.bake !== undefined && temperature > m.bake) target = m.bakeTo;
@@ -43,7 +47,6 @@ export function changePhase(w, i, x, y, m) {
     materials[frozenLiquid]?.waterLike
   )
     target = frozenLiquid;
-  if (target === M.Water && nutrition) target = M["Nutrient water"];
   w.transform(i, target, temperature);
   w.nutrition[i] = nutrition;
   if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;

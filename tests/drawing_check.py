@@ -46,7 +46,9 @@ with sync_playwright() as p:
     assert abs(after['x']-before['x'])<.01 and abs(after['y']-before['y'])<.01
     assert page.evaluate('sandlab.state.radius')==2
     page.mouse.click(**point(page,130,100));assert occupied(page,130,100)
-    page.locator('#reset-view-btn').click();assert page.evaluate('sandlab.renderer.zoom')==1
+    assert page.locator('#reset-view-btn').count()==0
+    page.keyboard.down('Control');page.mouse.wheel(0,100);page.wait_for_timeout(80);page.keyboard.up('Control')
+    assert abs(page.evaluate('sandlab.renderer.zoom')-1)<.001
     assert not errors,errors;c.close();browser.close()
     for width,height in [(320,740),(360,780),(390,844),(844,390)]:
         browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
@@ -59,7 +61,8 @@ with sync_playwright() as p:
         page.locator('#controls-toggle').tap();assert page.locator('#shape-btn').is_visible()
         assert page.locator('#world').bounding_box()==box
         page.locator('#zoom-in-btn').tap();assert page.evaluate('sandlab.renderer.zoom')>1
-        page.locator('#zoom-fit-btn').tap();assert page.evaluate('sandlab.renderer.zoom')==1
+        assert page.locator('#zoom-fit-btn').count()==0
+        page.locator('#zoom-out-btn').tap();assert abs(page.evaluate('sandlab.renderer.zoom')-1)<.001
         if width<=700:
             a=page.locator('#clear-btn').bounding_box();b=page.locator('#view').bounding_box()
             assert a['y']+a['height']<=b['y'] or a['x']+a['width']<=b['x']

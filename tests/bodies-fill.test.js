@@ -87,8 +87,8 @@ test("Wall is the only static material and survives every destructive system and
     M.Void,
     M.Acid,
     M.Antimatter,
-    M["Black hole"],
-    M.Plasma,
+    M["Black Hole"],
+    M.Laser,
   ]) {
     w.set(i + 1, neighbor);
     w.random = () => 0;
@@ -181,7 +181,7 @@ test("massive impacts break glass, conserve matter, and resting contact causes n
   rect(w, 32, 12, 10, 6, M.Steel);
   run(w, 55);
   assert.ok(
-    w.cells.includes(M["Glass dust"]),
+    w.cells.includes(M["Glass Shards"]),
     "heavy impact should fracture glass",
   );
   assert.equal(w.cells.filter((id) => id === M.Wall).length, 1600);
@@ -265,9 +265,10 @@ test("legacy acid IDs and absorbed acids migrate to the single Acid entry", () =
   for (const legacy of [20, 59, 91]) {
     const b = new World(16, 16);
     b.set(100, legacy);
-    b.set(101, M["Baking soda"]);
+    b.set(101, M["Baking Soda"]);
     react(b, 100, 4, 6);
-    assert.ok(b.cells.includes(M["Carbon dioxide foam"]));
+    assert.ok(b.cells.includes(M.CO2));
+    assert.ok(b.cells.includes(M.Water));
   }
 });
 

@@ -4,8 +4,6 @@ export const absorbable = (id) =>
   !!materials[id]?.absorbable || id === M.Oil || id === M.Kerosene;
 function mixWater(a, b) {
   if (a === M.Brine || b === M.Brine) return M.Brine;
-  if (a === M["Nutrient water"] || b === M["Nutrient water"])
-    return M["Nutrient water"];
   return b;
 }
 export function absorb(w, i, x, y) {
@@ -34,6 +32,9 @@ export function absorb(w, i, x, y) {
             watery(type) && watery(otherType)
               ? mixWater(type, otherType)
               : type;
+          const food = Math.round((w.nutrition[i] * transfer) / amount);
+          w.nutrition[i] -= food;
+          w.nutrition[j] = Math.min(255, w.nutrition[j] + food);
           amount -= transfer;
         }
         return;
@@ -47,6 +48,7 @@ export function absorb(w, i, x, y) {
       const temperature = w.temp[j];
       type = watery(type) && watery(liquid) ? mixWater(type, liquid) : liquid;
       w.temp[i] = (w.temp[i] * (amount + 1) + temperature) / (amount + 2);
+      w.nutrition[i] = Math.min(255, w.nutrition[i] + w.nutrition[j]);
       w.transform(j, 0);
       amount++;
     });
@@ -61,11 +63,12 @@ export function absorb(w, i, x, y) {
         const [dx, dy] = releases[order],
           j = w.relativeIndex(x, y, dx, dy);
         if ((j < 0 && w.border !== "void") || (j >= 0 && w.cells[j])) continue;
-        if (j >= 0)
+        if (j >= 0) {
+          const food = Math.ceil(w.nutrition[i] / amount);
           w.transform(
             j,
             boiling
-              ? materials[type].dryTo !== undefined
+              ? materials[type].dryTo !== undefined || food
                 ? type
                 : M.Steam
               : burning
@@ -73,6 +76,9 @@ export function absorb(w, i, x, y) {
                 : type,
             boiling ? 120 : burning ? 680 : w.temp[i],
           );
+          w.nutrition[i] -= food;
+          w.nutrition[j] = food;
+        } else w.nutrition[i] -= Math.ceil(w.nutrition[i] / amount);
         amount--;
         if (boiling || burning) w.fields.add(x, y, 0.8);
         if (boiling) w.temp[i] = Math.max(90, w.temp[i] - 5);
