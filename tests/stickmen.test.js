@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M } from "../src/sim/materials.js";
-import { links } from "../src/sim/stickman-body.js";
+import { links, blocked } from "../src/sim/stickman-body.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 import { resizeLevel } from "../src/level.js";
 import { EditHistory } from "../src/history.js";
@@ -34,6 +34,139 @@ test("player bodies settle, walk, jump, and retain safe joints", () => {
   assert.ok(a.y[2] < y - 6);
   assert.ok(a.bonds.every(Boolean));
   assert.ok(a.x.every(Number.isFinite));
+});
+test("players step up pixel slopes in both directions under every gravity orientation", () => {
+  for (const [gx, gy] of [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ])
+    for (const direction of [-1, 1])
+      for (const rise of [1, 2]) {
+        const w = new World(200, 200);
+        w.setGravity(gx, gy);
+        const map = (u, v) => ({
+          x: gy * u + gx * v + (gy < 0 || gx < 0 ? 199 : 0),
+          y: -gx * u + gy * v + (gx > 0 || gy < 0 ? 199 : 0),
+        });
+        for (let u = 0; u < 200; u++) {
+          const along = direction > 0 ? u : 199 - u;
+          const floor =
+            150 -
+            Math.min(
+              12,
+              Math.max(0, Math.floor((along - 65) / (rise === 1 ? 1 : 4))) *
+                rise,
+            );
+          for (let v = floor; v < 200; v++) {
+            const p = map(u, v);
+            w.set(w.index(p.x, p.y), M.Wall);
+          }
+        }
+        const spawn = map(direction > 0 ? 40 : 159, 148);
+        assert.ok(w.stickmen.spawn(spawn.x, spawn.y, M.Player));
+        tick(w, 100);
+        const a = w.stickmen.player;
+        const across = () => a.x[2] * gy - a.y[2] * gx;
+        const down = () => a.x[2] * gx + a.y[2] * gy;
+        const start = across(),
+          ground = down();
+        w.stickmen.controls.move = direction;
+        for (let t = 0; t < 800; t++) {
+          w.step();
+          assert.ok(
+            a.x.every((x, n) => !blocked(w, x, a.y[n])),
+            "Joints stay outside terrain",
+          );
+        }
+        assert.ok(
+          direction * (across() - start) > 58,
+          `Ramp ${gx},${gy},${direction},${rise}`,
+        );
+        assert.ok(ground - down() > 10 && ground - down() < 14);
+        assert.ok(a.alive && a.health > 95 && a.bonds.every(Boolean));
+        w.stickmen.controls.move = 0;
+        tick(w, 60);
+        const stopped = across();
+        tick(w, 120);
+        assert.ok(
+          Math.abs(across() - stopped) < 0.03,
+          "Standing on the upper surface stays planted",
+        );
+        w.stickmen.controls.move = -direction;
+        tick(w, 400);
+        assert.ok(
+          direction * (stopped - across()) > 40,
+          "Walking down the slope remains free",
+        );
+        assert.ok(a.alive && a.bonds.every(Boolean));
+      }
+});
+test("feet remain planted after stopping partway up a slope at different gait phases", () => {
+  for (const walk of [75, 90, 105, 120]) {
+    const w = new World(320, 200);
+    for (let x = 0; x < 320; x++)
+      for (
+        let y = 136 - Math.min(6, Math.max(0, Math.floor((x - 101) / 2)));
+        y < 200;
+        y++
+      )
+        w.set(w.index(x, y), M.Wall);
+    w.stickmen.spawn(96, 134, M.Player);
+    tick(w, 90);
+    const a = w.stickmen.player;
+    w.stickmen.controls.move = 1;
+    tick(w, walk);
+    w.stickmen.controls.move = 0;
+    tick(w, 120);
+    const hips = a.x[2];
+    const feet = [a.x[5], a.y[5], a.x[6], a.y[6]];
+    tick(w, 600);
+    assert.ok(
+      Math.abs(a.x[2] - hips) < 0.03,
+      `Torso settles at gait phase ${walk}`,
+    );
+    for (const [i, value] of [a.x[5], a.y[5], a.x[6], a.y[6]].entries())
+      assert.ok(
+        Math.abs(value - feet[i]) < 0.03,
+        `Planted foot stays on its ledge at gait phase ${walk}`,
+      );
+    assert.ok(a.alive && a.bonds.every(Boolean));
+  }
+});
+test("walking steps respect tall ledges and overhead clearance", () => {
+  for (const roof of [false, true]) {
+    const w = new World(160, 120);
+    for (let x = 0; x < 160; x++)
+      for (let y = 90 - (x >= 70 ? (roof ? 2 : 5) : 0); y < 120; y++)
+        w.set(w.index(x, y), M.Wall);
+    if (roof)
+      for (let x = 60; x < 160; x++)
+        for (let y = 73; y < 76; y++) w.set(w.index(x, y), M.Wall);
+    assert.ok(w.stickmen.spawn(40, 88, M.Player));
+    tick(w, 100);
+    const a = w.stickmen.player;
+    w.stickmen.controls.move = 1;
+    for (let t = 0; t < 700; t++) {
+      w.step();
+      assert.ok(a.x.every((x, n) => !blocked(w, x, a.y[n])));
+    }
+    assert.ok(
+      a.x[2] > 60 && a.x[2] < 70,
+      roof
+        ? "Low ceiling prevents stepping up"
+        : "Tall ledge still requires jumping",
+    );
+    assert.ok(a.alive && a.bonds.every(Boolean));
+    w.stickmen.controls.move = -1;
+    const turn = a.x[2];
+    tick(w, 80);
+    assert.ok(
+      a.x[2] < turn - 8,
+      "The character can turn away from the obstacle",
+    );
+  }
 });
 test("A* finds supported walks, jump edges, and avoids impassable walls", () => {
   const w = floor(),

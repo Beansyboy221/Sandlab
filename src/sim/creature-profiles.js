@@ -30,6 +30,7 @@ function profile(x, y, options = {}) {
 export const humanProfile = profile(
   [0, 0, 0, -4, 4, -2, 2, -1.5, 1.5],
   [-13, -9, -5, -7, -7, 0, 0, -2.5, -2.5],
+  { stepHeight: 2.5 },
 );
 const profiles = {
   ai: humanProfile,

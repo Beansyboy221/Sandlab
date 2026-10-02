@@ -80,6 +80,35 @@ with sync_playwright() as p:
         assert after['down']<before['down']-4,(width,before,after)
         assert not page.evaluate('sandlab.state.paused')
         page.wait_for_timeout(900)
+        # Walk over a real pixel staircase using keyboard/joystick input. Keep
+        # the fixture gravity-relative so phone landscape tests the same climb.
+        page.evaluate('''async()=>{
+          sandlab.state.paused=true;
+          const {M}=await import('./src/sim/materials.js');const w=sandlab.world;w.clear();
+          const gx=w.gravityX,gy=w.gravityY,across=gy?w.width:w.height,down=gx?w.width:w.height;
+          const map=(u,v)=>({x:gy*u+gx*v+(gy<0||gx<0?w.width-1:0),y:-gx*u+gy*v+(gx>0||gy<0?w.height-1:0)});
+          const floor=Math.floor(down*.68),start=Math.floor(across*.3);
+          for(let u=0;u<across;u++) {
+            const height=Math.min(6,Math.max(0,Math.floor((u-start-5)/2)));
+            for(let v=floor-height;v<down;v++){const q=map(u,v);w.set(q.y*w.width+q.x,M.Wall);}
+          }
+          const q=map(start,floor-2);w.stickmen.spawn(q.x,q.y,M.Player);
+          for(let t=0;t<90;t++)w.step();sandlab.state.paused=false;
+        }''')
+        before=position()
+        if touch:
+            box=page.locator('.player-joystick').bounding_box();x=box['x']+box['width']/2;y=box['y']+box['height']/2
+            session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x+32,y=y,id=1)]))
+        else:page.locator('#world').focus();page.keyboard.down('d')
+        page.wait_for_function('target=>sandlab.world.tick>=target',arg=page.evaluate('sandlab.world.tick')+240,timeout=20000)
+        if touch:session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[]))
+        else:page.keyboard.up('d')
+        after=position()
+        assert after['across']>before['across']+12,(width,'Slope movement',before,after)
+        assert after['down']<before['down']-3,(width,'Slope climb',before,after)
+        assert page.evaluate('sandlab.world.stickmen.player.bonds.every(Boolean)')
+        page.wait_for_function('target=>sandlab.world.tick>=target',arg=page.evaluate('sandlab.world.tick')+120,timeout=15000);stopped=position();page.wait_for_function('target=>sandlab.world.tick>=target',arg=page.evaluate('sandlab.world.tick')+60,timeout=10000)
+        assert abs(position()['across']-stopped['across'])<.08,(width,'Slope braking',stopped,position())
         if not touch:
             page.locator('#player-control-toggle').click();page.locator('#world').focus();page.keyboard.press('Space')
             assert page.evaluate('sandlab.state.paused')
@@ -99,6 +128,6 @@ with sync_playwright() as p:
         page.screenshot(path=str(ARTIFACTS/f'stickmen-{width}x{height}.png'))
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         assert not errors,errors
-        print(f'Player drawing, movement, jumping, controls ownership, rendering and saves passed: {width}x{height}',flush=True)
+        print(f'Player drawing, slope climbing, braking, jumping, controls ownership, rendering and saves passed: {width}x{height}',flush=True)
         context.close()
     browser.close()

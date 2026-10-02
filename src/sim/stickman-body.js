@@ -22,10 +22,10 @@ export function blocked(w, x, y) {
   return !!m.id && !m.gas && m.category !== "liquid" && !m.actor;
 }
 
-function collide(w, a, n, x, y) {
+function collide(w, a, n, x, y, maxStep = 0.5) {
   let nx = a.x[n],
     ny = a.y[n];
-  const steps = Math.max(1, Math.ceil(Math.hypot(x - nx, y - ny) * 2));
+  const steps = Math.max(1, Math.ceil(Math.hypot(x - nx, y - ny) / maxStep));
   const dx = (x - nx) / steps,
     dy = (y - ny) / steps;
   const radius = n === 0 ? actorProfile(a.material).headRadius : 0.4;
@@ -62,8 +62,10 @@ export function integrateBody(
   const gx = w.gravityX,
     gy = w.gravityY,
     grounded = a.grounded,
-    stance5 = a.x[5] * gy - a.y[5] * gx,
-    stance6 = a.x[6] * gy - a.y[6] * gx;
+    foot5x = a.x[5],
+    foot5y = a.y[5],
+    foot6x = a.x[6],
+    foot6y = a.y[6];
   a.grounded = false;
   a.cooldown = Math.max(0, a.cooldown - 1);
   if (a.alive && grounded && jump && !a.cooldown) {
@@ -206,9 +208,17 @@ export function integrateBody(
       }
     } else if (a.heat[n] > 70) a.health -= (a.heat[n] - 70) * 0.0007;
   }
+  // Measure external motion before pose projection. Motor corrections must not
+  // masquerade as an impulse that breaks a planted foot's static contact.
+  const motion5 = Math.hypot(a.x[5] - foot5x, a.y[5] - foot5y);
+  const motion6 = Math.hypot(a.x[6] - foot6x, a.y[6] - foot6y);
   // Internal pose motors exchange momentum with the hips; dead or disconnected
   // limbs have no motors and remain freely simulated ragdoll bodies.
   if (a.alive && a.bonds[0] && a.bonds[1]) {
+    if (grounded && drive && !jump && !a.cooldown && profile.stepHeight) {
+      stepFoot(w, a, 5, drive, profile.stepHeight);
+      stepFoot(w, a, 6, drive, profile.stepHeight);
+    }
     if (a.grounded && profile.mode !== "swim" && profile.mode !== "fly") {
       let support = Infinity;
       for (const n of [5, 6])
@@ -291,29 +301,150 @@ export function integrateBody(
     a.bonds[1] &&
     (profile.mode === "walk" || profile.mode === "hop")
   ) {
-    gripFoot(w, a, 5, stance5, profile.acceleration);
-    gripFoot(w, a, 6, stance6, profile.acceleration);
+    // Two feet support the body's nine joints. Static contact must resist the
+    // pose motors on uneven ground, rather than only the steering acceleration.
+    const floor5 = footSurface(w, foot5x, foot5y);
+    const floor6 = footSurface(w, foot6x, foot6y);
+    const uneven =
+      Number.isFinite(floor5) &&
+      Number.isFinite(floor6) &&
+      Math.abs(floor5 - floor6) > 0.5;
+    const friction = uneven
+      ? Math.max(profile.acceleration, (0.12 * 9 * 0.4) / 2)
+      : profile.acceleration;
+    const planted5 = gripFoot(
+      w,
+      a,
+      5,
+      foot5x,
+      foot5y,
+      motion5,
+      friction,
+      uneven,
+    );
+    const planted6 = gripFoot(
+      w,
+      a,
+      6,
+      foot6x,
+      foot6y,
+      motion6,
+      friction,
+      uneven,
+    );
+    // Transmit resting contact damping to the torso after link projection.
+    // Larger external impulses still retain their momentum.
+    if (uneven && (planted5 || planted6))
+      for (let n = 0; n < 3; n++) {
+        const tangent = (a.x[n] - a.px[n]) * gy - (a.y[n] - a.py[n]) * gx;
+        if (Math.abs(tangent) <= friction) {
+          a.px[n] += gy * tangent * 0.5;
+          a.py[n] -= gx * tangent * 0.5;
+        }
+      }
   }
   a.health = Math.max(0, a.health);
   if (!a.health || !a.bonds[0] || !a.bonds[1]) a.alive = false;
 }
 
-function gripFoot(w, a, n, stance, friction) {
+// Lift a grounded foot onto a nearby low ledge. The space above the foot and
+// the landing must both be clear; a vertical wall offers no reachable foothold.
+function stepFoot(w, a, n, drive, height) {
   const first = n === 5 ? 4 : 6;
   if (!a.bonds[first] || !a.bonds[first + 1]) return;
   const gx = w.gravityX,
     gy = w.gravityY;
-  const i = w.index(
-    Math.floor(a.x[n] + gx * 0.8),
-    Math.floor(a.y[n] + gy * 0.8),
+  const x = a.x[n],
+    y = a.y[n];
+  if (!blocked(w, x + gx * 0.8, y + gy * 0.8)) return;
+  const tx = gy * Math.sign(drive),
+    ty = -gx * Math.sign(drive);
+  const aheadX = x + tx * 0.8,
+    aheadY = y + ty * 0.8;
+  if (!blocked(w, aheadX, aheadY)) return;
+  for (let rise = 0.5; rise <= height; rise += 0.5) {
+    const nx = x - gx * rise,
+      ny = y - gy * rise;
+    if (!clearNode(w, nx, ny)) return;
+    const lx = aheadX - gx * rise,
+      ly = aheadY - gy * rise;
+    if (!clearNode(w, lx, ly) || !blocked(w, lx + gx * 0.9, ly + gy * 0.9))
+      continue;
+    // A foothold under a low roof must not pull the torso into that roof.
+    for (let up = 0.5; up <= rise; up += 0.5)
+      for (let joint = 0; joint < 3; joint++)
+        if (
+          !clearNode(
+            w,
+            a.x[joint] - gx * up,
+            a.y[joint] - gy * up,
+            joint === 0 ? actorProfile(a.material).headRadius : 0.4,
+          )
+        )
+          return;
+    collide(w, a, n, nx, ny);
+    collide(w, a, n, lx, ly);
+    // A pose correction is a step, not an upward launch.
+    a.px[n] += a.x[n] - x;
+    a.py[n] += a.y[n] - y;
+    return;
+  }
+}
+
+function clearNode(w, x, y, radius = 0.4) {
+  return (
+    !blocked(w, x - radius, y - radius) &&
+    !blocked(w, x + radius, y - radius) &&
+    !blocked(w, x - radius, y + radius) &&
+    !blocked(w, x + radius, y + radius)
   );
-  if (!blocked(w, a.x[n] + gx * 0.8, a.y[n] + gy * 0.8)) return;
+}
+
+function footSurface(w, x, y) {
+  const gx = w.gravityX,
+    gy = w.gravityY;
+  for (let distance = 0.4; distance <= 3.4; distance += 0.5) {
+    const sx = x + gx * distance,
+      sy = y + gy * distance;
+    if (blocked(w, sx, sy))
+      return (
+        Math.floor(sx) * gx + Math.floor(sy) * gy - (gx < 0 || gy < 0 ? 1 : 0)
+      );
+  }
+  return Infinity;
+}
+
+function gripFoot(w, a, n, x, y, motion, friction, uneven) {
+  const first = n === 5 ? 4 : 6;
+  if (!a.bonds[first] || !a.bonds[first + 1]) return;
+  const gx = w.gravityX,
+    gy = w.gravityY;
+  const slip = (a.x[n] - x) * gy - (a.y[n] - y) * gx;
+  if ((uneven ? motion : Math.abs(slip)) > friction) return;
+  const sx = uneven ? x : a.x[n],
+    sy = uneven ? y : a.y[n];
+  const i = w.index(Math.floor(sx + gx * 0.8), Math.floor(sy + gy * 0.8));
+  if (
+    !blocked(w, sx + gx * 0.8, sy + gy * 0.8) ||
+    (uneven && !clearNode(w, x, y))
+  )
+    return;
   // A moving support or an external impulse must still be able to move a body.
   if (i >= 0 && Math.hypot(w.velocityX[i], w.velocityY[i]) > 0.001) return;
-  const slip = a.x[n] * gy - a.y[n] * gx - stance;
-  if (Math.abs(slip) > friction) return;
-  collide(w, a, n, a.x[n] - gy * slip, a.y[n] + gx * slip);
-  const tangent = (a.x[n] - a.px[n]) * gy - (a.y[n] - a.py[n]) * gx;
-  a.px[n] += gy * tangent;
-  a.py[n] -= gx * tangent;
+  if (!uneven) {
+    collide(w, a, n, a.x[n] - gy * slip, a.y[n] + gx * slip);
+    const tangent = (a.x[n] - a.px[n]) * gy - (a.y[n] - a.py[n]) * gx;
+    a.px[n] += gy * tangent;
+    a.py[n] -= gx * tangent;
+    return true;
+  }
+  const vertical = (x - a.x[n]) * gx + (y - a.y[n]) * gy;
+  collide(w, a, n, a.x[n] + gx * vertical, a.y[n] + gy * vertical);
+  collide(w, a, n, x, y);
+  // Pose projection can lift a supported foot slightly off a stair. Settle
+  // that contact before zeroing its velocity, so grip doesn't flicker on/off.
+  collide(w, a, n, a.x[n] + gx * 0.8, a.y[n] + gy * 0.8, 0.1);
+  a.px[n] = a.x[n];
+  a.py[n] = a.y[n];
+  return true;
 }

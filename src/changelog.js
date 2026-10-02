@@ -1,5 +1,14 @@
 export const changelog = [
   {
+    version: "1.10.2",
+    date: "2026-10-02",
+    title: "Walking over slopes",
+    changes: [
+      "Players and human stickmen lift grounded feet onto nearby one- and two-pixel ledges, so walking climbs pixel slopes instead of catching on each corner. Steps require attached legs, a reachable supported landing and clearance above the head and torso. The existing joint solver pulls the body up behind each foot. Taller ledges still require jumping; low roofs block steps. Gravity rotation, keyboard and joystick movement, idle foot grip and ragdoll physics remain supported.",
+      "Feet stay planted on surfaces at different heights after movement is released. Resting contact now distinguishes leg-motor corrections from external impulses, preventing downhill slipping while preserving jumps, strong pushes and moving supports.",
+    ],
+  },
+  {
     version: "1.10.1",
     date: "2026-10-02",
     title: "Planted feet after walking",
