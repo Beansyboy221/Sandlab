@@ -38,7 +38,7 @@ with sync_playwright() as p:
     desktop = browser.new_context(viewport={'width':1440, 'height':900}, device_scale_factor=1)
     page, errors = init(desktop)
     page.wait_for_timeout(1200)
-    assert page.locator('.material').count() == 72
+    assert page.locator('.material').count() == 74
     assert page.locator('#reset-view-btn, #zoom-fit-btn').count() == 0
     names = page.locator('.material-name').all_text_contents()
     assert 'CO2' in names and 'Glass Shards' in names
@@ -143,12 +143,12 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '72 materials · 84 simulation forms'
+    assert page.locator('#app-content-count').inner_text() == '74 materials · 86 simulation forms'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 21
+    assert page.locator('.changelog-release').count() == 23
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')

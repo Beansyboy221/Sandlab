@@ -1,4 +1,5 @@
 import { rigidFields } from "./sim/rigid-bodies.js";
+import { validateStickmen } from "./sim/stickmen.js";
 import { elasticFields, elasticFloatFields } from "./sim/elasticity.js";
 import {
   defaultLevel,
@@ -16,6 +17,7 @@ const floatFields = [...elasticFloatFields, ...rigidFields];
 export function snapshot(world, typed = false) {
   return {
     version: 1,
+    stickmen: world.stickmen.snapshot(),
     atmosphere: {
       ambientTemperature: world.fields.ambientTemperature,
       ambientPressure: world.fields.ambientPressure,
@@ -60,6 +62,7 @@ function validateDimensions(data) {
 }
 export function validateSnapshot(data) {
   validateDimensions(data);
+  validateStickmen(data.stickmen);
   if (data.level !== undefined) validateLevelMetadata(data.level);
   if (
     (data.seed !== undefined &&
@@ -251,6 +254,8 @@ export function restore(world, data) {
       world.chunks[world.chunk(i)]++;
     }
   world.elastic.rebuild(world);
+  world.stickmen.world = world;
+  world.stickmen.restore(data.stickmen);
   if (data.pressure) world.fields.pressure.set(data.pressure);
   if (data.atmosphere) {
     world.fields.ambientTemperature = data.atmosphere.ambientTemperature;
@@ -283,6 +288,7 @@ export function pack(data) {
 }
 export function unpack(data) {
   validateDimensions(data);
+  validateStickmen(data.stickmen);
   if (data.level !== undefined) validateLevelMetadata(data.level);
   if (data.encoding === undefined) return data;
   if (data.encoding !== "rle") throw Error("Unsupported save encoding.");

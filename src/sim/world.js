@@ -1,4 +1,5 @@
 import { RigidBodies, rigidFields } from "./rigid-bodies.js";
+import { Stickmen } from "./stickmen.js";
 import { drawingPhase } from "./material-families.js";
 import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
 import { moveRay, rayHeading } from "./energy.js";
@@ -68,6 +69,7 @@ export class World {
     this.energyBirths = 0;
     this.energyReactions = 0;
     this.fields = new Fields(width, height);
+    this.stickmen = new Stickmen(this);
   }
   random() {
     let s = this.seed | 0;
@@ -91,6 +93,15 @@ export class World {
   ) {
     id = canonicalMaterial(id);
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
+    if (materials[id].actor) {
+      this.stickmen.world = this;
+      this.stickmen.spawn(
+        (i % this.width) + 0.5,
+        Math.floor(i / this.width) + 0.5,
+        id,
+      );
+      return;
+    }
     if (!this.cells[i] && id) {
       this.chunks[this.chunk(i)]++;
       this.count++;
@@ -172,6 +183,8 @@ export class World {
     }
   }
   clear() {
+    this.stickmen.world = this;
+    this.stickmen.restore();
     this.rigid.locations.clear();
     this.rigid.bodies = [];
     this.rigid.bodyOf.clear();
@@ -483,6 +496,8 @@ export class World {
     this.inParticlePass = false;
     this.rigid.step();
     this.elastic.step();
+    this.stickmen.world = this;
+    this.stickmen.step();
   }
   explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);
@@ -534,6 +549,13 @@ export class World {
     if (!Number.isFinite(temperature)) return;
     temperature = Math.max(-250, Math.min(6000, temperature));
     id = drawingPhase(id, temperature);
+    if (materials[id].actor) {
+      this.stickmen.world = this;
+      this.stickmen.spawn(x + 0.5, y + 0.5, id);
+      return;
+    }
+    if (!id)
+      this.stickmen.brush("erase", x + 0.5, y + 0.5, radius, 0, 0, 1, shape);
     if (!id && this.elastic.locations.size) {
       this.elastic.world = this;
       this.elastic.cutBrush(x, y, radius, shape);

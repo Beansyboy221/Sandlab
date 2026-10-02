@@ -60,6 +60,16 @@ export const settingGroups = [
     name: "Brush",
     fields: [
       {
+        key: "solidDrawRelease",
+        label: "After drawing solids",
+        type: "select",
+        options: [
+          ["resume", "Resume on release"],
+          ["hold", "Stay paused"],
+        ],
+        default: "resume",
+      },
+      {
         key: "brushSize",
         label: "Brush size",
         type: "range",

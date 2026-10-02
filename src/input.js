@@ -24,6 +24,7 @@ export class Input {
     onHover,
     selection,
     onRead,
+    drawingPause,
   ) {
     this.canvas = canvas;
     canvas.tabIndex = 0;
@@ -35,6 +36,8 @@ export class Input {
     this.onStroke = onStroke;
     this.onHover = onHover;
     this.selection = selection;
+    this.drawingPause = drawingPause;
+    this.lastSolidBrush = null;
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     const pointerDown = (e) => {
       if (e.button === 1) {
@@ -88,6 +91,13 @@ export class Input {
         ["paint", "erase", "recolor"].includes(state.tool) &&
         (e.shiftKey || e.ctrlKey);
       if (geometric && this.pointers.size) return;
+      if (
+        state.tool === "paint" &&
+        !state.erase &&
+        e.button === 0 &&
+        materials[state.material].rigid
+      )
+        drawingPause?.begin(e.pointerId);
       if (!selecting && !geometric && !this.pointers.size) {
         this.onStroke();
         if (state.tool === "recolor") beginColorStroke(world);
@@ -207,6 +217,7 @@ export class Input {
         } else selection.cancel();
       }
       this.pointers.delete(e.pointerId);
+      drawingPause?.end(e.pointerId, type !== "pointerup");
       if (e.pointerType === "touch") {
         renderer.cursor = null;
         canvas.style.cursor = "crosshair";
@@ -283,6 +294,7 @@ export class Input {
   cancelDrawing() {
     this.pointers.clear();
     this.renderer.gesture = null;
+    this.drawingPause?.cancel();
   }
   hover(point, erasing = false, refine = false) {
     if (this.state.tool === "fill") {
@@ -445,9 +457,44 @@ export class Input {
     }
   }
   update() {
-    if (!this.pointers.size) this.renderer.gesture = null;
-    for (const point of this.pointers.values())
-      if (!point.selecting && !point.readOnly && !point.gesture && !point.pan)
+    if (!this.pointers.size) {
+      this.renderer.gesture = null;
+      this.lastSolidBrush = null;
+      return;
+    }
+    const s = this.state,
+      frozen =
+        this.drawingPause?.active &&
+        s.tool === "paint" &&
+        !s.erase &&
+        materials[s.material].rigid,
+      previous = this.lastSolidBrush,
+      changed =
+        !previous ||
+        previous.material !== s.material ||
+        previous.radius !== s.radius ||
+        previous.shape !== s.shape ||
+        previous.replace !== s.replace;
+    // Pointer events already stamp moving strokes. Frozen solids cannot vacate
+    // their brush, so held strokes need another stamp only if brush settings change.
+    for (const [id, point] of this.pointers)
+      if (
+        !point.selecting &&
+        !point.readOnly &&
+        !point.gesture &&
+        !point.pan &&
+        !(frozen && this.drawingPause.pointers.has(id) && !changed)
+      )
         this.paint(point, point, point.erase, point.dx, point.dy);
+    this.lastSolidBrush = frozen
+      ? changed
+        ? {
+            material: s.material,
+            radius: s.radius,
+            shape: s.shape,
+            replace: s.replace,
+          }
+        : previous
+      : null;
   }
 }

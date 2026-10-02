@@ -1,5 +1,26 @@
 export const changelog = [
   {
+    version: "1.7.0",
+    date: "2026-10-02",
+    title: "Stickmen and player controls",
+    changes: [
+      "Added Stickman and Player in Life. Characters have jointed bodies, gravity, swept terrain collisions, liquid drag, finite burning fuel, impact damage, breakable limbs, and persistent ragdoll physics. Grab, Fan, Warm, Cool and Erase interact with them.",
+      "AI stickmen use bounded A* over supported terrain, with clearance checks, jump and drop edges, and hazard avoidance. They follow a player or patrol terrain; navigation replans as the world changes.",
+      "Player controls use A/D to move, W or Space to jump, and S to crouch. Phones and tablets get an on-screen joystick and Jump button. Release controls returns Space to normal sandbox shortcuts; P pauses while playing.",
+      "Added Stickman playground. Characters survive saves, autosaves, export/import, Undo/Redo, and canvas resizing. Inspect shows health, joints, heat and navigation state.",
+    ],
+  },
+  {
+    version: "1.6.6",
+    date: "2026-10-02",
+    title: "Shape solids before they fall",
+    changes: [
+      "Draw automatically pauses physics while drawing moving solids, so a whole shape forms before falling. Mouse, pen, touch, and line/circle/rectangle gestures share this behavior.",
+      "Settings → Brush → After drawing solids offers Resume on release or Stay paused. Existing pauses are preserved; canceled strokes and two-finger navigation release the temporary stop safely.",
+      "Stationary solid strokes avoid repeated brush work while frozen. Movement and live size/shape changes still update immediately.",
+    ],
+  },
+  {
     version: "1.6.5",
     date: "2026-10-02",
     title: "Pixel material icons",

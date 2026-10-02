@@ -1,5 +1,6 @@
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
 import { drawRigidBodies } from "./sim/rigid-renderer.js";
+import { drawStickmen } from "./sim/stickman-renderer.js";
 import { drawElasticBodies, drawBubbles } from "./sim/elastic-renderer.js";
 import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
@@ -58,6 +59,7 @@ export class Renderer {
   drawElastics(context, viewport) {
     drawElasticBodies(context, this.world, viewport, this.elasticColors);
     drawRigidBodies(context, this.world, viewport, this.elasticColors);
+    drawStickmen(context, this.world, viewport);
   }
   worldImage() {
     if (

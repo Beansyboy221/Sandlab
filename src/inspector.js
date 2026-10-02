@@ -7,13 +7,37 @@ export function cellAt(world, point) {
     y = Math.floor(point.y);
   if (x < 0 || y < 0 || x >= world.width || y >= world.height) return null;
   const index = y * world.width + x;
-  return { x, y, index, material: materials[world.cells[index]] };
+  const actor = world.stickmen.hit(point.x, point.y, 0.8);
+  return {
+    x,
+    y,
+    index,
+    material: materials[actor?.material ?? world.cells[index]],
+    actor,
+  };
 }
 export function cellProperties(world, point) {
   const cell = cellAt(world, point);
   if (!cell) return null;
   const { x, y, index: i, material: m } = cell,
     life = world.life[i];
+  if (cell.actor) {
+    const a = cell.actor;
+    return {
+      ...cell,
+      rows: [
+        ["Health", `${Math.round(a.health)} / 100`],
+        ["State", a.alive ? "Alive" : "Ragdoll"],
+        ["Temperature", `${Math.max(...a.heat).toFixed(1)}°C`],
+        ["Joints", `${a.bonds.filter(Boolean).length} / 8`],
+        [
+          "Navigation",
+          m.actor === "ai" ? `A* · ${a.path.length} waypoints` : "Player",
+        ],
+        ["Grounded", a.grounded ? "Yes" : "No"],
+      ],
+    };
+  }
   const rows = [
     [
       "Temperature",

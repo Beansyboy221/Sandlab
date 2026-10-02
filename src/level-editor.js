@@ -4,6 +4,7 @@ import {
   inversePoint,
 } from "./canvas-view.js";
 import { materials } from "./sim/materials.js";
+import { presets, loadPreset } from "./presets.js";
 import {
   levelProperties,
   validateLevelProperties,
@@ -21,6 +22,14 @@ export class LevelEditor {
     this.remember = remember;
     this.refresh = refresh;
     this.form = dialog.querySelector("form");
+    this.starter = dialog.querySelector("#level-starter");
+    for (const preset of presets)
+      if (preset.id !== "blank") {
+        const option = document.createElement("option");
+        option.value = preset.id;
+        option.textContent = preset.name;
+        this.starter.append(option);
+      }
     this.inputs = Object.fromEntries(
       ["name", "border", "background"].map((key) => [
         key,
@@ -126,6 +135,8 @@ export class LevelEditor {
   }
   show(editing = false) {
     this.editing = editing;
+    this.starter.value = "blank";
+    this.starter.closest("label").hidden = editing;
     this.placement = null;
     this.error.textContent = "";
     const values = levelProperties(this.world);
@@ -214,6 +225,11 @@ export class LevelEditor {
         Object.assign(this.world, resized);
       } else if (!this.editing) {
         const created = createLevel(values);
+        created.setGravity(this.world.gravityX, this.world.gravityY);
+        if (this.starter.value !== "blank") {
+          loadPreset(created, this.starter.value);
+          if (values.name !== "Untitled canvas") created.name = values.name;
+        }
         this.remember();
         Object.assign(this.world, created);
       } else {

@@ -829,6 +829,8 @@ definitions.push(
       combustionGas: "CO2",
     },
   ],
+  ["Stickman", "life", "#dec49b", 1, { actor: "ai", movable: false }],
+  ["Player", "life", "#82d4e8", 1, { actor: "player", movable: false }],
 );
 export const M = Object.create(null);
 export const materials = definitions.map(

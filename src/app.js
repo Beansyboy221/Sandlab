@@ -1,4 +1,6 @@
 import { ColorPicker } from "./color-picker.js";
+import { DrawingPause } from "./drawing-pause.js";
+import { PlayerControls } from "./player-controls.js";
 import { fittedCanvasSize } from "./canvas-view.js";
 import {
   paletteBase,
@@ -43,7 +45,7 @@ import { icon, materialIcon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
-let autosaveTimer, toolPicker, mobileDock;
+let autosaveTimer, toolPicker, mobileDock, drawingPause;
 $("palette").querySelector("h1 span").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
@@ -138,7 +140,11 @@ function undo() {
 function redo() {
   travelHistory("redo");
 }
-function setPaused(value) {
+function setPaused(value, fromDrawing = false) {
+  if (!fromDrawing && drawingPause?.active) {
+    drawingPause.hold();
+    value = true;
+  }
   if (!value && selection.dragging) selection.cancel();
   state.paused = value;
   accumulator = 0;
@@ -399,12 +405,14 @@ for (const cat of categories) {
 $("search").addEventListener("input", renderMaterials);
 $("brush").addEventListener("input", (e) => state.setRadius(+e.target.value));
 $("play-btn").addEventListener("click", () => setPaused(!state.paused));
-$("step-btn").addEventListener("click", () => {
+function stepSimulation() {
   setPaused(true);
+  if (drawingPause?.active) return;
   if (selection.dragging) selection.cancel();
   world.step();
   hasChanged = true;
-});
+}
+$("step-btn").addEventListener("click", stepSimulation);
 $("speed").addEventListener("change", (e) =>
   settings.set("speed", +e.target.value),
 );
@@ -472,6 +480,9 @@ $("palette-toggle").addEventListener("click", () => {
 $("palette-close").addEventListener("click", () =>
   $("palette").classList.remove("open"),
 );
+drawingPause = new DrawingPause(state, settings, (value) =>
+  setPaused(value, true),
+);
 const input = new Input(
   $("world"),
   renderer,
@@ -495,7 +506,9 @@ const input = new Input(
       toast(`${cell.material.name} selected`);
     }
   },
+  drawingPause,
 );
+const playerControls = new PlayerControls($("canvas-wrap"), world, state);
 mobileDock.onOrientationChange = () => {
   input.cancel();
   selection.cancel();
@@ -519,6 +532,7 @@ $("inspect-zoom").addEventListener("change", (e) => {
 });
 function openDialog(id) {
   input.cancel();
+  playerControls.reset();
   selection.cancel();
   const dialog = $(id);
   dialogPrevious.set(dialog, state.paused);
@@ -798,10 +812,8 @@ const shortcutHandlers = {
   },
   delete: deleteSelection,
   step: () => {
-    setPaused(true);
     selection.cancel();
-    world.step();
-    hasChanged = true;
+    stepSimulation();
   },
   paint: () => setTool(false),
   recolor: () => setTool("recolor"),
@@ -980,6 +992,7 @@ function frame(now) {
   lastTime = now;
   if (!document.hidden) {
     input.update();
+    playerControls.update();
     if (!state.paused) {
       accumulator += elapsed * state.speed;
       let steps = 0;

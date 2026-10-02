@@ -6,3 +6,6 @@
 - Introduce latent heat and calibrated heat capacities before adding more physical phase transitions.
 - Extend spring-body tests to folded ropes and large cut membranes touching other elastic objects.
 - Measure simulations on physical iPhones and Android devices; browser emulation verifies touch/layout but cannot measure phone thermal throttling or Safari sensor behavior.
+
+- Extend selection masks and clipboard operations to jointed actors, including partial-body selections.
+- Expand AI navigation with climbing and swimming, with routes verified against character trajectories.

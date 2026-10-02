@@ -34,6 +34,13 @@ export class SettingsPanel {
           "Reduced quality lowers display resolution without changing the simulation.";
         panel.append(note);
       }
+      if (group.id === "brush") {
+        const note = document.createElement("p");
+        note.className = "settings-note";
+        note.textContent =
+          "Draw pauses the simulation while you shape a solid. Choose Stay paused to build more before pressing Play. Worlds already paused stay paused.";
+        panel.append(note);
+      }
       if (group.id === "storage") {
         const note = document.createElement("p");
         note.className = "settings-note";

@@ -62,6 +62,21 @@ export function resizeLevel(world, properties, x, y) {
       }
     }
   resized.elastic.rebuild(resized);
+  const actors = world.stickmen.snapshot();
+  for (const a of actors)
+    for (let n = 0; n < 9; n++) {
+      a.x[n] -= x;
+      a.px[n] -= x;
+      a.y[n] -= y;
+      a.py[n] -= y;
+    }
+  resized.stickmen.restore(
+    actors.filter((a) =>
+      a.x.every(
+        (px, n) => px >= 0 && px < p.width && a.y[n] >= 0 && a.y[n] < p.height,
+      ),
+    ),
+  );
   resized.motionStamp.fill(resized.tick + 1);
   return resized;
 }

@@ -21,6 +21,7 @@ export function fillRegion(w, x, y, options = {}, beforeChange = () => {}) {
         );
   if (!["material", "foreground", "background"].includes(layer)) return 0;
   if (layer === "material") {
+    if (materials[target]?.actor) return 0;
     if (
       !materials[target] ||
       source === target ||

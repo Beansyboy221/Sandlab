@@ -4,6 +4,13 @@ import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
 export const presets = [
   {
+    id: "stickmen",
+    name: "Stickman playground",
+    subtitle: "Walk, jump, and follow",
+    tag: "PLAY",
+    color: "#82d4e8",
+  },
+  {
     id: "volcano",
     name: "Volcanic island",
     subtitle: "Lava and water",
@@ -119,6 +126,36 @@ export function loadPreset(world, id) {
   const w = world.width,
     h = world.height;
   const { put, rect, line, cup } = painter(world);
+  if (id === "stickmen") {
+    const gx = world.gravityX,
+      gy = world.gravityY;
+    const across = gy ? w : h,
+      down = gx ? w : h;
+    const floor = Math.max(16, Math.min(down - 3, Math.floor(down * 0.78)));
+    const map = (u, v) => ({
+      x: gy * u + gx * v + (gy < 0 || gx < 0 ? w - 1 : 0),
+      y: -gx * u + gy * v + (gx > 0 || gy < 0 ? h - 1 : 0),
+    });
+    for (let u = 0; u < across; u++) {
+      for (const base of [floor, down - 3])
+        for (let v = base; v < base + 3; v++) {
+          const p = map(u, v);
+          put(p.x, p.y, "Wall");
+        }
+      if (u >= across * 0.4 && u < across * 0.48)
+        for (let v = floor - 3; v < floor; v++) {
+          const p = map(u, v);
+          put(p.x, p.y, "Wall");
+        }
+    }
+    if (across >= 60 && down >= 40) {
+      const a = map(Math.max(8, across * 0.14), floor - 1),
+        b = map(across * 0.3, floor - 1);
+      world.stickmen.spawn(a.x, a.y, M.Stickman);
+      world.stickmen.spawn(b.x, b.y, M.Player);
+    }
+    return;
+  }
   if (buildMaterialLab(world, id) || buildExperiment(world, id)) return;
   if (id === "volcano") {
     rect(0, h - 10, w, 10, "Wall");

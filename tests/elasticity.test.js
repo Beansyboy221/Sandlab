@@ -185,7 +185,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 72);
+  assert.equal(paletteMaterials.length, 74);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],

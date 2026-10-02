@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 72 palette substances and 84 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 74 palette substances and 86 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -11,6 +11,10 @@ npm start
 Open **http://localhost:3000**. The development server uses Python 3. For deployment, upload `index.html`, `style.css`, and `src/` to any static host. JavaScript modules require HTTP serving rather than opening the HTML as a local file. The interface uses system fonts and needs no external services.
 
 ## Play
+
+Draw a solid shape while holding the pointer: physics pauses until release. Settings → Brush → After drawing solids can keep the world paused afterward; an already-paused world always stays paused.
+
+Life includes **Stickman** (AI) and **Player**. Click or tap empty space to spawn a jointed character. **A/D** move, **W or Space** jump, and **S** crouches; mobile provides a joystick and Jump button, usable together. **P** still pauses. Release controls returns keyboard shortcuts to the sandbox. The plus button's Starting world picker includes a Stickman playground and the other preset worlds. AI characters use A* over terrain with supported standing positions, walking/jump/drop edges, clearance checks, bounded searches and periodic replanning. They follow a player or patrol. Limbs can be cut or strained apart; characters burn, corrode, take impact damage and remain physical after death. Grab, Fan, Warm, Cool and Erase work on bodies. Saves, history, inspection, and resizing preserve their state. Each world supports up to 32 stickmen and one living Player.
 
 Choose an element and drag to paint. The tool picker on the drawing toolbar offers Warm, Cool, Fan, Grab, Pressure, Vacuum, and Squeeze. Fan pushes in your drag direction (right when held still); Grab drags a patch of particles and solids. Pressure repels mobile particles, while Vacuum attracts them. Squeeze releases stored liquid from sponges. Right-click to erase, or select the eraser on touch screens. Inspect (`M`) shows a zoomed view and live cell properties; hover to follow, or tap a cell to hold it. Copy (`I`) picks a material and returns to Draw without changing the world. Shift-drag previews a straight line. Control-drag previews a circle (center at the starting point) or rectangle outline using the current brush shape; release to draw or press Escape to cancel. Scroll over the canvas or use `[` / `]` to resize the brush. Control-scroll zooms at the pointer, middle-drag pans. On phones and tablets, use one finger to draw; use two fingers to pan and pinch to zoom. Both fingers must lift before drawing resumes, and camera gestures leave the world and edit history unchanged. The tool dropdown displays matching line icons and supports arrow keys, Enter, Escape, and first-letter navigation.
 
