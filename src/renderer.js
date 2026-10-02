@@ -27,10 +27,13 @@ export class Renderer {
     this.world = world;
     this.context = canvas.getContext("2d", { alpha: false });
     this.buffer = document.createElement("canvas");
+    this.composite = document.createElement("canvas");
+    this.compositeContext = this.composite.getContext("2d");
     this.buffer.width = world.width;
     this.buffer.height = world.height;
     this.ctx = this.buffer.getContext("2d", { alpha: false });
     this.data = this.ctx.createImageData(world.width, world.height);
+    this.elasticColors = new Uint8ClampedArray(world.length * 3);
     this.mode = "normal";
     this.grid = false;
     this.bloom = true;
@@ -48,6 +51,21 @@ export class Renderer {
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(canvas);
     this.resize();
+  }
+  drawElastics(context, viewport) {
+    drawElasticBodies(context, this.world, viewport, this.elasticColors);
+  }
+  worldImage() {
+    if (
+      this.composite.width !== this.world.width ||
+      this.composite.height !== this.world.height
+    ) {
+      this.composite.width = this.world.width;
+      this.composite.height = this.world.height;
+    }
+    this.compositeContext.drawImage(this.buffer, 0, 0);
+    this.drawElastics(this.compositeContext, { x: 0, y: 0, scale: 1 });
+    return this.composite;
   }
   resize() {
     const box = this.canvas.getBoundingClientRect(),
@@ -132,6 +150,7 @@ export class Renderer {
       this.buffer.width = this.world.width;
       this.buffer.height = this.world.height;
       this.data = this.ctx.createImageData(this.world.width, this.world.height);
+      this.elasticColors = new Uint8ClampedArray(this.world.length * 3);
       this.resize();
     }
     if (this.background !== this.world.background) {
@@ -151,9 +170,15 @@ export class Renderer {
         o = i * 4,
         x = i % width,
         y = (i / width) | 0;
-      let r = bgR,
-        g = bgG,
-        b = bgB;
+      const backdrop = this.world.backgroundPaint[i],
+        backAlpha = (backdrop >>> 24) / 255;
+      const cellBgR =
+          bgR * (1 - backAlpha) + ((backdrop >>> 16) & 255) * backAlpha,
+        cellBgG = bgG * (1 - backAlpha) + ((backdrop >>> 8) & 255) * backAlpha,
+        cellBgB = bgB * (1 - backAlpha) + (backdrop & 255) * backAlpha;
+      let r = cellBgR,
+        g = cellBgG,
+        b = cellBgB;
       if (id) {
         const base = thermal
           ? heatColors[Math.max(0, Math.min(1600, Math.round(temp[i]) + 100))]
@@ -163,6 +188,14 @@ export class Renderer {
         g = base[1] + shade;
         b = base[2] + shade;
         if (!thermal) {
+          const pigment = this.world.pigment[i],
+            opacity = (pigment >>> 24) / 255;
+          if (opacity) {
+            r =
+              r * (1 - opacity) + (((pigment >>> 16) & 255) + shade) * opacity;
+            g = g * (1 - opacity) + (((pigment >>> 8) & 255) + shade) * opacity;
+            b = b * (1 - opacity) + ((pigment & 255) + shade) * opacity;
+          }
           if (
             id === M.Fire ||
             id === M.Plasma ||
@@ -185,9 +218,9 @@ export class Renderer {
             id === M.Smoke ||
             materials[id].category === "gas"
           ) {
-            r = r * 0.67 + bgR * 0.33;
-            g = g * 0.67 + bgG * 0.33;
-            b = b * 0.67 + bgB * 0.33;
+            r = r * 0.67 + cellBgR * 0.33;
+            g = g * 0.67 + cellBgG * 0.33;
+            b = b * 0.67 + cellBgB * 0.33;
           }
           if (
             (id === M.Dirt || id === M.Mud || id === M.Plant) &&
@@ -226,7 +259,7 @@ export class Renderer {
             b = 139;
           }
         }
-      } else if (x % 20 === 0 && y % 20 === 0) {
+      } else if (!backdrop && x % 20 === 0 && y % 20 === 0) {
         const dot = bgR + bgG + bgB > 400 ? -13 : 13;
         r += dot;
         g += dot;
@@ -239,6 +272,16 @@ export class Renderer {
         g = g * (1 - a) + 103 * a;
         b = b * (1 - a) + (force < 0 ? 230 : 130) * a;
       }
+      if (materials[id].elasticity) {
+        const colorOffset = i * 3;
+        this.elasticColors[colorOffset] = r;
+        this.elasticColors[colorOffset + 1] = g;
+        this.elasticColors[colorOffset + 2] = b;
+        // Elastic skins use continuous positions in their own vector pass.
+        r = cellBgR;
+        g = cellBgG;
+        b = cellBgB;
+      }
       p[o] = r;
       p[o + 1] = g;
       p[o + 2] = b;
@@ -246,7 +289,6 @@ export class Renderer {
     }
     this.ctx.putImageData(this.data, 0, 0);
     if (this.mode === "normal") {
-      drawElasticBodies(this.ctx, this.world);
       drawBubbles(this.ctx, this.world);
     }
     const c = this.context,
@@ -254,8 +296,16 @@ export class Renderer {
     c.fillStyle = "#10191e";
     c.fillRect(0, 0, this.canvas.width, this.canvas.height);
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
+    this.drawElastics(c, v);
     if (this.bloom && !thermal && !pressure)
-      this.glow.draw(c, this.world, v, p, this.bloomIntensity);
+      this.glow.draw(
+        c,
+        this.world,
+        v,
+        p,
+        this.bloomIntensity,
+        this.elasticColors,
+      );
     if (this.grid) {
       c.strokeStyle = "#ffffff10";
       c.lineWidth = 1;

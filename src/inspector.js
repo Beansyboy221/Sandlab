@@ -49,16 +49,11 @@ export function cellProperties(world, point) {
         : "Empty · 0 / 48",
     ]);
   if (m.elasticity) {
-    let connections = 0;
-    for (const j of world.elastic.locations.values())
-      for (const bonds of world.elastic.bonds)
-        if (
-          (j === i && world.elastic.locations.has(bonds[j])) ||
-          bonds[j] === world.elasticId[i]
-        )
-          connections++;
+    const { connections, stretch, tension } = world.elastic.measure(i);
     rows.push(
       ["Elastic links", String(connections)],
+      ["Stretch", `${Math.round(stretch * 100)}%`],
+      ["Tension", `${tension.toFixed(2)} units`],
       ["Anchored", world.elasticAnchor[i] ? "Yes" : "No"],
     );
   }
@@ -154,7 +149,7 @@ export class Inspector {
     ctx.imageSmoothingEnabled = false;
     // Clip source bounds explicitly so edge cells keep their position in the lens.
     ctx.drawImage(
-      this.renderer.buffer,
+      this.renderer.worldImage(),
       sx,
       sy,
       width,

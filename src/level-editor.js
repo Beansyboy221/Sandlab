@@ -1,3 +1,4 @@
+import { materials } from "./sim/materials.js";
 import {
   levelProperties,
   validateLevelProperties,
@@ -205,8 +206,16 @@ export class LevelEditor {
       image = context.createImageData(this.world.width, this.world.height);
     image.data.set(this.renderer.data.data);
     for (let i = 0; i < this.world.length; i++)
-      if (!this.world.cells[i]) image.data[i * 4 + 3] = 0;
+      if (!this.world.cells[i] || materials[this.world.cells[i]].elasticity) {
+        const background = this.world.backgroundPaint[i],
+          o = i * 4;
+        image.data[o] = (background >>> 16) & 255;
+        image.data[o + 1] = (background >>> 8) & 255;
+        image.data[o + 2] = background & 255;
+        image.data[o + 3] = background >>> 24;
+      }
     context.putImageData(image, 0, 0);
+    this.renderer.drawElastics(context, { x: 0, y: 0, scale: 1 });
   }
   point(event) {
     const box = this.preview.getBoundingClientRect(),
@@ -246,7 +255,13 @@ export class LevelEditor {
     c.fillStyle = p.properties.background;
     c.fillRect(next.x, next.y, next.width, next.height);
     c.globalAlpha = 0.28;
-    c.drawImage(this.renderer.buffer, old.x, old.y, old.width, old.height);
+    c.drawImage(
+      this.renderer.worldImage(),
+      old.x,
+      old.y,
+      old.width,
+      old.height,
+    );
     c.globalAlpha = 1;
     c.save();
     c.beginPath();

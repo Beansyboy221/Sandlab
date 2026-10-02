@@ -1,6 +1,7 @@
 import { materials, M } from "./materials.js";
 export const brushTools = [
   ["paint", "Draw", "brush"],
+  ["recolor", "Paint", "palette"],
   ["erase", "Erase", "eraser"],
   ["warm", "Warm", "warm"],
   ["cool", "Cool", "cool"],
@@ -59,6 +60,10 @@ export function applyTool(
   if (tool === "fan") {
     moveBrush(w, x, y, radius, shape, Math.sign(dx), Math.sign(dy));
     return;
+  }
+  if (tool === "erase-mobile") {
+    w.elastic.world = w;
+    w.elastic.cutBrush(x, y, radius, shape);
   }
   const cx = Math.round(x),
     cy = Math.round(y);

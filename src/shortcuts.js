@@ -3,6 +3,7 @@ export const shortcutDefinitions = [
   ["pause", "Pause / play", ["Space", "p"]],
   ["step", "Single step", [".", "n"]],
   ["paint", "Draw", ["b"]],
+  ["recolor", "Paint", ["o"]],
   ["erase", "Erase", ["e"]],
   ["select", "Select", ["v"]],
   ["inspect", "Inspect", ["m"]],

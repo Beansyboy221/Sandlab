@@ -1,3 +1,4 @@
+import { paintBrush, beginColorStroke } from "./sim/paint.js";
 import { stampGesture } from "./drawing-gesture.js";
 import { M, materials } from "./sim/materials.js";
 import { applyTool, dragBrush } from "./sim/tools.js";
@@ -60,10 +61,13 @@ export class Input {
       }
       const geometric =
         !selecting &&
-        (state.tool === "paint" || state.tool === "erase") &&
+        ["paint", "erase", "recolor"].includes(state.tool) &&
         (e.shiftKey || e.ctrlKey);
       if (geometric && this.pointers.size) return;
-      if (!selecting && !geometric && !this.pointers.size) this.onStroke();
+      if (!selecting && !geometric && !this.pointers.size) {
+        this.onStroke();
+        if (state.tool === "recolor") beginColorStroke(world);
+      }
       this.pointers.set(e.pointerId, {
         ...point,
         erase:
@@ -154,9 +158,14 @@ export class Input {
           if (type === "pointerup") {
             gesture.end = this.bounded(renderer.point(e.clientX, e.clientY));
             this.onStroke();
+            if (state.tool === "recolor") beginColorStroke(world);
             const dx = gesture.end.x - gesture.start.x,
               dy = gesture.end.y - gesture.start.y;
-            if (state.material === M.Lightning && !gesture.erase)
+            if (
+              state.tool === "paint" &&
+              state.material === M.Lightning &&
+              !gesture.erase
+            )
               this.paint(gesture.end, gesture.end, false, dx, dy, true);
             else {
               const radius = state.radius;
@@ -316,6 +325,20 @@ export class Input {
     for (let i = 0; i <= steps; i++) {
       const x = a.x + ((b.x - a.x) * i) / steps,
         y = a.y + ((b.y - a.y) * i) / steps;
+      if (this.state.tool === "recolor") {
+        paintBrush(
+          this.world,
+          x,
+          y,
+          this.state.radius,
+          this.state.shape,
+          this.state.colorLayer,
+          parseInt(this.state.color.slice(1), 16),
+          this.state.colorOpacity,
+          erase || this.state.colorErase,
+        );
+        continue;
+      }
       if (tool !== "paint" && tool !== "erase") {
         const direction = fanDirections[this.state.fanDirection];
         applyTool(

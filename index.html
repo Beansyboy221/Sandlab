@@ -243,6 +243,29 @@
               ><span class="deselect-label">Deselect</span>
             </button>
             <div id="tool-properties" class="tool-properties" hidden>
+              <div id="paint-properties" class="property-group" hidden>
+                <button
+                  id="paint-color"
+                  class="paint-color"
+                  aria-label="Choose paint color"
+                  title="Choose paint color"
+                >
+                  <i></i>
+                </button>
+                <select id="paint-layer" aria-label="Paint layer">
+                  <option value="foreground">Foreground</option>
+                  <option value="background">Background</option>
+                </select>
+                <button
+                  id="paint-erase"
+                  class="property-button"
+                  aria-label="Remove paint"
+                  title="Remove paint; right-click also removes paint"
+                  aria-pressed="false"
+                >
+                  <span data-icon="eraser"></span>
+                </button>
+              </div>
               <div id="inspection-properties" class="property-group" hidden>
                 <button
                   id="inspect-hold"
@@ -400,6 +423,118 @@
       </aside>
     </main>
     <div class="toast" id="toast" role="status"></div>
+    <dialog
+      id="color-dialog"
+      class="color-dialog"
+      aria-labelledby="color-title"
+    >
+      <div class="dialog-heading">
+        <h2 id="color-title">Paint color</h2>
+        <button
+          type="button"
+          class="icon-button dialog-close"
+          aria-label="Close color picker"
+        >
+          <span data-icon="close"></span>
+        </button>
+      </div>
+      <div class="color-tabs" role="tablist" aria-label="Color source">
+        <button
+          type="button"
+          role="tab"
+          id="picker-tab"
+          data-color-tab="picker"
+          aria-controls="color-picker-panel"
+          aria-selected="true"
+        >
+          Picker
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="palette-tab"
+          data-color-tab="palette"
+          aria-controls="color-palette-panel"
+          aria-selected="false"
+        >
+          <span data-icon="palette"></span>Palette
+        </button>
+      </div>
+      <div id="color-picker-panel" role="tabpanel" aria-labelledby="picker-tab">
+        <div class="wheel-wrap">
+          <canvas
+            id="color-wheel"
+            aria-label="Hue and saturation color wheel"
+          ></canvas
+          ><i id="wheel-marker" aria-hidden="true"></i>
+        </div>
+      </div>
+      <div
+        id="color-palette-panel"
+        role="tabpanel"
+        aria-labelledby="palette-tab"
+        hidden
+      >
+        <div id="color-palette" class="color-palette"></div>
+      </div>
+      <div class="color-inputs">
+        <label
+          >Hex<input
+            id="color-hex"
+            type="text"
+            maxlength="7"
+            spellcheck="false"
+            autocapitalize="off"
+            value="#73b8ef"
+            aria-label="Hex color"
+        /></label>
+        <label
+          >R<input
+            id="color-r"
+            type="number"
+            min="0"
+            max="255"
+            step="1"
+            aria-label="Red"
+        /></label>
+        <label
+          >G<input
+            id="color-g"
+            type="number"
+            min="0"
+            max="255"
+            step="1"
+            aria-label="Green"
+        /></label>
+        <label
+          >B<input
+            id="color-b"
+            type="number"
+            min="0"
+            max="255"
+            step="1"
+            aria-label="Blue"
+        /></label>
+      </div>
+      <div class="color-sliders">
+        <label for="color-h">Hue <output id="color-h-value"></output></label
+        ><input id="color-h" type="range" min="0" max="359" value="0" />
+        <label for="color-s"
+          >Saturation <output id="color-s-value"></output></label
+        ><input id="color-s" type="range" min="0" max="100" value="100" />
+        <label for="color-v"
+          >Brightness <output id="color-v-value"></output></label
+        ><input id="color-v" type="range" min="0" max="100" value="100" />
+        <label for="color-opacity"
+          >Opacity <output id="color-opacity-value"></output></label
+        ><input id="color-opacity" type="range" min="0" max="100" value="100" />
+      </div>
+      <div class="color-footer">
+        <div class="color-preview-checker"><i id="color-preview"></i></div>
+        <span id="color-preview-label"></span
+        ><button type="button" class="dialog-close">Done</button>
+      </div>
+    </dialog>
     <dialog
       id="settings-dialog"
       class="settings-dialog"

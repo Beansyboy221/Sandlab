@@ -26,6 +26,12 @@ export class SelectionOverlay {
             data.data[o] = parseInt(color.slice(1, 3), 16);
             data.data[o + 1] = parseInt(color.slice(3, 5), 16);
             data.data[o + 2] = parseInt(color.slice(5, 7), 16);
+            const pigment = clip.arrays.pigment?.[i] || 0,
+              opacity = (pigment >>> 24) / 255;
+            for (let channel = 0; channel < 3; channel++)
+              data.data[o + channel] =
+                data.data[o + channel] * (1 - opacity) +
+                ((pigment >>> (16 - channel * 8)) & 255) * opacity;
             data.data[o + 3] = 180;
           }
         c.putImageData(data, 0, 0);

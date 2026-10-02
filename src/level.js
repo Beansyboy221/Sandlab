@@ -35,7 +35,7 @@ export function resizeLevel(world, properties, x, y) {
   ) {
     const source = (row + y) * world.width + left + x,
       target = row * p.width + left;
-    for (const name of particleStateFields)
+    for (const name of [...particleStateFields, "backgroundPaint"])
       resized[name].set(
         world[name].subarray(source, source + right - left),
         target,

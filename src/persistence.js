@@ -10,7 +10,7 @@ import { absorbable } from "./sim/absorption.js";
 import { materials, M } from "./sim/materials.js";
 const KEY = "sandlab.saves.v1",
   AUTO = "sandlab.autosave.v1";
-const arrays = particleStateFields;
+const arrays = [...particleStateFields, "backgroundPaint"];
 export function snapshot(world, typed = false) {
   return {
     version: 1,
@@ -67,6 +67,8 @@ export function validateSnapshot(data) {
       data.arrays?.[key] ??
       ([
         ...elasticFields,
+        "pigment",
+        "backgroundPaint",
         "heading",
         "chargedAt",
         "moisture",
@@ -98,7 +100,9 @@ export function validateSnapshot(data) {
             ? 15
             : key === "heading"
               ? 7
-              : key === "chargedAt" ||
+              : key === "pigment" ||
+                  key === "backgroundPaint" ||
+                  key === "chargedAt" ||
                   ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
                     key,
                   )
@@ -128,6 +132,8 @@ export function validateSnapshot(data) {
   }
   const elasticIds = new Set();
   for (let i = 0; i < length; i++) {
+    if (!data.arrays.cells[i] && data.arrays.pigment?.[i])
+      throw Error("Invalid foreground paint on an empty cell.");
     const id = data.arrays.elasticId?.[i];
     if (id) {
       if (!materials[data.arrays.cells[i]]?.elasticity || elasticIds.has(id))
@@ -220,6 +226,8 @@ export function unpack(data) {
       data.arrays?.[key] ??
       ([
         ...elasticFields,
+        "pigment",
+        "backgroundPaint",
         "heading",
         "chargedAt",
         "moisture",

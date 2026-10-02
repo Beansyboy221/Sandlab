@@ -835,7 +835,7 @@ for (const m of materials)
     ? "fiction"
     : m.explosive
       ? "explosive"
-      : ["Plant", "Seed", "Fertilizer", "Nutrient water"].includes(m.name)
+      : ["Plant", "Seed", "Nutrient water"].includes(m.name)
         ? "life"
         : m.category === "special"
           ? "devices"

@@ -1,5 +1,21 @@
 export const changelog = [
   {
+    version: "1.4.1",
+    date: "2026-10-01",
+    title: "Paint, elastic motion, and canvas handles",
+    changes: [
+      "Added Paint with foreground and background layers. Foreground recolors occupied particles and travels with them; background strokes stay at their canvas coordinates. Paint never creates particles or changes their physics.",
+      "A circular color swatch opens a touch-friendly wheel, RGB/hex inputs, hue, saturation, brightness, opacity, and a palette. Opacity applies consistently once per stroke. Paint removal restores the original appearance without deleting materials.",
+      "Both paint layers survive local saves, export/import, Undo/Redo, and cropping or expanding the canvas. Copying particles includes their foreground coating. Paint has a rebindable O shortcut.",
+      "Elastics accelerate and fall faster. Internal damping controls deformation rather than slowing whole-body motion, and smaller physics steps stabilize spring tension.",
+      "Fixed thick bodies stalling when their own cells blocked movement. Leading edges move first, and elastic physics continues every simulation tick, including after cuts.",
+      "Elastics have a separate smooth rendering pass with connected skins, flexible joints, and thinning under tension. Temperature and pressure views, inspection, previews, and save thumbnails include the same elastic bodies.",
+      "Erasing cuts visible stretched links even through empty grid cells. Cut membranes disappear immediately, the resulting pieces stay separate, and tensioned strands can recoil.",
+      "Moved Fertilizer from Life into Powders.",
+      "Desktop canvases have draggable edge and corner handles. Drag to crop or add space, hold Shift on a corner to preserve aspect ratio, or Escape to cancel. Resizes remain undoable.",
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-10-01",
     title: "Elastics and bubbles",

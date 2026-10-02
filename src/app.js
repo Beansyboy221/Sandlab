@@ -1,3 +1,5 @@
+import { ColorPicker } from "./color-picker.js";
+import { CanvasResizeHandles } from "./canvas-resize-handles.js";
 import {
   paletteBase,
   paletteMaterials,
@@ -41,7 +43,7 @@ import { icon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
-let autosaveTimer, toolPicker, mobileDock;
+let autosaveTimer, toolPicker, mobileDock, canvasResizer;
 $("palette").querySelector("h1 span").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
@@ -56,6 +58,10 @@ const state = {
   selectionErase: false,
   erase: false,
   tool: "paint",
+  color: "#73b8ef",
+  colorOpacity: 1,
+  colorLayer: "foreground",
+  colorErase: false,
   power: 1,
   includeSolids: true,
   fanDirection: "drag",
@@ -173,6 +179,7 @@ function updateToolProperties() {
   $("tool-properties").hidden = tool === "paint";
   $("selection-properties").hidden = tool !== "select";
   $("inspection-properties").hidden = tool !== "inspect";
+  $("paint-properties").hidden = tool !== "recolor";
   $("eyedropper-property").hidden = tool !== "eyedropper";
   const reading = tool === "inspect" || tool === "eyedropper";
   $("shape-btn").hidden = reading;
@@ -535,6 +542,7 @@ function closeDialog(dialog) {
     setPaused(dialogPrevious.get(dialog) ?? false);
   lastTime = performance.now();
 }
+const colorPicker = new ColorPicker(state, openDialog);
 for (const dialog of document.querySelectorAll("dialog")) {
   dialog
     .querySelectorAll(".dialog-close")
@@ -602,6 +610,7 @@ function syncLevelDisplay() {
   document.querySelector(".world-type").textContent =
     ` / ${world.border.toUpperCase()}`;
   renderer.draw();
+  canvasResizer?.update();
 }
 const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
   open: openDialog,
@@ -615,6 +624,23 @@ const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
     syncLevelDisplay();
     hasChanged = true;
   },
+});
+canvasResizer = new CanvasResizeHandles($("canvas-wrap"), world, renderer, {
+  begin: () => {
+    input.cancel();
+    selection.cancel();
+    const paused = state.paused;
+    setPaused(true);
+    return paused;
+  },
+  end: (paused) => setPaused(paused),
+  remember,
+  refresh: () => {
+    resetSelection();
+    syncLevelDisplay();
+    syncHistory();
+  },
+  properties: () => levelEditor.show(true),
 });
 $("new-canvas-btn").addEventListener("click", () => levelEditor.show());
 $("level-properties-btn").addEventListener("click", () =>
@@ -703,7 +729,7 @@ $("save-form").addEventListener("submit", (e) => {
     saveWorld(
       world,
       $("save-name").value.trim() || "Untitled world",
-      renderer.buffer.toDataURL(),
+      renderer.worldImage().toDataURL(),
     );
     renderSaves();
     toast("World saved on this device");
@@ -801,6 +827,7 @@ const shortcutHandlers = {
     hasChanged = true;
   },
   paint: () => setTool(false),
+  recolor: () => setTool("recolor"),
   erase: () => setTool(true),
   select: () => setTool("select"),
   warm: () => setTool("warm"),
@@ -988,6 +1015,7 @@ function frame(now) {
       }
     } else accumulator = 0;
     renderer.draw();
+    canvasResizer.update();
     inspector.update(now);
     frameCount++;
     if (now - statsTime >= 600) {

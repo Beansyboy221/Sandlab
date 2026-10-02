@@ -26,6 +26,11 @@ export class World {
     this.residue = new Uint8Array(this.length);
     this.variant = new Uint8Array(this.length);
     this.heading = new Uint8Array(this.length);
+    this.pigment = new Uint32Array(this.length);
+    this.backgroundPaint = new Uint32Array(this.length);
+    this.paintMark = new Uint32Array(this.length);
+    this.backgroundMark = new Uint32Array(this.length);
+    this.paintStroke = 0;
     this.updated = new Uint32Array(this.length);
     this.chargedAt = new Uint32Array(this.length);
     this.moisture = new Uint8Array(this.length);
@@ -45,6 +50,7 @@ export class World {
     this.particleFields = particleStateFields
       .filter((name) => !elasticFields.includes(name))
       .map((name) => this[name]);
+    this.particleFields.push(this.paintMark);
     this.elasticParticleFields = elasticFields.map((name) => this[name]);
     this.chunkWidth = Math.ceil(width / 16);
     this.chunks = new Uint16Array(this.chunkWidth * Math.ceil(height / 16));
@@ -88,6 +94,8 @@ export class World {
       this.elastic.locations.delete(this.elasticId[i]);
       for (const field of this.elasticParticleFields) field[i] = 0;
     }
+    this.pigment[i] = 0;
+    this.paintMark[i] = 0;
     this.cells[i] = id;
     this.temp[i] = temperature;
     const variation = materials[id].lifetimeVariation || 0;
@@ -146,6 +154,10 @@ export class World {
     for (const key of elasticFields) this[key].fill(0);
     for (const key of [
       "cells",
+      "pigment",
+      "backgroundPaint",
+      "paintMark",
+      "backgroundMark",
       "heading",
       "life",
       "charge",
@@ -409,6 +421,10 @@ export class World {
     if (!Number.isFinite(temperature)) return;
     temperature = Math.max(-250, Math.min(6000, temperature));
     id = drawingPhase(id, temperature);
+    if (!id && this.elastic.locations.size) {
+      this.elastic.world = this;
+      this.elastic.cutBrush(x, y, radius, shape);
+    }
     if (id === M.Lightning || materials[id].directed) radius = 0;
     for (let dy = -radius; dy <= radius; dy++)
       for (let dx = -radius; dx <= radius; dx++) {

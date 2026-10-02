@@ -219,3 +219,87 @@ test("restoring different dimensions rebinds the elastic solver to the live worl
   assert.equal(target.count, 0);
   assert.equal(target.elastic.locations.size, 0);
 });
+
+test("fertilizer remains a powder in the behavioral palette", () => {
+  assert.equal(materials[M.Fertilizer].category, "powder");
+  assert.equal(materials[M.Fertilizer].paletteCategory, "powder");
+});
+test("thick elastic bodies keep falling at useful speed over long runs without self-blocking", () => {
+  for (const name of ["Rope", "Rubber", "Jelly"]) {
+    const w = new World(80, 220);
+    for (let y = 10; y < 25; y++)
+      for (let x = 25; x < 45; x++) w.set(at(w, x, y), M[name]);
+    const meanY = () =>
+      [...w.elastic.locations.values()].reduce(
+        (sum, i) => sum + Math.floor(i / w.width) + w.offsetY[i],
+        0,
+      ) / w.count;
+    let before = meanY();
+    for (let interval = 0; interval < 5; interval++) {
+      for (let n = 0; n < 30; n++) w.step();
+      const after = meanY();
+      assert.ok(
+        after - before > 20,
+        `${name} stalled during interval ${interval}: ${after - before}`,
+      );
+      before = after;
+    }
+    assert.equal(w.count, 300);
+    assert.equal(w.elastic.locations.size, 300);
+    assert.ok(
+      [...w.elastic.locations.values()].every((i) => w.velocityY[i] > 0.8),
+    );
+  }
+});
+test("an eraser cuts a stretched link through an empty cell even while paused", () => {
+  for (const shape of ["circle", "square"]) {
+    const w = new World(32, 32);
+    w.set(at(w, 10, 10), M.Jelly);
+    w.set(at(w, 11, 10), M.Jelly);
+    w.swap(at(w, 11, 10), at(w, 15, 10));
+    assert.equal(w.cells[at(w, 12, 10)], 0);
+    assert.equal(links(w), 1);
+    const state = w.elastic.measure(at(w, 10, 10));
+    assert.equal(state.stretch, 4);
+    assert.ok(state.tension > 3);
+    w.brush(12, 10, 0, 0, shape);
+    assert.equal(links(w), 0);
+    assert.equal(w.count, 2);
+    for (let n = 0; n < 30; n++) w.step();
+    assert.equal(links(w), 0);
+    assert.equal(w.count, 2);
+  }
+});
+test("cutting a tensioned strand releases its ends and does not join the two resulting pieces", () => {
+  const w = new World(64, 80);
+  for (let x = 5; x < 17; x++) w.set(at(w, x, 20), M.Rope);
+  for (let x = 16; x > 5; x--) w.swap(at(w, x, 20), at(w, 5 + (x - 5) * 2, 20));
+  const leftId = w.elasticId[at(w, 15, 20)],
+    rightId = w.elasticId[at(w, 17, 20)];
+  w.brush(16, 20, 0, 0);
+  assert.equal(links(w), 10);
+  for (let n = 0; n < 3; n++) w.step();
+  const left = w.elastic.locations.get(leftId),
+    right = w.elastic.locations.get(rightId);
+  assert.ok((left % w.width) + w.offsetX[left] < 15);
+  assert.ok((right % w.width) + w.offsetX[right] > 17);
+  assert.ok(
+    !w.elastic.bonds.some((b) => b[left] === rightId || b[right] === leftId),
+  );
+  assert.equal(w.count, 12);
+});
+test("a detached jelly piece continues falling after a full-width cut", () => {
+  const w = new World(64, 180);
+  for (let y = 10; y < 30; y++)
+    for (let x = 20; x < 35; x++) w.set(at(w, x, y), M.Jelly);
+  const ids = new Set(w.elastic.locations.keys());
+  for (let x = 20; x < 35; x++) w.brush(x, 20, 0, 0, "square");
+  assert.equal(w.count, 285);
+  for (let n = 0; n < 90; n++) w.step();
+  assert.ok(
+    [...w.elastic.locations].every(
+      ([id, i]) => ids.has(id) && Math.floor(i / w.width) > 60,
+    ),
+  );
+  assert.equal(w.count, 285);
+});

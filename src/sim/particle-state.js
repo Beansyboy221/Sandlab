@@ -9,6 +9,7 @@ export const particleStateFields = [
   "clone",
   "residue",
   "variant",
+  "pigment",
   "heading",
   "chargedAt",
   "moisture",

@@ -4,7 +4,7 @@ export class Bloom {
     this.canvas = document.createElement("canvas");
     this.ctx = this.canvas.getContext("2d", { alpha: false });
   }
-  draw(context, world, viewport, pixels, intensity = 1) {
+  draw(context, world, viewport, pixels, intensity = 1, elasticColors = null) {
     const width = Math.ceil(world.width / 2),
       height = Math.ceil(world.height / 2);
     if (this.canvas.width !== width || this.canvas.height !== height) {
@@ -40,7 +40,13 @@ export class Bloom {
       const target =
         ((((i / world.width) | 0) >> 1) * width + ((i % world.width) >> 1)) * 3;
       for (let c = 0; c < 3; c++)
-        source[target + c] += pixels[i * 4 + c] * strength * 0.4 * intensity;
+        source[target + c] +=
+          (materials[id].elasticity && elasticColors
+            ? elasticColors[i * 3 + c]
+            : pixels[i * 4 + c]) *
+          strength *
+          0.4 *
+          intensity;
     }
     if (!emitting) return;
     // Two small separable kernels, independent of browser canvas-filter support.
