@@ -24,7 +24,7 @@ def cell(page,x,y):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==74
+    assert page.locator('.material').count()==76
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#tool-picker-menu [role=option]').count()==14
@@ -69,13 +69,13 @@ with sync_playwright() as p:
       for(let y=65;y<110;y+=3){w.set(y*w.width+65,M.Laser);w.heading[y*w.width+65]=0;}
       for(let y=110;y<155;y++)for(let x=230;x<255;x++)w.set(y*w.width+x,M.Water);
       w.brush(230,108,4,M.Cooler);w.brush(260,110,4,M.Fire);
-      w.brush(60,150,8,M.Light);
+      w.brush(60,150,8,M.Laser);
       for(let n=0;n<22;n++)w.step();sandlab.renderer.draw();
     }''')
     page.screenshot(path=str(ARTIFACTS/'energy-materials-desktop.png'))
     assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Laser)')
     assert page.evaluate('sandlab.world.cells.some(id=>id===energyM.Fire)')
-    benchmark=page.evaluate('''()=>{const w=sandlab.world,r=sandlab.renderer,M=energyM;w.clear();for(let y=20;y<180;y+=2)for(let x=10;x<310;x+=2)w.set(y*w.width+x,M.Light);const times=[];for(let n=0;n<20;n++){const t=performance.now();w.step();times.push(performance.now()-t);}r.draw();return {particles:w.count,meanTickMs:times.reduce((a,b)=>a+b,0)/times.length};}''')
+    benchmark=page.evaluate('''()=>{const w=sandlab.world,r=sandlab.renderer,M=energyM;w.clear();for(let y=20;y<180;y+=2)for(let x=10;x<310;x+=2)w.set(y*w.width+x,M.Laser);const times=[];for(let n=0;n<20;n++){const t=performance.now();w.step();times.push(performance.now()-t);}r.draw();return {particles:w.count,meanTickMs:times.reduce((a,b)=>a+b,0)/times.length};}''')
     assert page.evaluate('sandlab.world.count===sandlab.world.chunks.reduce((a,b)=>a+b,0)')
     assert not errors,errors
     context.close()

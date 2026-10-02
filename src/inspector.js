@@ -32,7 +32,17 @@ export function cellProperties(world, point) {
         ["Joints", `${a.bonds.filter(Boolean).length} / 8`],
         [
           "Navigation",
-          m.actor === "ai" ? `A* · ${a.path.length} waypoints` : "Player",
+          m.actor === "ai"
+            ? `A* · ${a.path.length} waypoints`
+            : m.actor === "player"
+              ? "Player"
+              : m.actor === "fish"
+                ? "Swimming"
+                : m.actor === "bird"
+                  ? "Flying"
+                  : m.actor === "rabbit"
+                    ? "Hopping"
+                    : "Walking",
         ],
         ["Grounded", a.grounded ? "Yes" : "No"],
       ],

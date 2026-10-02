@@ -183,7 +183,8 @@ export class Renderer {
         this.world,
       p = this.data.data;
     const pressure = this.mode === "pressure",
-      thermal = this.mode === "heat";
+      thermal = this.mode === "heat",
+      echo = this.mode === "echo";
     for (let i = 0; i < cells.length; i++) {
       const id = cells[i],
         o = i * 4,
@@ -305,6 +306,13 @@ export class Renderer {
         g = g * (1 - a) + 103 * a;
         b = b * (1 - a) + (force < 0 ? 230 : 130) * a;
       }
+      if (echo) {
+        const wave = this.world.sound.wave[fields.index(x, y)],
+          glow = Math.min(1, Math.abs(wave) * 2.5);
+        r = r * 0.22 + (wave < 0 ? 86 : 61) * glow;
+        g = g * 0.22 + (wave < 0 ? 113 : 224) * glow;
+        b = b * 0.22 + (wave < 0 ? 241 : 204) * glow;
+      }
       if (materials[id].elasticity || materials[id].rigid) {
         const colorOffset = i * 3;
         this.elasticColors[colorOffset] = r;
@@ -332,7 +340,7 @@ export class Renderer {
     c.setTransform(...this.view.matrix);
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
     this.drawElastics(c, v);
-    if (this.bloom && !thermal && !pressure)
+    if (this.bloom && !thermal && !pressure && !echo)
       this.glow.draw(
         c,
         this.world,

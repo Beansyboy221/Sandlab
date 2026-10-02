@@ -75,7 +75,7 @@ export class StickmanPathfinder {
       steps = Math.max(2, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y)));
     for (let n = 1; n <= steps; n++) {
       const t = n / steps,
-        lift = jumping ? 64 * t * (1 - t) : 0;
+        lift = jumping ? 32 * t * (1 - t) : 0;
       if (
         !this.clear(
           a.x + (b.x - a.x) * t - w.gravityX * lift,
@@ -146,8 +146,8 @@ export class StickmanPathfinder {
       }
       const a = this.point(current);
       for (const sign of [-1, 1])
-        for (let run = 1; run <= 6; run++)
-          for (let rise = -4; rise <= 4; rise++) {
+        for (let run = 1; run <= 2; run++)
+          for (let rise = -1; rise <= 4; rise++) {
             if (run === 1 && Math.abs(rise) > 1) continue;
             const x = Math.floor(
               (current % this.width) +

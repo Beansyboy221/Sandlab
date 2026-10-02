@@ -2,17 +2,10 @@
 export const energyMaterials = [
   [
     "Light",
-    "energy",
-    "#fff1b8",
+    "none",
+    "#111b20",
     0,
-    {
-      ray: "light",
-      energyRule: "ray",
-      speed: 3,
-      lifetime: 85,
-      glow: 0.8,
-      conductivity: 0,
-    },
+    { deprecated: true, retired: true, replacement: "Empty" },
   ],
   [
     "Laser",
@@ -32,17 +25,10 @@ export const energyMaterials = [
   ],
   [
     "Sound",
-    "energy",
-    "#86d7ec",
+    "none",
+    "#111b20",
     0,
-    {
-      ray: "sound",
-      energyRule: "ray",
-      speed: 2,
-      lifetime: 45,
-      glow: 0.25,
-      conductivity: 0,
-    },
+    { deprecated: true, retired: true, replacement: "Empty" },
   ],
   [
     "Neutron",

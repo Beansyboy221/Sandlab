@@ -1,8 +1,16 @@
+import { buildWildlife } from "./presets/wildlife.js";
 import { buildMaterialLab } from "./presets/material-labs.js";
 import { painter } from "./presets/painter.js";
 import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
 export const presets = [
+  {
+    id: "wildlife",
+    name: "Wildlife pond",
+    subtitle: "Walk, hop, swim, and fly",
+    tag: "LIFE",
+    color: "#9ac9bd",
+  },
   {
     id: "stickmen",
     name: "Stickman playground",
@@ -156,6 +164,7 @@ export function loadPreset(world, id) {
     }
     return;
   }
+  if (buildWildlife(world, id)) return;
   if (buildMaterialLab(world, id) || buildExperiment(world, id)) return;
   if (id === "volcano") {
     rect(0, h - 10, w, 10, "Wall");

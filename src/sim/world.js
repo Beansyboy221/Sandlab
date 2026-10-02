@@ -1,3 +1,4 @@
+import { Acoustics } from "./acoustics.js";
 import { RigidBodies, rigidFields } from "./rigid-bodies.js";
 import { Stickmen } from "./stickmen.js";
 import { drawingPhase } from "./material-families.js";
@@ -70,6 +71,9 @@ export class World {
     this.energyReactions = 0;
     this.fields = new Fields(width, height);
     this.stickmen = new Stickmen(this);
+    this.sound = new Acoustics(width, height);
+    this.fallDistance = new Uint8Array(this.length);
+    this.particleFields.push(this.fallDistance);
   }
   random() {
     let s = this.seed | 0;
@@ -127,6 +131,7 @@ export class World {
     this.cells[i] = id;
     this.temp[i] = temperature;
     const variation = materials[id].lifetimeVariation || 0;
+    this.fallDistance[i] = 0;
     this.life[i] =
       variation && lifetime
         ? Math.max(
@@ -185,6 +190,8 @@ export class World {
   clear() {
     this.stickmen.world = this;
     this.stickmen.restore();
+    this.sound.clear();
+    this.fallDistance.fill(0);
     this.rigid.locations.clear();
     this.rigid.bodies = [];
     this.rigid.bodyOf.clear();
@@ -273,7 +280,11 @@ export class World {
       return false;
     }
     if (j === i || !this.canMove(i, j, vertical)) return false;
+    const category = materials[this.cells[i]].category;
+    const falling = category === "powder" || category === "liquid";
     this.swap(i, j);
+    if (falling && vertical > 0)
+      this.fallDistance[j] = Math.min(24, this.fallDistance[j] + 1);
     return true;
   }
   swap(i, j) {
@@ -380,6 +391,26 @@ export class World {
       if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
         return;
     }
+    if (cat === "liquid" && this.fallDistance[i] > 2) {
+      this.sound.emit(
+        "splash",
+        x,
+        y,
+        Math.min(0.35, this.fallDistance[i] * 0.015),
+        m.density,
+      );
+      this.fallDistance[i] = 0;
+    }
+    if (cat === "powder" && this.fallDistance[i] > 1) {
+      this.sound.emit(
+        "grain",
+        x,
+        y,
+        Math.min(0.6, this.fallDistance[i] * 0.015 * Math.sqrt(m.density)),
+        m.density,
+      );
+      this.fallDistance[i] = 0;
+    }
     if (cat === "liquid" || gas) {
       if (this.random() > 1 / m.viscosity) return;
       const reach = gas ? 1 : 4;
@@ -421,6 +452,7 @@ export class World {
     this.elastic.world = this;
     this.rigid.world = this;
     this.tick++;
+    this.sound.tick = this.tick;
     this.fields.border = this.border;
     this.fields.update(this);
     this.fields.beginForceSample();
@@ -498,9 +530,11 @@ export class World {
     this.elastic.step();
     this.stickmen.world = this;
     this.stickmen.step();
+    this.sound.step(this);
   }
   explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);
+    this.sound.emit("explosion", x, y, Math.min(1.5, radius * 0.15), radius);
     const r2 = radius * radius;
     const loop = this.border === "looping",
       left = loop ? -Math.min(radius, Math.floor(this.width / 2)) : -radius,

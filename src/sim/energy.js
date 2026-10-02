@@ -72,8 +72,7 @@ function reflect(w, i, x, y, dx, dy) {
   w.heading[i] = rayHeading(dx, dy);
 }
 export function moveRay(w, i, x, y, m) {
-  const [dx, dy] = rayDirections[w.heading[i]],
-    sound = m.ray === "sound";
+  const [dx, dy] = rayDirections[w.heading[i]];
   let moved = 0,
     traversed = 0;
   // Transparent matter occupies the same grid as rays. Skip its cells without
@@ -83,8 +82,7 @@ export function moveRay(w, i, x, y, m) {
       ny = y + dy,
       j = w.index(nx, ny);
     if (j < 0) {
-      if (sound && w.border === "solid") reflect(w, i, x, y, dx, dy);
-      else w.transform(i, 0);
+      w.transform(i, 0);
       return;
     }
     if (j === i) return;
@@ -95,7 +93,6 @@ export function moveRay(w, i, x, y, m) {
       x = j % w.width;
       y = Math.floor(j / w.width);
       moved++;
-      if (sound) w.fields.add(x, y, 0.28);
       continue;
     }
     if (
@@ -106,55 +103,33 @@ export function moveRay(w, i, x, y, m) {
       w.transform(i, 0);
       return;
     }
-    if (sound) {
-      w.fields.add(j % w.width, Math.floor(j / w.width), 1.8);
-      if (target.id === M.Sponge) {
-        w.transform(i, 0);
-        return;
-      }
-      if (
-        target.id === M.Glass &&
-        w.fields.pressure[
-          w.fields.index(j % w.width, Math.floor(j / w.width))
-        ] > 3.5
-      )
-        w.transform(j, M["Glass Shards"], w.temp[j]);
-      if (
-        target.static ||
-        ["solid", "elastic", "powder"].includes(target.category)
-      ) {
-        reflect(w, i, x, y, dx, dy);
-        w.life[i] = Math.max(1, w.life[i] - 4);
-        return;
-      }
-    } else {
-      if (target.reflectLight) {
-        reflect(w, i, x, y, dx, dy);
-        return;
-      }
-      if (target.photoelectric) {
-        w.charge[j] = 6;
-        w.cooldown[j] = 18;
-        w.chargedAt[j] = w.tick;
-        w.temp[j] = Math.min(6000, w.temp[j] + (m.absorptionHeat || 1));
-        w.transform(i, 0);
-        return;
-      }
-      const transparent =
-        target.id === M.Glass ||
-        target.category === "gas" ||
-        target.waterLike ||
-        target.category === "energy";
-      w.temp[j] = Math.min(
-        6000,
-        w.temp[j] + (m.absorptionHeat || 1) * (transparent ? 0.08 : 1),
-      );
-      if (!transparent) {
-        w.transform(i, 0);
-        return;
-      }
-      if (w.life[i] > 1) w.life[i]--;
+    if (target.reflectLight) {
+      reflect(w, i, x, y, dx, dy);
+      return;
     }
+    if (target.photoelectric) {
+      w.charge[j] = 6;
+      w.cooldown[j] = 18;
+      w.chargedAt[j] = w.tick;
+      w.temp[j] = Math.min(6000, w.temp[j] + (m.absorptionHeat || 1));
+      w.transform(i, 0);
+      return;
+    }
+    const transparent =
+      target.id === M.Glass ||
+      target.category === "gas" ||
+      target.waterLike ||
+      target.category === "energy";
+    w.temp[j] = Math.min(
+      6000,
+      w.temp[j] + (m.absorptionHeat || 1) * (transparent ? 0.08 : 1),
+    );
+    if (!transparent) {
+      w.transform(i, 0);
+      return;
+    }
+    if (w.life[i] > 1) w.life[i]--;
+
     x = j % w.width;
     y = Math.floor(j / w.width);
   }

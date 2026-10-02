@@ -1,5 +1,17 @@
 export const changelog = [
   {
+    version: "1.8.0",
+    date: "2026-10-02",
+    title: "Creatures and echolocation",
+    changes: [
+      "Character walking and jump height now scale to body size. Walking covers about one body height per second; jumps preserve horizontal momentum. A* routes use shorter reachable jumps and continue steering in the air.",
+      "Added Cat, Rabbit, Fish and Bird to Life, plus a Wildlife pond starting world. Creatures walk, hop, swim or fly with distinct jointed bodies. Fish need cool Water or Brine; birds fall when injured or dead. Bodies burn, break, collide, respond to tools and survive saves and resizing.",
+      "Removed Light and Sound materials. Their historical save IDs safely become empty space; Laser, Mirror and Solar Cell remain available.",
+      "Added audible, stereo effects for falling powders, heavy body impacts, fizzing chemistry, melting, boiling, splashes, fire, explosions, lightning and birds. Heavier impacts are louder and lower pitched. The listener follows the screen center, or the player while controlling one. Audio unlocks on interaction; Audio settings provide mute and volume.",
+      "Added Echolocation beside Natural, Temperature and Pressure. A separate damped sound-wave field reflects from solid barriers, wraps across looping edges, escapes through void edges and loses energy in sponge. Sound waves remain visible with audio muted.",
+    ],
+  },
+  {
     version: "1.7.1",
     date: "2026-10-02",
     title: "Joystick jumping",

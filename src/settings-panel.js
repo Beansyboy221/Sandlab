@@ -34,6 +34,13 @@ export class SettingsPanel {
           "Reduced quality lowers display resolution without changing the simulation.";
         panel.append(note);
       }
+      if (group.id === "audio") {
+        const note = document.createElement("p");
+        note.className = "settings-note";
+        note.textContent =
+          "Sound starts after your first tap or keypress. Stereo follows the screen, or your player while controlling one. Echolocation also works with sound muted.";
+        panel.append(note);
+      }
       if (group.id === "brush") {
         const note = document.createElement("p");
         note.className = "settings-note";
@@ -137,7 +144,8 @@ export class SettingsPanel {
       else input.value = value;
       input.disabled = !!field.depends && !this.settings.get(field.depends);
       label.classList.toggle("setting-disabled", input.disabled);
-      if (output) output.value = `${value}${field.suffix || ""}`;
+      if (output)
+        output.value = `${field.displayScale ? Math.round(value * field.displayScale) : value}${field.suffix || ""}`;
     }
     this.dialog.querySelector("#settings-storage-status").textContent = this
       .settings.saved

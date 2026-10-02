@@ -256,6 +256,9 @@ export function restore(world, data) {
   world.elastic.rebuild(world);
   world.stickmen.world = world;
   world.stickmen.restore(data.stickmen);
+  world.sound.clear();
+  world.sound.tick = world.tick;
+  world.fallDistance.fill(0);
   if (data.pressure) world.fields.pressure.set(data.pressure);
   if (data.atmosphere) {
     world.fields.ambientTemperature = data.atmosphere.ambientTemperature;

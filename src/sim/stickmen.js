@@ -1,12 +1,7 @@
 import { materials } from "./materials.js";
-import {
-  restX,
-  restY,
-  links,
-  bodyFields,
-  integrateBody,
-  blocked,
-} from "./stickman-body.js";
+import { bodyFields, integrateBody, blocked } from "./stickman-body.js";
+import { actorProfile } from "./creature-profiles.js";
+import { creatureMotion } from "./creature-behavior.js";
 import { StickmanPathfinder } from "./stickman-pathfinding.js";
 export const MAX_STICKMEN = 32;
 const segmentDistance = (x, y, ax, ay, bx, by) => {
@@ -40,13 +35,18 @@ export class Stickmen {
       this.bodies.length >= MAX_STICKMEN
     )
       return false;
+    const profile = actorProfile(material),
+      restX = profile.x,
+      restY = profile.y;
     const w = this.world,
       gx = w.gravityX,
       gy = w.gravityY;
     if (materials[material].actor === "player" && this.player) return false;
     if (
       this.bodies.some(
-        (a) => Math.hypot(a.x[2] - x + gx * 5, a.y[2] - y + gy * 5) < 10,
+        (a) =>
+          Math.hypot(a.x[2] - x - gx * restY[2], a.y[2] - y - gy * restY[2]) <
+          8,
       )
     )
       return false;
@@ -91,7 +91,7 @@ export class Stickmen {
           (px, n) =>
             Math.hypot(px - x, a.y[n] - y) <= radius + (n === 0 ? 1.5 : 0.7),
         ) ||
-        links.some(
+        actorProfile(a.material).links.some(
           ([u, v], k) =>
             a.bonds[k] &&
             segmentDistance(x, y, a.x[u], a.y[u], a.x[v], a.y[v]) <= radius,
@@ -101,6 +101,7 @@ export class Stickmen {
   brush(tool, x, y, radius, dx = 0, dy = 0, power = 1, shape = "circle") {
     if (!this.bodies.length) return;
     for (const a of this.bodies) {
+      const { links } = actorProfile(a.material);
       for (let n = 0; n < 9; n++) {
         const inBrush =
           shape === "square"
@@ -149,12 +150,21 @@ export class Stickmen {
     for (const a of this.bodies) {
       let move = 0,
         jump = false,
-        crouch = false;
+        crouch = false,
+        lift = 0;
       if (a.alive && materials[a.material].actor === "player") {
         ({ move, jump, crouch } = this.controls);
-      } else if (a.alive && a.grounded) {
-        const foot = { x: (a.x[5] + a.x[6]) / 2, y: (a.y[5] + a.y[6]) / 2 };
-        if (w.tick >= a.replan && plans < 1) {
+      } else if (a.alive && materials[a.material].actor !== "ai") {
+        ({ move = 0, jump = false, lift = 0 } = creatureMotion(w, a));
+      } else if (a.alive) {
+        const supported = [5, 6].find((n) =>
+          blocked(w, a.x[n] + w.gravityX * 0.8, a.y[n] + w.gravityY * 0.8),
+        );
+        const foot =
+          supported === undefined
+            ? { x: (a.x[5] + a.x[6]) / 2, y: (a.y[5] + a.y[6]) / 2 }
+            : { x: a.x[supported], y: a.y[supported] };
+        if (a.grounded && w.tick >= a.replan && plans < 1) {
           plans++;
           const player = this.player;
           a.goal = player
@@ -170,11 +180,20 @@ export class Stickmen {
           a.replan = w.tick + 45 + (a.id % 15);
           if (a.path.length < 2) a.direction *= -1;
         }
-        while (
-          a.path.length &&
-          Math.hypot(a.path[0].x - foot.x, a.path[0].y - foot.y) < 3.5
-        )
+        while (a.path.length) {
+          const p = a.path[0];
+          const across =
+            (p.x - foot.x) * w.gravityY - (p.y - foot.y) * w.gravityX;
+          const down =
+            (p.x - foot.x) * w.gravityX + (p.y - foot.y) * w.gravityY;
+          // Reach the takeoff edge before starting a short, body-scaled jump.
+          if (
+            Math.abs(across) >= (a.path[1]?.jump ? 0.7 : 1.5) ||
+            Math.abs(down) >= 3
+          )
+            break;
           a.path.shift();
+        }
         if (a.path.length) {
           const p = a.path[0],
             across = (p.x - foot.x) * w.gravityY - (p.y - foot.y) * w.gravityX;
@@ -182,7 +201,21 @@ export class Stickmen {
           jump = !!p.jump && a.grounded;
         }
       }
-      integrateBody(w, a, move, jump, crouch);
+      integrateBody(w, a, move, jump, crouch, lift);
+      if (a.alive && a.grounded && move && (w.tick + a.id) % 24 === 0)
+        w.sound.emit(
+          "impact",
+          a.x[5],
+          a.y[5],
+          0.06,
+          materials[a.material].density,
+        );
+      if (
+        a.alive &&
+        materials[a.material].actor === "bird" &&
+        (w.tick + a.id * 23) % 240 === 0
+      )
+        w.sound.emit("chirp", a.x[0], a.y[0], 0.15);
       if (w.border === "looping") {
         const x = a.x[2],
           y = a.y[2],
@@ -233,6 +266,8 @@ export class Stickmen {
       alive: a.alive,
       health: a.health,
       color: a.color,
+      direction: a.direction,
+      cooldown: a.cooldown,
       bonds: Array.from(a.bonds),
       ...Object.fromEntries(bodyFields.map((f) => [f, Array.from(a[f])])),
     }));
@@ -245,9 +280,9 @@ export class Stickmen {
       health: d.health,
       color: d.color,
       grounded: false,
-      cooldown: 0,
+      cooldown: d.cooldown ?? 0,
       replan: 0,
-      direction: 1,
+      direction: d.direction ?? 1,
       path: [],
       goal: null,
       bonds: Uint8Array.from(d.bonds),
@@ -276,6 +311,9 @@ export function validateStickmen(data) {
       !Number.isInteger(a.material) ||
       !materials[a.material]?.actor ||
       typeof a.alive !== "boolean" ||
+      (a.direction !== undefined && ![-1, 1].includes(a.direction)) ||
+      (a.cooldown !== undefined &&
+        (!Number.isInteger(a.cooldown) || a.cooldown < 0 || a.cooldown > 60)) ||
       !Number.isFinite(a.health) ||
       a.health < 0 ||
       a.health > 100 ||

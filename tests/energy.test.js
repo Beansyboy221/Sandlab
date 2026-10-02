@@ -17,20 +17,20 @@ function move(w, i = 250) {
   moveRay(w, i, i % w.width, Math.floor(i / w.width), materials[w.cells[i]]);
 }
 
-test("light crosses glass and water without replacing them; opaque matter absorbs it", () => {
+test("lasers cross glass and water without replacing them; opaque matter absorbs it", () => {
   for (const material of ["Glass", "Water", "Steel"]) {
-    const w = packet("Light");
+    const w = packet("Laser");
     w.set(251, M[material]);
     move(w);
     assert.equal(w.cells[251], M[material]);
     assert.equal(
-      w.cells.filter((id) => id === M.Light).length,
+      w.cells.filter((id) => id === M.Laser).length,
       material === "Steel" ? 0 : 1,
     );
-    if (material !== "Steel") assert.equal(w.cells[254], M.Light);
+    if (material !== "Steel") assert.equal(w.cells[256], M.Laser);
   }
 });
-test("rays reflect from mirrors, looping wraps them, solid contains sound, and void absorbs outgoing waves", () => {
+test("lasers reflect from mirrors, looping wraps them and boundaries absorb them", () => {
   const mirror = packet("Laser");
   mirror.set(251, M.Mirror);
   move(mirror);
@@ -41,15 +41,11 @@ test("rays reflect from mirrors, looping wraps them, solid contains sound, and v
   for (const border of ["solid", "looping", "void"]) {
     const w = new World(24, 24);
     w.border = border;
-    w.set(263, M.Sound);
+    w.set(263, M.Laser);
     w.heading[263] = 0;
     move(w, 263);
-    if (border === "solid") {
-      assert.equal(w.cells[263], M.Sound);
-      assert.equal(w.heading[263], 4);
-    }
-    if (border === "looping") assert.equal(w.cells[241], M.Sound);
-    if (border === "void") assert.equal(w.count, 0);
+    if (border === "looping") assert.equal(w.cells[244], M.Laser);
+    else assert.equal(w.count, 0);
   }
 });
 test("lasers heat absorbing surfaces, solar cells turn light into circuit charge", () => {
@@ -58,7 +54,7 @@ test("lasers heat absorbing surfaces, solar cells turn light into circuit charge
   move(laser);
   assert.equal(laser.temp[251], 85);
   assert.equal(laser.cells[250], 0);
-  const solar = packet("Light");
+  const solar = packet("Laser");
   solar.set(251, M["Solar Cell"]);
   solar.set(252, M.Steel);
   move(solar);
@@ -66,27 +62,6 @@ test("lasers heat absorbing surfaces, solar cells turn light into circuit charge
   solar.tick++;
   react(solar, 251, 11, 10);
   assert.equal(solar.charge[252], 6);
-});
-test("sound makes traveling pressure pulses, shatters glass under repeated impacts, and is damped by sponge", () => {
-  const w = packet("Sound");
-  w.set(251, M.Glass);
-  move(w);
-  assert.equal(w.cells[251], M.Glass);
-  assert.equal(w.heading[250], 4);
-  w.heading[250] = 0;
-  move(w);
-  assert.equal(w.cells[251], M["Glass Shards"]);
-  assert.ok(w.fields.pressure.some((value) => value > 3.5));
-  const sponge = packet("Sound");
-  sponge.set(251, M.Sponge);
-  move(sponge);
-  assert.equal(sponge.cells[250], 0);
-  assert.equal(sponge.cells[251], M.Sponge);
-  const water = packet("Sound");
-  water.set(251, M.Water);
-  move(water);
-  assert.equal(water.temp[251], 20);
-  assert.ok(water.cells.includes(M.Sound));
 });
 test("uranium retains bounded decay heating without emitting removed neutron particles", () => {
   const w = new World(24, 24);
@@ -141,8 +116,8 @@ test("energy worlds continue deterministically after a save and rays expire in c
   const a = new World(32, 32),
     b = new World(32, 32);
   a.border = "looping";
-  a.set(10, M.Light);
-  a.set(30, M.Sound);
+  a.set(10, M.Laser);
+  a.set(30, M.Laser);
   a.set(300, M.Uranium);
   a.set(400, M.Laser);
   for (let n = 0; n < 20; n++) a.step();
@@ -157,9 +132,9 @@ test("energy worlds continue deterministically after a save and rays expire in c
   sealed.count = sealed.length;
   sealed.chunks.fill(0);
   for (let i = 0; i < sealed.length; i++) sealed.chunks[sealed.chunk(i)]++;
-  sealed.set(250, M.Light);
+  sealed.set(250, M.Laser);
   move(sealed);
-  assert.ok(!sealed.cells.includes(M.Light));
+  assert.ok(!sealed.cells.includes(M.Laser));
   assert.equal(sealed.count, sealed.length - 1);
 });
 

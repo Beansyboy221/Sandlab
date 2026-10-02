@@ -203,6 +203,14 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
   if (!effects) return;
   // Resting contact never accumulates damage. Only energetic, closing impacts
   // fracture brittle surfaces; heavier bodies transfer more energy.
+  if (closing > 0.4)
+    w.sound.emit(
+      "impact",
+      cx,
+      cy,
+      Math.min(1.2, closing * Math.sqrt(body.mass) * 0.04),
+      body.mass,
+    );
   if (closing > 0.7) {
     const energy = Math.min(
       70,

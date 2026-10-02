@@ -831,6 +831,10 @@ definitions.push(
   ],
   ["Stickman", "life", "#dec49b", 1, { actor: "ai", movable: false }],
   ["Player", "life", "#82d4e8", 1, { actor: "player", movable: false }],
+  ["Cat", "life", "#d9aa78", 0.5, { actor: "cat", movable: false }],
+  ["Rabbit", "life", "#e4d4c4", 0.3, { actor: "rabbit", movable: false }],
+  ["Fish", "life", "#e5ad68", 0.2, { actor: "fish", movable: false }],
+  ["Bird", "life", "#9ac9bd", 0.2, { actor: "bird", movable: false }],
 );
 export const M = Object.create(null);
 export const materials = definitions.map(

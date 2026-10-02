@@ -45,6 +45,7 @@ export function burnFuel(world, i, x, y, material) {
       Math.round(material.burn * (0.85 + world.random() * 0.3)),
     );
   }
+  if ((world.tick + i) % 18 === 0) world.sound.emit("crackle", x, y, 0.1);
   temp[i] = Math.max(650, temp[i]);
   if (--life[i] === 0) {
     world.transform(
@@ -106,6 +107,7 @@ function emitFlame(world, fuel, j, probability) {
 }
 
 export function reactFire(world, i, x, y) {
+  if ((world.tick + i) % 20 === 0) world.sound.emit("crackle", x, y, 0.08);
   const { cells, temp, life } = world;
   let quenched = false,
     smothered = 0;

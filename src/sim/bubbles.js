@@ -5,6 +5,7 @@ export function reactBubbles(w, i, x, y) {
     w.eachNeighbor(x, y, (j) => {
       if (w.cells[i] === M.Soap && materials[w.cells[j]].waterLike) {
         w.transform(j, M["Soapy Water"], w.temp[j]);
+        w.sound.emit("fizz", x, y, 0.08);
         w.transform(i, 0);
       }
     });

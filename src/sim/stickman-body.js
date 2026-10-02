@@ -1,20 +1,10 @@
 import { materials, M } from "./materials.js";
 
-export const restX = [0, 0, 0, -4, 4, -2, 2, -1.5, 1.5];
-export const restY = [-13, -9, -5, -7, -7, 0, 0, -2.5, -2.5];
-export const links = [
-  [0, 1],
-  [1, 2],
-  [1, 3],
-  [1, 4],
-  [2, 7],
-  [7, 5],
-  [2, 8],
-  [8, 6],
-];
-export const lengths = links.map(([a, b]) =>
-  Math.hypot(restX[a] - restX[b], restY[a] - restY[b]),
-);
+import { actorProfile, humanProfile } from "./creature-profiles.js";
+export const restX = humanProfile.x;
+export const restY = humanProfile.y;
+export const links = humanProfile.links;
+export const lengths = humanProfile.lengths;
 export const bodyFields = ["x", "y", "px", "py", "heat", "fuel"];
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 const heatDirections = [
@@ -38,7 +28,7 @@ function collide(w, a, n, x, y) {
   const steps = Math.max(1, Math.ceil(Math.hypot(x - nx, y - ny) * 2));
   const dx = (x - nx) / steps,
     dy = (y - ny) / steps;
-  const radius = n === 0 ? 1.3 : 0.55;
+  const radius = n === 0 ? actorProfile(a.material).headRadius : 0.4;
   for (let s = 0; s < steps; s++) {
     if (
       !blocked(w, nx + dx + Math.sign(dx) * radius, ny) &&
@@ -59,7 +49,16 @@ function collide(w, a, n, x, y) {
   a.y[n] = ny;
 }
 
-export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
+export function integrateBody(
+  w,
+  a,
+  drive = 0,
+  jump = false,
+  crouch = false,
+  lift = 0,
+) {
+  const profile = actorProfile(a.material),
+    { links, lengths, x: restX, y: restY } = profile;
   const gx = w.gravityX,
     gy = w.gravityY,
     grounded = a.grounded;
@@ -67,10 +66,11 @@ export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
   a.cooldown = Math.max(0, a.cooldown - 1);
   if (a.alive && grounded && jump && !a.cooldown) {
     for (let n = 0; n < 9; n++) {
-      a.px[n] = a.x[n] + gx * 2.6;
-      a.py[n] = a.y[n] + gy * 2.6;
+      const tangent = (a.x[n] - a.px[n]) * gy - (a.y[n] - a.py[n]) * gx;
+      a.px[n] = a.x[n] - gy * tangent + gx * profile.jump;
+      a.py[n] = a.y[n] + gx * tangent + gy * profile.jump;
     }
-    a.cooldown = 25;
+    a.cooldown = profile.mode === "hop" ? 40 : 25;
   }
   for (let n = 0; n < 9; n++) {
     let i = w.index(Math.floor(a.x[n]), Math.floor(a.y[n]));
@@ -106,9 +106,28 @@ export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
       vx -= tangent * gy;
       vy += tangent * gx;
     }
-    if (a.alive) {
-      vx += gy * drive * 0.09;
-      vy -= gx * drive * 0.09;
+    if (a.alive && a.bonds[0] && a.bonds[1]) {
+      const swimming = profile.mode === "swim" && a.submerged;
+      const flying = profile.mode === "fly" && !liquid;
+      const steering = grounded || swimming || flying || drive;
+      if (steering && (profile.mode !== "swim" || swimming)) {
+        const tangent = vx * gy - vy * gx;
+        const speed = profile.speed * (crouch ? 0.5 : 1);
+        const force = clamp(
+          drive * speed - tangent,
+          profile.acceleration * (grounded || swimming || flying ? 1 : 0.3),
+        );
+        vx += gy * force;
+        vy -= gx * force;
+      }
+      if (swimming || flying) {
+        const vertical = vx * gx + vy * gy;
+        const force =
+          -(liquid ? 0.025 : 0.12) +
+          clamp(lift - vertical, profile.acceleration);
+        vx += gx * force;
+        vy += gy * force;
+      }
     }
     const contact = w.index(Math.floor(a.x[n] + vx), Math.floor(a.y[n] + vy));
     if (
@@ -171,7 +190,8 @@ export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
         a.health -= 1;
       }
       if (w.charge[i]) a.health -= 2;
-      if (n === 0 && liquid) a.health -= 0.15;
+      if (n === 0 && liquid && profile.mode !== "swim") a.health -= 0.15;
+      if (n === 0 && profile.mode === "swim" && !a.submerged) a.health -= 0.12;
     }
     if (a.heat[n] > 180 && a.fuel[n] > 0) {
       a.fuel[n] = Math.max(0, a.fuel[n] - 0.7);
@@ -187,6 +207,25 @@ export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
   // Internal pose motors exchange momentum with the hips; dead or disconnected
   // limbs have no motors and remain freely simulated ragdoll bodies.
   if (a.alive && a.bonds[0] && a.bonds[1]) {
+    if (a.grounded && profile.mode !== "swim" && profile.mode !== "fly") {
+      let support = Infinity;
+      for (const n of [5, 6])
+        if (
+          a.bonds[n === 5 ? 4 : 6] &&
+          a.bonds[n === 5 ? 5 : 7] &&
+          blocked(w, a.x[n] + gx * 0.8, a.y[n] + gy * 0.8)
+        )
+          support = Math.min(
+            support,
+            a.x[n] * gx +
+              a.y[n] * gy -
+              (restY[n] - restY[2]) * (crouch ? 0.65 : 1),
+          );
+      if (Number.isFinite(support)) {
+        const force = clamp((support - a.x[2] * gx - a.y[2] * gy) * 0.15, 0.3);
+        collide(w, a, 2, a.x[2] + gx * force, a.y[2] + gy * force);
+      }
+    }
     for (let n of motorNodes) {
       if ((n === 3 && !a.bonds[2]) || (n === 4 && !a.bonds[3])) continue;
       if (
@@ -195,9 +234,31 @@ export function integrateBody(w, a, drive = 0, jump = false, crouch = false) {
       )
         continue;
       const strength = n >= 5 ? 0.3 : 0.09;
-      const ry = (restY[n] - restY[2]) * (crouch ? 0.65 : 1);
-      const dx = (a.x[2] + gy * restX[n] + gx * ry - a.x[n]) * strength;
-      const dy = (a.y[2] - gx * restX[n] + gy * ry - a.y[n]) * strength;
+      const step =
+        a.grounded && drive && (n === 5 || n === 6)
+          ? Math.sin(w.tick * 0.16) * (n === 5 ? 0.6 : -0.6)
+          : 0;
+      const ry =
+        (restY[n] - restY[2]) * (crouch ? 0.65 : 1) +
+        (profile.mode === "fly" && n === 3 ? Math.sin(w.tick * 0.32) * 1.2 : 0);
+      const dx =
+        (a.x[2] +
+          gy *
+            ((restX[n] - restX[2]) *
+              (profile === humanProfile ? 1 : a.direction) +
+              step) +
+          gx * ry -
+          a.x[n]) *
+        strength;
+      const dy =
+        (a.y[2] -
+          gx *
+            ((restX[n] - restX[2]) *
+              (profile === humanProfile ? 1 : a.direction) +
+              step) +
+          gy * ry -
+          a.y[n]) *
+        strength;
       collide(w, a, n, a.x[n] + dx, a.y[n] + dy);
       collide(w, a, 2, a.x[2] - dx / 4, a.y[2] - dy / 4);
     }

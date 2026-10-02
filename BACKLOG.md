@@ -9,3 +9,6 @@
 
 - Extend selection masks and clipboard operations to jointed actors, including partial-body selections.
 - Expand AI navigation with climbing and swimming, with routes verified against character trajectories.
+
+- Improve creature feeding, social behavior and terrain navigation without unbounded population growth.
+- Measure acoustic occlusion and richer multi-bounce audible reflections before extending the current bounded room echo.

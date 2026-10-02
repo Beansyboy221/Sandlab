@@ -1,3 +1,4 @@
+import { GameAudio } from "./audio.js";
 import { ColorPicker } from "./color-picker.js";
 import { DrawingPause } from "./drawing-pause.js";
 import { PlayerControls } from "./player-controls.js";
@@ -509,6 +510,7 @@ const input = new Input(
   drawingPause,
 );
 const playerControls = new PlayerControls($("canvas-wrap"), world, state);
+const audio = new GameAudio(world, renderer, settings, playerControls);
 mobileDock.onOrientationChange = () => {
   input.cancel();
   selection.cancel();
@@ -829,7 +831,7 @@ const shortcutHandlers = {
   grid: () => settings.set("grid", !settings.get("grid")),
   shape: () => $("shape-btn").click(),
   view: () => {
-    const modes = ["normal", "heat", "pressure"];
+    const modes = ["normal", "heat", "pressure", "echo"];
     settings.set(
       "view",
       modes[(modes.indexOf(renderer.mode) + 1) % modes.length],
@@ -1010,6 +1012,7 @@ function frame(now) {
         lagFrames++;
       }
     } else accumulator = 0;
+    audio.update(state.paused);
     renderer.draw();
 
     inspector.update(now);
@@ -1044,6 +1047,8 @@ window.sandlab = {
   world,
   state,
   renderer,
+  audio,
+  playerControls,
   inspector,
   selection,
   settings,

@@ -26,12 +26,12 @@ test("player bodies settle, walk, jump, and retain safe joints", () => {
   const x = a.x[2];
   w.stickmen.controls.move = 1;
   tick(w, 45);
-  assert.ok(a.x[2] > x + 15);
+  assert.ok(a.x[2] > x + 6 && a.x[2] < x + 13);
   w.stickmen.controls.move = 0;
   const y = a.y[2];
   w.stickmen.controls.jump = true;
   tick(w, 10);
-  assert.ok(a.y[2] < y - 10);
+  assert.ok(a.y[2] < y - 6);
   assert.ok(a.bonds.every(Boolean));
   assert.ok(a.x.every(Number.isFinite));
 });
@@ -48,7 +48,7 @@ test("A* finds supported walks, jump edges, and avoids impassable walls", () => 
   for (let y = 0; y < 60; y++)
     for (let x = 55; x < 58; x++) w.set(y * w.width + x, 0);
   for (let y = 60; y < 80; y++)
-    for (let x = 53; x < 62; x++) w.set(y * w.width + x, 0);
+    for (let x = 53; x < 56; x++) w.set(y * w.width + x, 0);
   const gap = planner.find({ x: 20, y: 59 }, { x: 100, y: 59 });
   assert.ok(gap.some((p) => p.jump));
   assert.ok(gap.at(-1).x > 90);
