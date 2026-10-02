@@ -111,13 +111,7 @@ export class Input {
       const point = renderer.point(e.clientX, e.clientY),
         last = this.pointers.get(e.pointerId);
       if (last?.pan) {
-        const box = canvas.getBoundingClientRect(),
-          ratio = canvas.width / box.width;
-        renderer.center.x -=
-          ((e.clientX - last.clientX) * ratio) / renderer.viewport.scale;
-        renderer.center.y -=
-          ((e.clientY - last.clientY) * ratio) / renderer.viewport.scale;
-        renderer.updateViewport();
+        renderer.panBy(e.clientX - last.clientX, e.clientY - last.clientY);
         last.clientX = e.clientX;
         last.clientY = e.clientY;
         return;
@@ -302,7 +296,6 @@ export class Input {
         this.state.replace,
         1,
         0,
-        this.state.paintTemperature,
       );
       return;
     }
@@ -348,8 +341,14 @@ export class Input {
           y,
           this.state.radius,
           this.state.shape,
-          direction?.[0] ?? dx,
-          direction?.[1] ?? dy,
+          direction
+            ? this.world.gravityY * direction[0] +
+                this.world.gravityX * direction[1]
+            : dx,
+          direction
+            ? -this.world.gravityX * direction[0] +
+                this.world.gravityY * direction[1]
+            : dy,
           this.state.power || 1,
         );
         if (!distance) break;
@@ -375,7 +374,6 @@ export class Input {
         this.state.replace,
         dx,
         dy,
-        this.state.paintTemperature,
       );
     }
   }

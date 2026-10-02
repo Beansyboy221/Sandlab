@@ -15,6 +15,6 @@ export function reactExplosive(world, i, x, y, material) {
     if (!world.life[i]) world.life[i] = material.ignitionDelay;
     if (--world.life[i] > 0) return true;
   }
-  world.explode(x, y, material.explosive);
+  world.explode(x, y, material.explosive, material.combustionGas);
   return true;
 }

@@ -7,7 +7,7 @@ def serve(route):
     path=ROOT/(route.request.url.split('sandlab.test/',1)[1].split('?')[0] or 'index.html')
     route.fulfill(body=path.read_bytes(),content_type=mimetypes.guess_type(path)[0] or 'text/plain') if path.is_file() else route.fulfill(status=404)
 def point(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,d=r.canvas.width/b.width;return {x:b.x+(v.x+(x+.5)*v.scale)/d,y:b.y+(v.y+(y+.5)*v.scale)/d}}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.x+p.x/d,y:b.y+p.y/d}}''',[x,y])
 def choose(page,tool,touch=False):
     action='tap' if touch else 'click'
     getattr(page.locator('#tool-picker-toggle'),action)();getattr(page.locator(f'[data-tool-option="{tool}"]'),action)()

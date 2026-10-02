@@ -141,18 +141,18 @@ export function loadPreset(world, id) {
     world.set(emitter, M.Clone);
     world.clone[emitter] = M.Lava;
   } else if (id === "circuit") {
-    line(w * 0.18, h * 0.5, w * 0.38, h * 0.5, "Metal", 2);
-    line(w * 0.38, h * 0.5, w * 0.38, h * 0.3, "Metal", 2);
-    line(w * 0.38, h * 0.3, w * 0.62, h * 0.3, "Metal", 2);
-    line(w * 0.62, h * 0.3, w * 0.62, h * 0.65, "Metal", 2);
-    line(w * 0.62, h * 0.65, w * 0.8, h * 0.65, "Metal", 2);
-    line(w * 0.18, h * 0.52, w * 0.38, h * 0.52, "Insulator", 1);
+    line(w * 0.18, h * 0.5, w * 0.38, h * 0.5, "Steel", 2);
+    line(w * 0.38, h * 0.5, w * 0.38, h * 0.3, "Steel", 2);
+    line(w * 0.38, h * 0.3, w * 0.62, h * 0.3, "Steel", 2);
+    line(w * 0.62, h * 0.3, w * 0.62, h * 0.65, "Steel", 2);
+    line(w * 0.62, h * 0.65, w * 0.8, h * 0.65, "Steel", 2);
+    line(w * 0.18, h * 0.52, w * 0.38, h * 0.52, "Mica", 1);
     rect(Math.round(w * 0.81), Math.round(h * 0.62), 10, 12, "TNT");
     const terminalX = Math.round(w * 0.81),
       terminalY = Math.round(h * 0.65);
-    line(w * 0.62, terminalY, terminalX - 3, terminalY, "Metal", 1);
+    line(w * 0.62, terminalY, terminalX - 3, terminalY, "Steel", 1);
     rect(terminalX - 2, terminalY - 3, 2, 7, "Empty");
-    put(terminalX - 1, terminalY, "Metal");
+    put(terminalX - 1, terminalY, "Steel");
     line(terminalX - 2, terminalY - 1, terminalX, terminalY - 1, "Wood", 0);
     put(Math.round(w * 0.18) - 3, Math.round(h * 0.5), "Spark");
   } else if (id === "chemistry") {

@@ -18,16 +18,16 @@ function move(w, i = 250) {
 }
 
 test("light crosses glass and water without replacing them; opaque matter absorbs it", () => {
-  for (const material of ["Glass", "Water", "Metal"]) {
+  for (const material of ["Glass", "Water", "Steel"]) {
     const w = packet("Light");
     w.set(251, M[material]);
     move(w);
     assert.equal(w.cells[251], M[material]);
     assert.equal(
       w.cells.filter((id) => id === M.Light).length,
-      material === "Metal" ? 0 : 1,
+      material === "Steel" ? 0 : 1,
     );
-    if (material !== "Metal") assert.equal(w.cells[254], M.Light);
+    if (material !== "Steel") assert.equal(w.cells[254], M.Light);
   }
 });
 test("rays reflect from mirrors, looping wraps them, solid contains sound, and void absorbs outgoing waves", () => {
@@ -60,7 +60,7 @@ test("lasers heat absorbing surfaces, solar cells turn light into circuit charge
   assert.equal(laser.cells[250], 0);
   const solar = packet("Light");
   solar.set(251, M["Solar cell"]);
-  solar.set(252, M.Metal);
+  solar.set(252, M.Steel);
   move(solar);
   assert.equal(solar.charge[251], 6);
   solar.tick++;
@@ -92,7 +92,7 @@ test("neutrons heat matter, trigger finite uranium fission, and are absorbed by 
   const w = packet("Neutron");
   w.set(251, M.Uranium);
   move(w);
-  assert.equal(w.cells[251], M.Metal);
+  assert.equal(w.cells[251], M.Steel);
   assert.equal(w.temp[251], 900);
   assert.ok(w.fields.pressure.some((value) => value >= 12));
   assert.ok(w.cells.filter((id) => id === M.Neutron).length <= 3);

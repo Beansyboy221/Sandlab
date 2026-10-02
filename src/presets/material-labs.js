@@ -50,17 +50,19 @@ export function buildMaterialLab(w, id) {
         7,
         "Clay",
       );
-      rect(
-        left,
-        ground - 11,
-        Math.max(3, Math.round((size - 24) / 5)),
-        1,
-        "Wet clay",
-      );
+      // Spaced wet patches leave steam escape channels during the drying stage.
+      for (let dx = 0; dx < Math.max(3, Math.round((size - 24) / 5)); dx += 4)
+        put(left + dx, ground - depth + 4, "Wet clay");
     }
-    // Kiln starts warm, rather than allowing the liquid clay to level before firing.
-    for (let i = 0; i < w.length; i++)
-      if (w.cells[i] === M["Wet clay"]) w.temp[i] = 130;
+    // A preheated chamber warms the complete slab before the lower heater fires
+    // it. Cold dry clay otherwise pulls its wet surface below the drying point.
+    for (let yy = ground - depth; yy < ground; yy++)
+      for (let xx = x + 3; xx < x + size - 3; xx++) {
+        const i = yy * W + xx;
+        if (w.cells[i] === M.Clay || w.cells[i] === M["Wet clay"])
+          w.temp[i] = 130;
+        w.fields.temperature[w.fields.index(xx, yy)] = 130;
+      }
   }
   return true;
 }

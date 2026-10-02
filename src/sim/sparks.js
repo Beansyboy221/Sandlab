@@ -3,9 +3,12 @@ import { M, materials } from "./materials.js";
 export function emitSpark(world, i, x, y, residue = 0) {
   // Choose one free upper/side vent, without overwriting flames or other matter.
   const direction = Math.floor(world.random() * 3);
-  const nx = x + (direction === 0 ? -1 : direction === 1 ? 1 : 0),
-    ny = y - (direction === 2 ? 1 : 0);
-  const j = world.index(nx, ny);
+  const j = world.relativeIndex(
+    x,
+    y,
+    direction === 0 ? -1 : direction === 1 ? 1 : 0,
+    direction === 2 ? -1 : 0,
+  );
   if (j < 0) return false;
   if (world.cells[j]) return false;
   world.set(

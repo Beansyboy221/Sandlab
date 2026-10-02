@@ -26,6 +26,10 @@ export function resizeLevel(world, properties, x, y) {
   const resized = createLevel(p);
   resized.seed = world.seed;
   resized.tick = world.tick;
+  resized.fields.ambientTemperature = world.fields.ambientTemperature;
+  resized.fields.ambientPressure = world.fields.ambientPressure;
+  resized.fields.temperature.fill(world.fields.ambientTemperature);
+  resized.setGravity(world.gravityX, world.gravityY);
   const left = Math.max(0, -x),
     right = Math.min(p.width, world.width - x);
   for (
@@ -50,9 +54,12 @@ export function resizeLevel(world, properties, x, y) {
     for (let fx = 0; fx < resized.fields.width; fx++) {
       const sx = Math.min(p.width - 1, fx * 4 + 2) + x,
         sy = Math.min(p.height - 1, fy * 4 + 2) + y;
-      if (sx >= 0 && sx < world.width && sy >= 0 && sy < world.height)
+      if (sx >= 0 && sx < world.width && sy >= 0 && sy < world.height) {
         resized.fields.pressure[fy * resized.fields.width + fx] =
           world.fields.pressure[world.fields.index(sx, sy)];
+        resized.fields.temperature[fy * resized.fields.width + fx] =
+          world.fields.temperature[world.fields.index(sx, sy)];
+      }
     }
   resized.elastic.rebuild(resized);
   resized.motionStamp.fill(resized.tick + 1);

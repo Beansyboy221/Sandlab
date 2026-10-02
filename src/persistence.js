@@ -14,6 +14,13 @@ const arrays = [...particleStateFields, "backgroundPaint"];
 export function snapshot(world, typed = false) {
   return {
     version: 1,
+    atmosphere: {
+      ambientTemperature: world.fields.ambientTemperature,
+      ambientPressure: world.fields.ambientPressure,
+      temperature: typed
+        ? world.fields.temperature.slice()
+        : Array.from(world.fields.temperature),
+    },
     level: {
       name: world.name,
       border: world.border,
@@ -94,7 +101,7 @@ export function validateSnapshot(data) {
         ? 100000
         : elasticFloatFields.includes(key)
           ? key.startsWith("offset")
-            ? 0.5
+            ? 1.5
             : 2
           : key === "elasticAnchor"
             ? 15
@@ -162,6 +169,25 @@ export function validateSnapshot(data) {
       data.pressure.some((v) => !Number.isFinite(v) || Math.abs(v) > 80))
   )
     throw Error("Invalid pressure data.");
+  if (data.atmosphere !== undefined) {
+    if (!data.atmosphere || typeof data.atmosphere !== "object")
+      throw Error("Invalid atmosphere data.");
+    const { ambientTemperature, ambientPressure, temperature } =
+      data.atmosphere;
+    if (
+      !Number.isFinite(ambientTemperature) ||
+      ambientTemperature < -273 ||
+      ambientTemperature > 6000 ||
+      !Number.isFinite(ambientPressure) ||
+      ambientPressure < 0.01 ||
+      ambientPressure > 10 ||
+      !(Array.isArray(temperature) || ArrayBuffer.isView(temperature)) ||
+      temperature.length !==
+        Math.ceil(data.width / 4) * Math.ceil(data.height / 4) ||
+      temperature.some((v) => !Number.isFinite(v) || v < -273 || v > 6000)
+    )
+      throw Error("Invalid atmosphere data.");
+  }
   const chunkCount = Math.ceil(data.width / 16) * Math.ceil(data.height / 16);
   if (
     data.activity &&
@@ -175,11 +201,14 @@ export function validateSnapshot(data) {
 }
 export function restore(world, data) {
   validateSnapshot(data);
+  const gravityX = world.gravityX,
+    gravityY = world.gravityY;
   // Validate the complete payload before replacing a live world or allocating its grid.
   if (world.width !== data.width || world.height !== data.height)
     Object.assign(world, new World(data.width, data.height));
   else world.clear();
   applyLevelMetadata(world, data.level ?? defaultLevel);
+  world.setGravity(gravityX, gravityY);
   world.lastStrikeTick = -1;
   for (const key of arrays)
     world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
@@ -192,6 +221,12 @@ export function restore(world, data) {
     }
   world.elastic.rebuild(world);
   if (data.pressure) world.fields.pressure.set(data.pressure);
+  if (data.atmosphere) {
+    world.fields.ambientTemperature = data.atmosphere.ambientTemperature;
+    world.fields.ambientPressure = data.atmosphere.ambientPressure;
+    world.fields.temperature.set(data.atmosphere.temperature);
+  }
+  world.fields.obstaclesDirty = true;
   if (data.activity) world.motionStamp.set(data.activity);
   else world.motionStamp.fill(world.tick + 1);
 }

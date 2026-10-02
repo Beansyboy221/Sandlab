@@ -74,6 +74,11 @@ export function applyTool(
         ny = cy + oy;
       if (nx < 0 || nx >= w.width || ny < 0 || ny >= w.height) continue;
       const i = ny * w.width + nx;
+      if (
+        (tool === "warm" || tool === "cool") &&
+        ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
+      )
+        w.fields.heat(nx, ny, (tool === "warm" ? 12 : -12) * power);
       if (tool === "erase-mobile") {
         if (w.cells[i] && materials[w.cells[i]].movable) w.set(i, 0);
       } else if (tool === "pressure" || tool === "vacuum") {

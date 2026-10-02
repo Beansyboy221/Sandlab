@@ -70,8 +70,8 @@ test("garden grows from seeds, storm strikes its rod, foundry melts and casts me
   const foundry = new World();
   loadPreset(foundry, "foundry");
   run(foundry, 350);
-  assert.ok(count(foundry, M["Molten metal"]) > 0);
-  assert.ok(count(foundry, M.Metal) > 0);
+  assert.ok(count(foundry, M["Molten steel"]) > 0);
+  assert.ok(count(foundry, M.Steel) > 0);
 });
 test("preset painter clips rounded edges and handles zero-length lines", () => {
   const w = new World(16, 16),

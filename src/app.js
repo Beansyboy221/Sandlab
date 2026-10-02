@@ -1,5 +1,5 @@
 import { ColorPicker } from "./color-picker.js";
-import { CanvasResizeHandles } from "./canvas-resize-handles.js";
+import { fittedCanvasSize } from "./canvas-view.js";
 import {
   paletteBase,
   paletteMaterials,
@@ -43,7 +43,7 @@ import { icon, populateIcons } from "./icons.js";
 const $ = (id) => document.getElementById(id);
 populateIcons();
 const settings = new Settings();
-let autosaveTimer, toolPicker, mobileDock, canvasResizer;
+let autosaveTimer, toolPicker, mobileDock;
 $("palette").querySelector("h1 span").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
@@ -51,7 +51,6 @@ const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
 const inspector = new Inspector($("inspection-card"), world, renderer);
 const state = {
   material: M.Sand,
-  paintTemperature: 20,
   radius: settings.get("brushSize"),
   shape: settings.get("brushShape"),
   selectionShape: "square",
@@ -176,6 +175,7 @@ function updateToolProperties() {
   const tool = state.tool;
   document.querySelector(".toolbox").dataset.tool = tool;
   $("palette-toggle").hidden = tool !== "paint";
+  $("replace-property").hidden = tool !== "paint";
   $("tool-properties").hidden = tool === "paint";
   $("selection-properties").hidden = tool !== "select";
   $("inspection-properties").hidden = tool !== "inspect";
@@ -322,10 +322,9 @@ mobileDock = new MobileDock(
   world,
   renderer,
 );
-function selectMaterial(id, temperature = materials[id].temperature) {
+function selectMaterial(id) {
   id = paletteBase[id];
   state.material = id;
-  state.paintTemperature = temperature;
   setTool(false);
   const m = materials[id];
   renderMaterials();
@@ -335,27 +334,6 @@ function selectMaterial(id, temperature = materials[id].temperature) {
   title.className = "detail-title";
   title.innerHTML = `<span class="swatch" style="--color:${m.color}"></span><h2>${m.name}</h2><span class="detail-type">${categoryLabels[m.paletteCategory] || m.category}</span>`;
   details.append(title);
-  const temperatureControl = document.createElement("label");
-  temperatureControl.className = "draw-temperature";
-  temperatureControl.textContent = "Draw temperature";
-  const temperatureInput = document.createElement("input");
-  temperatureInput.id = "draw-temperature";
-  temperatureInput.type = "number";
-  temperatureInput.min = "-250";
-  temperatureInput.max = "6000";
-  temperatureInput.step = "1";
-  temperatureInput.value = String(Math.round(temperature));
-  temperatureInput.setAttribute("aria-label", "Draw temperature in Celsius");
-  temperatureInput.addEventListener("change", () => {
-    if (Number.isFinite(temperatureInput.valueAsNumber))
-      state.paintTemperature = Math.max(
-        -250,
-        Math.min(6000, temperatureInput.valueAsNumber),
-      );
-    temperatureInput.value = String(state.paintTemperature);
-  });
-  temperatureControl.append(temperatureInput, document.createTextNode("°C"));
-  details.append(temperatureControl);
   $("palette-toggle").querySelector("i").style.background = m.color;
   $("palette-toggle").querySelector("span:not([data-icon])").textContent =
     m.name;
@@ -480,9 +458,11 @@ $("fullscreen-btn").addEventListener("click", async () => {
     focus();
   }
 });
-$("palette-toggle").addEventListener("click", () =>
-  $("palette").classList.toggle("open"),
-);
+$("palette-toggle").addEventListener("click", () => {
+  if (mobileDock.media.matches || innerWidth <= 1100)
+    $("palette").classList.toggle("open");
+  else $("search").focus();
+});
 $("palette-close").addEventListener("click", () =>
   $("palette").classList.remove("open"),
 );
@@ -505,11 +485,16 @@ const input = new Input(
       const cell = cellAt(world, point);
       if (!cell) return;
       if (!cell.material.id) return toast("Empty cell—choose a particle.");
-      selectMaterial(cell.material.id, world.temp[cell.index]);
+      selectMaterial(cell.material.id);
       toast(`${cell.material.name} selected`);
     }
   },
 );
+mobileDock.onOrientationChange = () => {
+  input.cancel();
+  selection.cancel();
+  inspector.nextUpdate = 0;
+};
 function syncInspectorControls() {
   $("inspect-hold").setAttribute("aria-pressed", String(inspector.pinned));
   $("inspect-hold").classList.toggle("active", inspector.pinned);
@@ -610,7 +595,6 @@ function syncLevelDisplay() {
   document.querySelector(".world-type").textContent =
     ` / ${world.border.toUpperCase()}`;
   renderer.draw();
-  canvasResizer?.update();
 }
 const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
   open: openDialog,
@@ -624,23 +608,6 @@ const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
     syncLevelDisplay();
     hasChanged = true;
   },
-});
-canvasResizer = new CanvasResizeHandles($("canvas-wrap"), world, renderer, {
-  begin: () => {
-    input.cancel();
-    selection.cancel();
-    const paused = state.paused;
-    setPaused(true);
-    return paused;
-  },
-  end: (paused) => setPaused(paused),
-  remember,
-  refresh: () => {
-    resetSelection();
-    syncLevelDisplay();
-    syncHistory();
-  },
-  properties: () => levelEditor.show(true),
 });
 $("new-canvas-btn").addEventListener("click", () => levelEditor.show());
 $("level-properties-btn").addEventListener("click", () =>
@@ -962,7 +929,12 @@ if (saved) {
   } catch {
     loadPreset(world, "blank");
   }
-} else loadPreset(world, "blank");
+} else {
+  const box = renderer.canvas.getBoundingClientRect(),
+    size = fittedCanvasSize(200, box.width, box.height, renderer.rotation);
+  Object.assign(world, new World(size.width, size.height));
+  loadPreset(world, "blank");
+}
 selectMaterial(M.Sand);
 $("particle-count").textContent = `${world.count.toLocaleString()} particles`;
 syncLevelDisplay();
@@ -1015,7 +987,7 @@ function frame(now) {
       }
     } else accumulator = 0;
     renderer.draw();
-    canvasResizer.update();
+
     inspector.update(now);
     frameCount++;
     if (now - statsTime >= 600) {

@@ -5,8 +5,8 @@ export function grow(w, i, x, y) {
   const id = w.cells[i],
     moisture = w.moisture,
     nutrition = w.nutrition,
-    above = w.index(x, y - 1),
-    below = w.index(x, y + 1);
+    above = w.relativeIndex(x, y, 0, -1),
+    below = w.relativeIndex(x, y, 0, 1);
   if ((i + w.tick) % 4 === 0)
     w.eachNeighbor(x, y, (j) => {
       if (
@@ -86,7 +86,7 @@ export function grow(w, i, x, y) {
     w.random() < 0.05 + (nutrition[i] ? 0.04 : 0)
   ) {
     const dx = w.random() < 0.7 ? 0 : w.random() < 0.5 ? -1 : 1;
-    const j = w.index(x + dx, y - 1);
+    const j = w.relativeIndex(x, y, dx, -1);
     if (j < 0) return;
     if (!w.cells[j]) {
       const share = (moisture[i] - 8) >> 1,

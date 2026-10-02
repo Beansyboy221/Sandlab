@@ -229,6 +229,19 @@
             >
               <i></i><span>Sand</span><span data-icon="chevron"></span>
             </button>
+            <label
+              id="replace-property"
+              class="draw-replace"
+              title="Replace existing particles"
+            >
+              <input
+                type="checkbox"
+                id="replace"
+                aria-label="Replace existing particles"
+              />
+              <span data-icon="layers" aria-hidden="true"></span
+              ><span class="replace-label">Replace</span>
+            </label>
           </div>
           <div class="utility-controls">
             <button
@@ -415,11 +428,6 @@
         </div>
         <div class="material-grid" id="materials"></div>
         <div class="material-detail" id="material-detail"></div>
-        <label class="replace-option"
-          ><input type="checkbox" id="replace" /><span
-            >Replace existing particles</span
-          ><span title="Draw over occupied cells" data-icon="help"></span
-        ></label>
       </aside>
     </main>
     <div class="toast" id="toast" role="status"></div>
@@ -585,30 +593,17 @@
               autocomplete="off"
               required
           /></label>
-          <div class="level-dimensions">
-            <label
-              >X · width in pixels<input
-                id="level-width"
-                type="number"
-                min="8"
-                max="512"
-                step="1"
-                inputmode="numeric"
-                required /></label
-            ><label
-              >Y · height in pixels<input
-                id="level-height"
-                type="number"
-                min="8"
-                max="512"
-                step="1"
-                inputmode="numeric"
-                required
-            /></label>
-          </div>
-          <p class="settings-note">
-            8–512 pixels per axis · up to 200,000 pixels total
-          </p>
+          <label class="canvas-resolution" hidden
+            >Short side · pixels<input
+              id="level-resolution"
+              type="number"
+              min="8"
+              max="512"
+              step="1"
+              inputmode="numeric"
+              value="200"
+              required
+          /></label>
           <label
             >Border type<select id="level-border">
               <option value="solid">Solid</option>

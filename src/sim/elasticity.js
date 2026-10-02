@@ -49,6 +49,8 @@ export class Elasticity {
     this.bonds = [world.bond0, world.bond1, world.bond2, world.bond3];
     this.indices = new Int32Array(world.length);
     this.nodeIds = new Uint32Array(world.length);
+    this.parents = new Int32Array(world.length);
+    this.components = new Uint32Array(world.length);
     this.forceX = new Float32Array(world.length);
     this.forceY = new Float32Array(world.length);
     this.delta = new Float64Array(2);
@@ -98,10 +100,11 @@ export class Elasticity {
   cutBrush(x, y, radius, shape) {
     if (!this.locations.size) return;
     const w = this.world,
-      reach = Math.ceil(radius + 10),
+      reach = Math.ceil(radius + 12),
       cx = Math.round(x) + 0.5,
       cy = Math.round(y) + 0.5;
-    // Links cannot exceed nine cells before tearing. Query their nearby endpoints,
+    // Links tear around nine cells; include delayed raster-placement offsets.
+    // Query nearby endpoints,
     // keeping small erasers independent of the size of the rest of the world.
     for (let oy = -reach; oy <= reach; oy++)
       for (let ox = -reach; ox <= reach; ox++) {
@@ -188,6 +191,14 @@ export class Elasticity {
       }
     return { connections, stretch, tension };
   }
+  root(i) {
+    const parents = this.parents;
+    while (parents[i] !== i) {
+      parents[i] = parents[parents[i]];
+      i = parents[i];
+    }
+    return i;
+  }
   step() {
     // Substeps let gravity act promptly without destabilizing stiff spring networks.
     for (let n = 0; n < 3 && this.locations.size; n++) this.substep(1 / 3);
@@ -199,6 +210,7 @@ export class Elasticity {
     for (const i of locations.values()) {
       indices[count++] = i;
       fx[i] = fy[i] = 0;
+      this.parents[i] = i;
     }
     indices.subarray(0, count).sort();
     for (let n = 0; n < count; n++) this.nodeIds[n] = w.elasticId[indices[n]];
@@ -223,6 +235,9 @@ export class Elasticity {
           bonds[i] = 0;
           continue;
         }
+        const a = this.root(i),
+          b = this.root(j);
+        if (a !== b) this.parents[b] = a;
         if (distance < 0.001) continue;
         const relativeSpeed =
           ((w.velocityX[j] - w.velocityX[i]) * dx +
@@ -238,6 +253,12 @@ export class Elasticity {
         fx[j] -= dx * tension;
         fy[j] -= dy * tension;
       }
+    }
+    // Components follow surviving links, so cutting immediately restores
+    // collisions between the detached pieces. They travel with grid swaps.
+    for (let n = 0; n < count; n++) {
+      const i = indices[n];
+      this.components[i] = w.elasticId[this.root(i)];
     }
     // All forces are computed before any grid cell moves, avoiding scan bias.
     for (let n = 0; n < count; n++) {
@@ -275,11 +296,15 @@ export class Elasticity {
         0.12 *
         (liquidNeighbors ? 1 - liquidDensity / liquidNeighbors / m.density : 1);
       w.velocityX[i] = limit(
-        (w.velocityX[i] + (fx[i] + pressureX * 0.015) * dt) * 0.999,
+        (w.velocityX[i] +
+          (fx[i] + gravity * w.gravityX + pressureX * 0.015) * dt) *
+          0.999,
         0.95,
       );
       w.velocityY[i] = limit(
-        (w.velocityY[i] + (fy[i] + gravity + pressureY * 0.015) * dt) * 0.999,
+        (w.velocityY[i] +
+          (fy[i] + gravity * w.gravityY + pressureY * 0.015) * dt) *
+          0.999,
         0.95,
       );
       // Force buffers can become predicted offsets once all spring forces exist.
@@ -310,10 +335,32 @@ export class Elasticity {
       offsets[i] = offset;
       return i;
     }
-    const j = w.index(
+    let j = w.index(
       (i % w.width) + (horizontal ? shift : 0),
       Math.floor(i / w.width) + (horizontal ? 0 : shift),
     );
+    // A delayed raster reservation can cross two cells. Test the swept path so
+    // retained displacement never tunnels through a wall or a detached piece.
+    if (Math.abs(shift) > 1)
+      for (let d = 1; d < Math.abs(shift); d++) {
+        const k = w.index(
+            (i % w.width) + (horizontal ? Math.sign(shift) * d : 0),
+            Math.floor(i / w.width) + (horizontal ? 0 : Math.sign(shift) * d),
+          ),
+          material = k >= 0 ? materials[w.cells[k]] : null;
+        if (
+          !material ||
+          (material.id &&
+            !material.gas &&
+            material.category !== "liquid" &&
+            (!material.elasticity ||
+              !this.components[i] ||
+              this.components[i] !== this.components[k]))
+        ) {
+          j = k;
+          break;
+        }
+      }
     if (j < 0 && w.border === "void") {
       w.set(i, 0);
       return -1;
@@ -327,6 +374,17 @@ export class Elasticity {
       w.swap(i, j);
       offsets[j] = offset - shift;
       return j;
+    }
+    // Continuous positions may briefly lead their occupied raster cell while a
+    // connected neighbor vacates it. Retaining that displacement avoids losing
+    // motion on every grid reservation; internal springs handle compression.
+    if (
+      target?.elasticity &&
+      this.components[i] &&
+      this.components[i] === this.components[j]
+    ) {
+      offsets[i] = limit(offset, 1.49);
+      return i;
     }
     offsets[i] = limit(offset, 0.49);
     velocity[i] *= -0.18;

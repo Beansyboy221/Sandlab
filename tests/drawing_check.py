@@ -13,7 +13,7 @@ def open_page(browser,width=1440,height=900,touch=False):
     page.evaluate("()=>{sandlab.settings.set('autosave',false);sandlab.world.clear();sandlab.state.material=3;sandlab.state.setRadius(1)}")
     return c,page,errors
 def point(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,d=r.canvas.width/b.width;return {x:b.x+(v.x+(x+.5)*v.scale)/d,y:b.y+(v.y+(y+.5)*v.scale)/d}}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.x+p.x/d,y:b.y+p.y/d}}''',[x,y])
 def gesture(page,key,a,b):
     page.keyboard.down(key);page.mouse.move(**point(page,*a));page.mouse.down();page.mouse.move(**point(page,*b),steps=5)
     assert page.evaluate('sandlab.world.count')==0

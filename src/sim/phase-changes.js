@@ -7,7 +7,7 @@ export function changePhase(w, i, x, y, m) {
     let vent = -1,
       open = false;
     for (const [dx, dy] of vents) {
-      const j = w.index(x + dx, y + dy);
+      const j = w.relativeIndex(x, y, dx, dy);
       if (j >= 0 ? !w.cells[j] : w.border === "void") {
         vent = j;
         open = true;
@@ -32,6 +32,8 @@ export function changePhase(w, i, x, y, m) {
   else if (m.condense !== undefined && temperature < m.condense)
     target = m.condenseTo;
   if (target === undefined) return false;
+  if (m.category === "gas" && materials[target].category !== "gas")
+    w.fields.add(x, y, -0.8);
   const nutrition = w.nutrition[i],
     frozenLiquid = w.residue[i];
   // Ice retains dissolved material through freezing, using its otherwise unused residue slot.

@@ -118,7 +118,7 @@ const definitions = [
     },
   ],
   [
-    "Metal",
+    "Steel",
     "solid",
     "#a8b3bf",
     7.8,
@@ -126,7 +126,7 @@ const definitions = [
       conductive: true,
       conductivity: 0.48,
       melt: 1450,
-      meltTo: "Molten metal",
+      meltTo: "Molten steel",
       resistance: 0.98,
     },
   ],
@@ -138,7 +138,7 @@ const definitions = [
     {
       conductivity: 0.035,
       melt: 1700,
-      meltTo: "Lava",
+      meltTo: "Molten glass",
       resistance: 1,
     },
   ],
@@ -186,18 +186,24 @@ const definitions = [
   ],
   ["Cement", "powder", "#b8b6a1", 1.8, {}],
   [
-    "Metal dust",
+    "Steel powder",
     "powder",
     "#96a6b7",
     5,
     {
       conductive: true,
       conductivity: 0.4,
-      melt: 1000,
-      meltTo: "Molten metal",
+      melt: 1450,
+      meltTo: "Molten steel",
     },
   ],
-  ["Acid", "liquid", "#b8dc63", 1.1, {}],
+  [
+    "Hydrochloric acid",
+    "liquid",
+    "#b8dc63",
+    1.1,
+    { conductivity: 0.2, conductive: true, aqueous: true },
+  ],
   [
     "Lava",
     "liquid",
@@ -223,7 +229,7 @@ const definitions = [
     },
   ],
   [
-    "Fuel",
+    "Kerosene",
     "liquid",
     "#de8d65",
     0.7,
@@ -258,14 +264,14 @@ const definitions = [
     },
   ],
   [
-    "Molten metal",
+    "Molten steel",
     "liquid",
     "#ffc170",
     6.5,
     {
       temperature: 1550,
-      freeze: 1100,
-      freezeTo: "Metal",
+      freeze: 1430,
+      freezeTo: "Steel",
       conductive: true,
       conductivity: 0.45,
       viscosity: 3,
@@ -284,7 +290,7 @@ const definitions = [
       conductivity: 0.25,
     },
   ],
-  ["Oxygen", "gas", "#8ebfae", -0.08, {}],
+  ["Oxygen", "gas", "#8ebfae", 0.03, {}],
   [
     "Hydrogen",
     "gas",
@@ -297,7 +303,7 @@ const definitions = [
     },
   ],
   [
-    "Gas",
+    "Methane",
     "gas",
     "#b992b8",
     -0.25,
@@ -329,7 +335,7 @@ const definitions = [
     },
   ],
   [
-    "Insulator",
+    "Mica",
     "solid",
     "#a26c89",
     2,
@@ -547,7 +553,7 @@ const definitions = [
       conductivity: 0.025,
       resistance: 0.1,
       melt: 1550,
-      meltTo: "Molten metal",
+      meltTo: "Molten steel",
     },
   ],
   [
@@ -769,6 +775,39 @@ const definitions = [
       bubble: true,
     },
   ],
+  [
+    "Sulfurous acid",
+    "liquid",
+    "#b5c978",
+    1.03,
+    { acidic: true, aqueous: true, conductive: true, conductivity: 0.2 },
+  ],
+  [
+    "Carbon dioxide foam",
+    "gas",
+    "#e7edd2",
+    -0.18,
+    {
+      lifetime: 100,
+      lifetimeVariation: 0.3,
+      conductivity: 0.06,
+      bubble: true,
+      suppressesFlame: true,
+    },
+  ],
+  [
+    "Molten glass",
+    "liquid",
+    "#efb98f",
+    2.3,
+    {
+      temperature: 1750,
+      viscosity: 6,
+      conductivity: 0.1,
+      freeze: 1650,
+      freezeTo: "Glass",
+    },
+  ],
 ];
 export const M = Object.create(null);
 export const materials = definitions.map(
@@ -843,7 +882,7 @@ for (const m of materials)
 
 for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 
-for (const name of ["Metal", "Metal dust"])
+for (const name of ["Steel", "Steel powder"])
   Object.assign(materials[M[name]], {
     oxidizeTo: M.Rust,
     oxidationRate: 0.0015,
@@ -854,12 +893,31 @@ for (const name of ["Water", "Brine"])
     waterLike: true,
     absorbable: true,
   });
-materials[M.Acid].acidic = true;
+materials[M["Hydrochloric acid"]].acidic = true;
 for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid wax"])
   materials[M[name]].organic = true;
 
-for (const name of ["Hydrogen", "Gas"])
+for (const name of ["Hydrogen", "Methane"])
   materials[M[name]].requiresOxygen = true;
 
 materials[M.Coal].sparkChance = 0.025;
 materials[M.Wood].sparkChance = 0.006;
+
+// Ambient air is implicit. Real gases share buoyancy and pressure rules, with
+// their own chemistry and products; fiction remains explicitly categorized.
+materials[M.Hydrogen].combustionGas = M.Steam;
+materials[M.Methane].combustionGas = M["Carbon dioxide"];
+materials[M.Kerosene].combustionGas = M["Carbon dioxide"];
+for (const name of [
+  "Oil",
+  "Wood",
+  "Coal",
+  "Rubber",
+  "Rope",
+  "Plant",
+  "Wax",
+  "Liquid wax",
+  "Seed",
+])
+  materials[M[name]].combustionGas ??= M["Carbon dioxide"];
+materials[M.Sponge].airPermeability = 0.8;

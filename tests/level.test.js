@@ -86,8 +86,8 @@ test("looping seams connect heat, electricity, contact chemistry, pressure, and 
   const w = configured("looping"),
     left = 10 * 32,
     right = left + 31;
-  w.set(left, M.Metal, 500);
-  w.set(right, M.Metal, 20);
+  w.set(left, M.Steel, 500);
+  w.set(right, M.Steel, 20);
   w.tick = 1;
   w.charge[left] = 6;
   react(w, left, 0, 10);

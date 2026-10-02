@@ -7,7 +7,7 @@ def serve(route):
     path=ROOT/(route.request.url.split('sandlab.test/',1)[1].split('?')[0] or 'index.html')
     route.fulfill(body=path.read_bytes(),content_type=mimetypes.guess_type(path)[0] or 'text/plain') if path.is_file() else route.fulfill(status=404)
 def point(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,d=r.canvas.width/b.width;return {x:b.x+(v.x+(x+.5)*v.scale)/d,y:b.y+(v.y+(y+.5)*v.scale)/d}}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.x+p.x/d,y:b.y+p.y/d}}''',[x,y])
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
     for width,height,touch in [(1440,900,False),(320,740,True),(390,844,True),(844,390,True)]:
@@ -30,17 +30,16 @@ with sync_playwright() as p:
             assert max(t['h'] for t in tiles)-min(t['h'] for t in tiles)<1
             assert min(t['h'] for t in tiles)==76
             page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'elastic-palette-{width}.png'))
-        assert page.locator('.material').count()==79
+        assert page.locator('.material').count()==81
         for name in ['Molten salt','Molten copper','Steam','Ice','Liquid nitrogen']:
             assert page.get_by_role('button',name=name,exact=True).count()==0
         page.locator('#search').fill('molten salt');assert page.locator('.material').count()==1
         assert page.locator('.material-name').inner_text()=='Salt';page.locator('#search').fill('')
         page.get_by_role('button',name='Salt',exact=True).click()
-        if touch:page.locator('#palette-toggle').tap();page.wait_for_timeout(250)
-        page.locator('#draw-temperature').fill('850');page.locator('#draw-temperature').press('Tab')
-        if touch:page.locator('#palette-close').tap();page.wait_for_timeout(250);page.locator('#controls-toggle').tap()
+        assert page.locator('#draw-temperature').count()==0
+        if touch and page.locator('#controls-toggle').get_attribute('aria-expanded')=='true':page.locator('#controls-toggle').tap()
         target=point(page,50,45);page.mouse.click(**target)
-        assert page.evaluate("async()=>{const {M}=await import('./src/sim/materials.js');return sandlab.world.cells[45*sandlab.world.width+50]===M['Molten salt'] && sandlab.world.temp[45*sandlab.world.width+50]===850}")
+        assert page.evaluate("async()=>{const {M}=await import('./src/sim/materials.js');return sandlab.world.cells[45*sandlab.world.width+50]===M.Salt && sandlab.world.temp[45*sandlab.world.width+50]===20}")
         if touch:page.locator('#palette-toggle').tap();page.wait_for_timeout(250)
         page.locator('#categories').get_by_role('button',name='Elastics',exact=True).click()
         assert page.locator('.material').count()==3
@@ -49,11 +48,11 @@ with sync_playwright() as p:
         if touch:page.locator('#controls-toggle').tap()
         page.evaluate('sandlab.world.clear();sandlab.state.setRadius(1)')
         page.mouse.move(**point(page,50,50));page.mouse.down();page.mouse.move(**point(page,85,50),steps=20);page.mouse.up()
-        result=page.evaluate('''()=>{const w=sandlab.world;const count=w.count,ids=[...w.elastic.locations.keys()];let links=0;for(const i of w.elastic.locations.values())for(const b of w.elastic.bonds)if(w.elastic.locations.has(b[i]))links++;for(let n=0;n<90;n++)w.step();sandlab.renderer.draw();return {count,after:w.count,ids:ids.every(id=>w.elastic.locations.has(id)),links,lowest:Math.max(...[...w.elastic.locations.values()].map(i=>Math.floor(i/w.width)))};}''')
-        assert result['count']>36 and result['count']==result['after'] and result['ids'] and result['links']>35 and result['lowest']>51,result
+        result=page.evaluate('''()=>{const w=sandlab.world;const count=w.count,ids=[...w.elastic.locations.keys()];const initial=[...w.elastic.locations.values()].reduce((sum,i)=>sum+(i%w.width)*w.gravityX+Math.floor(i/w.width)*w.gravityY,0)/count;let links=0;for(const i of w.elastic.locations.values())for(const b of w.elastic.bonds)if(w.elastic.locations.has(b[i]))links++;for(let n=0;n<90;n++)w.step();sandlab.renderer.draw();return {count,after:w.count,ids:ids.every(id=>w.elastic.locations.has(id)),links,travel:[...w.elastic.locations.values()].reduce((sum,i)=>sum+(i%w.width)*w.gravityX+Math.floor(i/w.width)*w.gravityY,0)/count-initial};}''')
+        assert result['count']>36 and result['count']==result['after'] and result['ids'] and result['links']>35 and result['travel']>2,result
         if not touch:
             page.locator('#undo-btn').click();assert page.evaluate('sandlab.world.count')==0
             page.locator('#redo-btn').click();assert page.evaluate('sandlab.world.elastic.locations.size')==result['count']
         assert not errors,errors;c.close()
     browser.close()
-print(json.dumps({'elastic_drawing_and_history':'pass','single_substance_palette':'pass','temperature_phase_drawing':'pass','grouped_mobile_controls':'pass','equal_mobile_tiles':'pass'}))
+print(json.dumps({'elastic_drawing_and_history':'pass','single_substance_palette':'pass','default_material_temperature':'pass','grouped_mobile_controls':'pass','equal_mobile_tiles':'pass'}))

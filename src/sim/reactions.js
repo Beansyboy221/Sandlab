@@ -1,3 +1,4 @@
+import { reactFoam } from "./foam.js";
 import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
 import { arcGap } from "./sparks.js";
@@ -31,6 +32,7 @@ export function react(world, i, x, y) {
     reactEnergy(world, i, x, y, m);
     return;
   }
+  if (reactFoam(world, i, x, y)) return;
   if (reactBubbles(world, i, x, y)) return;
   // Contact chemistry precedes phase changes, so a hot water-reactive metal
   // still reacts with water before that water flashes into steam.
@@ -98,21 +100,24 @@ export function react(world, i, x, y) {
     world.eachNeighbor(x, y, (j) => {
       if (c[j]) t[j] += (t[i] - t[j]) * 0.12;
     });
-  } else if (id === M.Acid || m.corrosive) {
-    if (world.random() < 0.2)
+  } else if (id === M["Hydrochloric acid"]) {
+    // Strong acid etches susceptible mineral/organic surfaces slowly. Glass,
+    // oils, water, and unrelated devices do not vanish on contact. Metals and
+    // carbonates react through the product-aware contact registry above.
+    if (world.random() < 0.025) {
+      let target = -1;
       world.eachNeighbor(x, y, (j) => {
-        const n = materials[c[j]];
         if (
-          c[j] &&
-          n.category !== "gas" &&
-          c[j] !== id &&
-          n.category !== "energy" &&
-          world.random() > n.resistance
-        ) {
-          world.set(j, 0);
-          if (world.random() < 0.06) world.set(i, m.corrosive ? 0 : M.Water);
-        }
+          target < 0 &&
+          (c[j] === M.Stone || c[j] === M.Concrete || materials[c[j]].organic)
+        )
+          target = j;
       });
+      if (target >= 0) {
+        world.set(target, 0);
+        world.set(i, M.Water, t[i]);
+      }
+    }
   } else if (id === M.Void)
     world.eachNeighbor(x, y, (j) => {
       if (c[j] && c[j] !== M.Void) world.set(j, 0);

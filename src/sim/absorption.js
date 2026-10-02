@@ -1,7 +1,7 @@
 import { M, materials } from "./materials.js";
 const watery = (id) => materials[id].waterLike;
 export const absorbable = (id) =>
-  !!materials[id]?.absorbable || id === M.Oil || id === M.Fuel;
+  !!materials[id]?.absorbable || id === M.Oil || id === M.Kerosene;
 function mixWater(a, b) {
   if (a === M.Brine || b === M.Brine) return M.Brine;
   if (a === M.Vinegar || b === M.Vinegar) return M.Vinegar;
@@ -60,7 +60,7 @@ export function absorb(w, i, x, y) {
       for (let side = 0; side < 4; side++) {
         const order = boiling || burning ? 3 - side : side;
         const [dx, dy] = releases[order],
-          j = w.index(x + dx, y + dy);
+          j = w.relativeIndex(x, y, dx, dy);
         if ((j < 0 && w.border !== "void") || (j >= 0 && w.cells[j])) continue;
         if (j >= 0)
           w.set(
@@ -75,6 +75,7 @@ export function absorb(w, i, x, y) {
             boiling ? 120 : burning ? 680 : w.temp[i],
           );
         amount--;
+        if (boiling || burning) w.fields.add(x, y, 0.8);
         if (boiling) w.temp[i] = Math.max(90, w.temp[i] - 5);
         break;
       }

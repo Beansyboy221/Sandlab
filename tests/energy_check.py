@@ -19,21 +19,21 @@ def init(browser,width,height,touch=False):
     return context,page,errors
 
 def cell(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.x+(v.x+(x+.5)*v.scale)/s,y:b.y+(v.y+(y+.5)*v.scale)/s}}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.x+p.x/s,y:b.y+p.y/s}}''',[x,y])
 
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==79
+    assert page.locator('.material').count()==81
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
-    assert page.locator('#tool-picker-menu [role=option]').count()==12
-    assert page.locator('#tool-picker-menu [role=option] > svg').count()==12
-    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==12
+    assert page.locator('#tool-picker-menu [role=option]').count()==13
+    assert page.locator('#tool-picker-menu [role=option] > svg').count()==13
+    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==13
     assert page.locator('#tool-picker-toggle').get_attribute('aria-expanded')=='true'
     page.screenshot(path=str(ARTIFACTS/'tool-icons-desktop.png'))
     page.keyboard.press('End');assert page.locator('[data-tool-option=squeeze]').evaluate('e=>e===document.activeElement')
-    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('Enter')
+    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowRight');page.keyboard.press('Enter')
     assert page.evaluate('sandlab.state.tool')=='warm'
     assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Warm'
     page.keyboard.press('b');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Draw'

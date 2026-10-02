@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 79 palette substances and 90 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 81 palette substances and 93 simulation forms, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 ## Run
 
@@ -26,7 +26,7 @@ Try oil over water, sand in a density column, cement with water, an acid bath in
 
 New phone worlds use a 200 × 300 grid; larger screens use 320 × 200. Rotating or resizing a window preserves the world. Imported saves retain their original dimensions and canvas properties.
 
-The plus button creates a canvas with a name, X/Y pixel dimensions, border type, and background color. Use the sliders button beside the canvas size to edit these properties. Solid borders contain particles, looping borders connect opposite edges for movement and interactions, and void borders drain outgoing particles. Sizes range from 8 to 512 pixels per axis, up to 200,000 cells total.
+The plus button creates a canvas with a name, border type, and background color. Dimensions come from the available drawing area. Mobile properties have one resolution value: the shorter side in pixels; the longer side is calculated automatically. Desktop has no size controls. Solid borders contain particles, looping borders connect opposite edges, and void borders drain outgoing particles. Grid limits are 512 pixels per axis and 200,000 cells total.
 
 When resizing, drag the gold rectangle in the preview, enter exact X/Y offsets, or use arrow keys (Shift moves ten pixels). Shrinking places a crop window over the original canvas; expanding places the original particles inside the larger canvas. Mixed changes crop one axis and expand the other. Mint outlines show the new bounds and dim particles show what will be removed. The preview does not change the live canvas until you apply it. Undo and Redo restore dimensions, properties, and complete particle state.
 
@@ -56,7 +56,7 @@ My worlds stores up to eight named worlds on the current device. Autosave captur
 | `src/presets.js`              | Internal simulation fixtures                                                      |
 | `src/app.js`                  | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
 
-The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a coarse gameplay field, rather than a full fluid solver.
+The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors and exchanges with a coarse air temperature field. Atmospheric heat and pressure diffuse around solid barriers and vent at void edges; looping worlds wrap both fields. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a damped coarse gameplay field relative to an ambient baseline of 1 atm, rather than a full fluid solver. Air temperature starts at 20°C; localized heat is retained, diffuses, and survives saves, Undo/Redo, and positioned resizes.
 
 The simulation advances at a fixed 60 Hz target. Catch-up work is capped to keep interaction responsive under load. Rendering uses a low-resolution ImageData buffer scaled without smoothing; the display canvas respects device pixel ratio with a 2× cap. Thermal colors are precomputed. Seeded randomness and saved activity timestamps support reproducible continuation.
 
@@ -99,7 +99,7 @@ Burning fuels retain their material and use the particle lifetime field as a rem
 
 ## Absorbent solids
 
-Sponge stores up to 48 cells of water, brine, oil, or fuel per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and fuel can burn, while stored water protects the sponge as it evaporates. Acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Wet a sponge with different liquids, then warm or squeeze it to release the stored contents.
+Sponge stores up to 48 cells of water, brine, oil, or kerosene per solid cell. It retains one compatible liquid type, with water and brine able to mix. Saturation changes its color. Liquid wicks between touching sponges, and plants draw water from wet sponges. Squeeze or pressure releases liquid into empty neighboring cells; warming a wet sponge produces steam. Absorbed oil and kerosene can burn, while stored water protects the sponge as it evaporates. Hydrochloric acid corrodes sponge. Stored contents move with Grab and survive undo, local saves, and export/import. Wet a sponge with different liquids, then warm or squeeze it to release the stored contents.
 
 ## Selection and copying
 
@@ -117,9 +117,9 @@ The gear in the top-right opens Rendering, Simulation, Brush, Storage, Keyboard,
 
 ## Chemistry and new materials
 
-The palette contains 79 substances, with 90 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Metal and metal dust rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to metal.
+The palette contains 81 substances, with 93 distinct simulation forms including alternate phases. Copper conducts heat and electricity and melts into molten copper; moisture and air form insulating patina. Steel and steel powder rust on exposed wet surfaces, faster in brine. Vinegar cleans oxides, and hot coal reduces rust back to steel.
 
-Acid or vinegar plus baking soda releases carbon dioxide. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form acid. Rubber insulates electricity and heat but burns.
+Hydrochloric acid or vinegar plus baking soda releases carbon dioxide and a finite, expanding foam burst. Foam traps gas briefly, raises local pressure, and collapses into water and CO₂. Gas creation/absorption, reaction heat, boiling, condensation, and combustion generate signed pressure changes. Acids neutralize lye into water and brine. Sodium and liquid sodium react with aqueous liquids to release heat, pressure, hydrogen, and lye. Flammable gases need air or oxygen to ignite. Carbon dioxide and nitrogen suppress flames; hydrated, exposed plants consume carbon dioxide and release oxygen. Burning sulfur releases sulfur dioxide, which reacts with water to form sulfurous acid. Rubber insulates electricity and heat but burns.
 
 Water hydrates clay; wet clay separates into clay and steam when vapor has an escape space. Heating clay fires it into brick. Fertilizer dissolves into nutrient water, carries finite nutrition through damp soil and plants, and improves hydrated growth. Nutrient water works with sponges, retains nutrition through freezing, and dries back into fertilizer. Liquid nitrogen draws heat from nearby particles and boils into nitrogen. Nutrients travel with particles, selection moves, undo, and saves; older saves load with zero nutrients. Combine these materials to explore reactions and ceramic firing.
 
@@ -149,7 +149,7 @@ The Fiction filter groups six experimental substances. Dragonfire heats nearby m
 
 Ray travel, transparent-volume scanning, new emissions, and fission/annihilation events have fixed work limits. No interaction starts recursive simulation work or creates an unbounded list of effects. All effects remain local to the browser and use the existing bloom renderer.
 
-On phones, the canvas occupies most of the available screen. The bottom dock keeps Play, the tool picker, and materials reachable. Swipe up or tap the grip to expand brush settings, undo/redo, tool properties, and zoom buttons. In landscape, the dock moves to the side when that gives the canvas more room; swipe left to expand a side dock. Tall canvases align left. Rotation refits the view without changing particles. The Fullscreen button uses canvas focus on mobile, so it works without iPhone Safari's browser fullscreen API; tap the visible × button in the top-right corner to exit focus. Browser address bars remain controlled by Safari. Adding Sandlab to the Home Screen offers a separate app window.
+On phones, the canvas occupies most of the available screen. The bottom dock keeps Play, the tool picker, and materials reachable. Swipe up or tap the grip to expand brush settings, undo/redo, tool properties, and zoom buttons. The dock stays at the bottom in every orientation. Rotation preserves world coordinates and counters browser rotation while changing gravity to follow screen-down. Powders, fluids, gases, elastics, combustion, weather, plant growth, and sponge drainage use the same gravity direction. Drawing, inspection, selection, zoom, and pan share the rotated view transform. The Fullscreen button uses canvas focus on mobile, so it works without iPhone Safari's browser fullscreen API; tap the visible × button in the top-right corner to exit focus. Browser address bars remain controlled by Safari. Adding Sandlab to the Home Screen offers a separate app window.
 
 Elastic materials
 
@@ -157,10 +157,10 @@ Rope, Rubber, and Jelly use connected springs rather than granular movement. Dra
 
 Soap dissolves in water. Warm or agitate Soapy water with Pressure to produce bubbles. Bubbles rise through liquids, drain faster in open air, and pop under heat or strong pressure. The mobile material grid uses equal 76-pixel rows and equal column widths.
 
-Each substance appears once in the palette. Use Draw temperature (°C) to create its frozen, gaseous, or molten phase; searching an alternate name finds its parent substance. Copy samples both the substance and temperature.
+Each substance appears once in the palette. Searching an alternate phase name finds its parent substance. Particles start at their normal material temperature; Warm, Cool, heaters, and chemical reactions create alternate phases in the world. Copy samples the substance. Replace sits beside the main material picker.
 
 Elastics use three physics substeps per simulation tick. Internal spring damping acts on deformation, while whole bodies accelerate under gravity and respond to pressure and liquid buoyancy. Their occupied grid cells move leading edges first, so dense bodies do not stop against their own particles. There is no elastic sleep timer. An eraser cuts stretched connections even in empty grid cells; skins and joints render as a separate continuous layer at display resolution, including in heat/pressure views, inspector lenses, save thumbnails, and resize previews. Inspect reports stretch and tension.
 
-On desktop, drag one of the eight edge/corner canvas handles to crop that side or add blank space. Existing particles are preserved without scaling. Hold Shift on a corner to preserve aspect ratio within the grid size limits, Escape to cancel, and Undo/Redo to travel between sizes. Enter on a focused handle opens the numeric canvas properties editor. Mobile keeps the canvas properties dialog. Fertilizer is grouped under Powders.
+The world fills the display, including previously saved worlds, without automatically cropping content. Changing mobile resolution uses the crop/expansion placement preview and stays undoable. Connected elastic contact preserves both velocity and temporarily delayed raster displacement; disconnected fragments still collide. A swept path test prevents retained displacement from jumping through walls. Fertilizer is grouped under Powders.
 
 Paint uses packed RGBA foreground coatings that travel with particle state and a fixed-coordinate background overlay. Stroke stamps prevent overlap from compounding opacity; the foreground stamp travels with the particle too. Both layers are validated, run-length encoded, saved, undoable, and preserved on resize. Legacy saves default to transparent overlays. Paint's eraser restores the underlying appearance without changing occupancy or physics.

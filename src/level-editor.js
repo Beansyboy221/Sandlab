@@ -1,3 +1,8 @@
+import {
+  fittedCanvasSize,
+  canvasResolutionLimit,
+  inversePoint,
+} from "./canvas-view.js";
 import { materials } from "./sim/materials.js";
 import {
   levelProperties,
@@ -17,11 +22,12 @@ export class LevelEditor {
     this.refresh = refresh;
     this.form = dialog.querySelector("form");
     this.inputs = Object.fromEntries(
-      ["name", "width", "height", "border", "background"].map((key) => [
+      ["name", "border", "background"].map((key) => [
         key,
         dialog.querySelector(`#level-${key}`),
       ]),
     );
+    this.resolution = dialog.querySelector("#level-resolution");
     this.preview = dialog.querySelector("#resize-preview");
     this.context = this.preview.getContext("2d", { alpha: false });
     this.particles = document.createElement("canvas");
@@ -102,7 +108,11 @@ export class LevelEditor {
       e.preventDefault();
       const p = this.placement,
         step = e.shiftKey ? 10 : 1;
-      p.setPosition(p.positionX + dx * step, p.positionY + dy * step);
+      const direction = inversePoint(this.previewMatrix, dx, dy, true);
+      p.setPosition(
+        p.positionX + direction.x * step,
+        p.positionY + direction.y * step,
+      );
       this.draw();
     });
     new ResizeObserver(() => {
@@ -125,9 +135,21 @@ export class LevelEditor {
     this.dialog.querySelector("h2").textContent = editing
       ? "Canvas properties"
       : "New canvas";
-    this.dialog.querySelector("#level-note").textContent = editing
-      ? "Resizing lets you place the kept area before applying changes."
-      : "The current canvas remains available in Undo.";
+    const mobile = document.body.classList.contains("mobile-layout"),
+      box = this.renderer.canvas.getBoundingClientRect();
+    this.resolution.closest("label").hidden = !mobile;
+    const limit = canvasResolutionLimit(box.width, box.height);
+    this.resolution.value = editing
+      ? Math.min(this.world.width, this.world.height)
+      : Math.min(limit, this.world.width, this.world.height);
+    this.startResolution = Number(this.resolution.value);
+    this.resolution.max = limit;
+    this.dialog.querySelector("#level-note").textContent =
+      editing && mobile
+        ? "Canvas shape follows the screen. Changing resolution lets you place the kept area before applying it."
+        : editing
+          ? "Canvas shape follows the drawing area."
+          : "The current canvas remains available in Undo.";
     this.showFields();
     this.openDialog(this.dialog.id);
   }
@@ -141,23 +163,35 @@ export class LevelEditor {
           ? "Apply changes"
           : "Create canvas";
   }
+  dimensions() {
+    if (this.editing && Number(this.resolution.value) === this.startResolution)
+      return { width: this.world.width, height: this.world.height };
+    const resolution = Number(this.resolution.value);
+    if (!Number.isInteger(resolution) || resolution < 8 || resolution > 512)
+      throw Error("Choose a whole-pixel resolution between 8 and 512.");
+    const box = this.renderer.canvas.getBoundingClientRect(),
+      limit = canvasResolutionLimit(box.width, box.height);
+    if (document.body.classList.contains("mobile-layout") && resolution > limit)
+      throw Error(`Choose 8–${limit} pixels for this screen.`);
+    return fittedCanvasSize(
+      resolution,
+      box.width,
+      box.height,
+      this.renderer.rotation,
+    );
+  }
   sizeChanged() {
     return (
-      Number(this.inputs.width.value) !== this.world.width ||
-      Number(this.inputs.height.value) !== this.world.height
+      this.editing && Number(this.resolution.value) !== this.startResolution
     );
   }
   values() {
-    return validateLevelProperties(
-      Object.fromEntries(
-        Object.entries(this.inputs).map(([key, input]) => [
-          key,
-          key === "width" || key === "height"
-            ? Number(input.value)
-            : input.value,
-        ]),
+    return validateLevelProperties({
+      ...Object.fromEntries(
+        Object.entries(this.inputs).map(([key, input]) => [key, input.value]),
       ),
-    );
+      ...this.dimensions(),
+    });
   }
   commit() {
     try {
@@ -220,10 +254,15 @@ export class LevelEditor {
   point(event) {
     const box = this.preview.getBoundingClientRect(),
       ratio = this.preview.width / box.width,
-      v = this.viewport;
+      v = this.viewport,
+      point = inversePoint(
+        this.previewMatrix,
+        (event.clientX - box.left) * ratio,
+        (event.clientY - box.top) * ratio,
+      );
     return {
-      x: ((event.clientX - box.left) * ratio - v.x) / v.scale,
-      y: ((event.clientY - box.top) * ratio - v.y) / v.scale,
+      x: (point.x - v.x) / v.scale,
+      y: (point.y - v.y) / v.scale,
     };
   }
   draw() {
@@ -235,18 +274,30 @@ export class LevelEditor {
     this.preview.height = Math.max(1, Math.round(box.height * dpr));
     const c = this.context,
       padding = 18 * dpr,
+      turn = this.renderer.rotation,
+      virtualWidth = turn % 2 ? this.preview.height : this.preview.width,
+      virtualHeight = turn % 2 ? this.preview.width : this.preview.height,
       scale = Math.min(
-        (this.preview.width - 2 * padding) / p.width,
-        (this.preview.height - 2 * padding) / p.height,
+        (virtualWidth - 2 * padding) / p.width,
+        (virtualHeight - 2 * padding) / p.height,
       );
     this.viewport = {
-      x: (this.preview.width - p.width * scale) / 2,
-      y: (this.preview.height - p.height * scale) / 2,
+      x: (virtualWidth - p.width * scale) / 2,
+      y: (virtualHeight - p.height * scale) / 2,
       scale,
     };
     c.fillStyle = "#0b1317";
     c.fillRect(0, 0, this.preview.width, this.preview.height);
+    this.previewMatrix =
+      turn === 1
+        ? [0, 1, -1, 0, this.preview.width, 0]
+        : turn === 2
+          ? [-1, 0, 0, -1, this.preview.width, this.preview.height]
+          : turn === 3
+            ? [0, -1, 1, 0, 0, this.preview.height]
+            : [1, 0, 0, 1, 0, 0];
     c.save();
+    c.setTransform(...this.previewMatrix);
     c.translate(this.viewport.x, this.viewport.y);
     c.scale(scale, scale);
     c.imageSmoothingEnabled = false;

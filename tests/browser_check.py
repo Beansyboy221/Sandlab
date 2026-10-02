@@ -38,7 +38,7 @@ with sync_playwright() as p:
     desktop = browser.new_context(viewport={'width':1440, 'height':900}, device_scale_factor=1)
     page, errors = init(desktop)
     page.wait_for_timeout(1200)
-    assert page.locator('.material').count() == 79
+    assert page.locator('.material').count() == 81
     assert page.locator('.tagline, .canvas-note, .palette-foot').count() == 0
     assert page.locator('.material-detail p, .material[title]').count() == 0
     assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
@@ -138,12 +138,12 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '79 materials · 90 simulation forms'
+    assert page.locator('#app-content-count').inner_text() == '81 materials · 93 simulation forms'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()
     assert page.locator('#changelog-dialog').is_visible()
-    assert page.locator('.changelog-release').count() == 14
+    assert page.locator('.changelog-release').count() == 15
     page.locator('#changelog-dialog .dialog-close').click()
     assert page.evaluate('sandlab.state.paused')
     radius=page.evaluate('sandlab.state.radius')
@@ -164,6 +164,7 @@ with sync_playwright() as p:
     assert page.locator('.save-row').count() == 1
     assert page.evaluate('sandlab.state.paused')
     saved_count=page.evaluate('sandlab.world.count')
+    saved_width=page.evaluate('sandlab.world.width')
     with page.expect_download() as download:
         page.locator('#export-btn').click()
     export=ARTIFACTS / 'roundtrip.sandlab'
@@ -193,7 +194,7 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.world.cells.some(v=>v===5)')
     page.screenshot(path=str(ARTIFACTS / 'fire-surfaces.png'))
     page.evaluate("() => {sandlab.state.paused=true;const w=sandlab.world;w.clear();w.set(100*w.width+160,2);}")
-    point=page.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+160*v.scale)/s,y:b.top+(v.y+100*v.scale)/s};}""")
+    point=page.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(160,100);return {x:b.left+p.x/s,y:b.top+p.y/s};}""")
     choose(page, 'warm')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.temp[100*sandlab.world.width+160]') > 20
@@ -225,7 +226,7 @@ with sync_playwright() as p:
     assert not page.locator('#brush-control').is_visible()
     page.evaluate("() => {const w=sandlab.world;w.clear();w.set(90*w.width+140,4);w.set(91*w.width+140,51,42);w.storedLiquid[91*w.width+140]=2;w.storedAmount[91*w.width+140]=7;w.set(90*w.width+141,41);w.clone[90*w.width+141]=21;}")
     def cell(page,x,y):
-        return page.evaluate("""([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+(x+.5)*v.scale)/s,y:b.top+(v.y+(y+.5)*v.scale)/s};}""",[x,y])
+        return page.evaluate("""([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.left+p.x/s,y:b.top+p.y/s};}""",[x,y])
     start,end=cell(page,139,89),cell(page,142,92)
     page.mouse.move(start['x'],start['y']);page.mouse.down();page.mouse.move(end['x'],end['y'],steps=5);page.mouse.up()
     assert page.evaluate('sandlab.world.count') == 3
@@ -430,7 +431,7 @@ with sync_playwright() as p:
     assert 'open' not in phone.locator('#palette').get_attribute('class')
     phone.wait_for_timeout(300)
     phone.evaluate("() => {const w=sandlab.world;w.clear();w.set(150*w.width+100,2);}")
-    point=phone.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),v=r.viewport,s=r.canvas.width/b.width;return {x:b.left+(v.x+100*v.scale)/s,y:b.top+(v.y+150*v.scale)/s};}""")
+    point=phone.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(100,150);return {x:b.left+p.x/s,y:b.top+p.y/s};}""")
     phone.touchscreen.tap(point['x'],point['y'])
     assert phone.evaluate('sandlab.world.temp[150*sandlab.world.width+100]') < 20
     choose(phone, 'paint')
@@ -558,9 +559,9 @@ with sync_playwright() as p:
     phone.locator('#save-btn').tap()
     phone.locator('#import-file').set_input_files(str(export))
     phone.wait_for_function('() => (!document.getElementById("saves-dialog").open)')
-    assert phone.evaluate('sandlab.world.width') == 320
+    assert phone.evaluate('sandlab.world.width') == saved_width
     assert phone.evaluate('sandlab.world.count') == saved_count
-    phone.wait_for_function('() => (sandlab.renderer.buffer.width === 320)')
+    phone.wait_for_function('width => sandlab.renderer.buffer.width === width',arg=saved_width)
     assert not mobile_errors, mobile_errors
     print(json.dumps({'touch_and_multitouch':'pass','mobile_portrait_and_landscape':'pass','runtime_errors':mobile_errors}))
     browser.close()

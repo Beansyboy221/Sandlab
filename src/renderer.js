@@ -1,3 +1,4 @@
+import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
 import { drawElasticBodies, drawBubbles } from "./sim/elastic-renderer.js";
 import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
@@ -44,6 +45,7 @@ export class Renderer {
     this.glow = new Bloom();
     this.cursor = null;
     this.zoom = 1;
+    this.rotation = 0;
     this.center = { x: world.width / 2, y: world.height / 2 };
     this.cameraWidth = world.width;
     this.cameraHeight = world.height;
@@ -85,20 +87,24 @@ export class Renderer {
     this.updateViewport();
   }
   updateViewport() {
-    const scale =
-      this.zoom *
-      Math.min(
-        this.canvas.width / this.world.width,
-        this.canvas.height / this.world.height,
-      );
-    this.viewport = {
-      x:
-        this.alignLeft && this.zoom === 1
-          ? 0
-          : this.canvas.width / 2 - this.center.x * scale,
-      y: this.canvas.height / 2 - this.center.y * scale,
-      scale,
-    };
+    this.view = canvasView(
+      this.canvas.width,
+      this.canvas.height,
+      this.world.width,
+      this.world.height,
+      this.rotation,
+      this.zoom,
+      this.center,
+    );
+    this.viewport = this.view.viewport;
+  }
+  project(x, y) {
+    const v = this.viewport;
+    return transformPoint(
+      this.view.matrix,
+      v.x + x * v.scale,
+      v.y + y * v.scale,
+    );
   }
   zoomAt(factor, clientX, clientY) {
     const anchor = this.point(clientX, clientY),
@@ -106,18 +112,25 @@ export class Renderer {
       ratio = this.canvas.width / box.width;
     this.zoom = Math.max(1, Math.min(12, this.zoom * factor));
     this.updateViewport();
+    const point = inversePoint(
+      this.view.matrix,
+      (clientX - box.left) * ratio,
+      (clientY - box.top) * ratio,
+    );
     this.center = {
-      x:
-        anchor.x -
-        ((clientX - box.left) * ratio - this.canvas.width / 2) /
-          this.viewport.scale,
-      y:
-        anchor.y -
-        ((clientY - box.top) * ratio - this.canvas.height / 2) /
-          this.viewport.scale,
+      x: anchor.x - (point.x - this.view.baseWidth / 2) / this.viewport.scale,
+      y: anchor.y - (point.y - this.view.baseHeight / 2) / this.viewport.scale,
     };
     if (this.zoom === 1)
       this.center = { x: this.world.width / 2, y: this.world.height / 2 };
+    this.updateViewport();
+  }
+  panBy(dx, dy) {
+    const box = this.canvas.getBoundingClientRect(),
+      ratio = this.canvas.width / box.width,
+      point = inversePoint(this.view.matrix, dx * ratio, dy * ratio, true);
+    this.center.x -= point.x / this.viewport.scale;
+    this.center.y -= point.y / this.viewport.scale;
     this.updateViewport();
   }
   resetView() {
@@ -136,11 +149,13 @@ export class Renderer {
     )
       this.resize();
     const v = this.viewport,
-      s = this.canvas.width / b.width;
-    return {
-      x: ((clientX - b.left) * s - v.x) / v.scale,
-      y: ((clientY - b.top) * s - v.y) / v.scale,
-    };
+      s = this.canvas.width / b.width,
+      point = inversePoint(
+        this.view.matrix,
+        (clientX - b.left) * s,
+        (clientY - b.top) * s,
+      );
+    return { x: (point.x - v.x) / v.scale, y: (point.y - v.y) / v.scale };
   }
   draw() {
     if (
@@ -265,6 +280,21 @@ export class Renderer {
         g += dot;
         b += dot;
       }
+      if (thermal && !id) {
+        const air =
+          heatColors[
+            Math.max(
+              0,
+              Math.min(
+                1600,
+                Math.round(fields.temperature[fields.index(x, y)]) + 100,
+              ),
+            )
+          ];
+        r = air[0];
+        g = air[1];
+        b = air[2];
+      }
       if (pressure) {
         const force = fields.pressure[fields.index(x, y)],
           a = Math.min(0.9, Math.abs(force) / 12);
@@ -295,6 +325,8 @@ export class Renderer {
       v = this.viewport;
     c.fillStyle = "#10191e";
     c.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    c.save();
+    c.setTransform(...this.view.matrix);
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
     this.drawElastics(c, v);
     if (this.bloom && !thermal && !pressure)
@@ -346,5 +378,6 @@ export class Renderer {
       c.fill();
       c.stroke();
     }
+    c.restore();
   }
 }

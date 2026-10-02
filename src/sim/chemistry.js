@@ -17,18 +17,35 @@ pair(M["Nutrient water"], M.Dirt, 0, M.Mud, {
   hydrateSoil: true,
 });
 for (const acid of materials.filter((m) => m.acidic)) {
-  pair(acid.id, M["Baking soda"], M.Water, M["Carbon dioxide"], {
-    pressure: 1.2,
-  });
+  pair(
+    acid.id,
+    M["Baking soda"],
+    M["Carbon dioxide foam"],
+    M["Carbon dioxide"],
+    {
+      pressure: 4,
+      foam: true,
+    },
+  );
   pair(acid.id, M.Lye, M.Water, M.Brine, { heat: 35 });
+  pair(acid.id, M.Steel, M.Brine, M.Hydrogen, {
+    chance: acid.id === M.Vinegar ? 0.004 : 0.05,
+    heat: 12,
+  });
+  pair(acid.id, M["Steel powder"], M.Brine, M.Hydrogen, {
+    chance: 0.12,
+    heat: 12,
+  });
   pair(acid.id, M.Rust, M.Water, 0, { chance: 0.12 });
   pair(acid.id, M.Patina, M.Water, M.Copper, { chance: 0.06 });
 }
 for (const sodium of materials.filter((m) => m.reactsWithWater))
   for (const water of materials.filter((m) => m.aqueous))
     pair(sodium.id, water.id, M.Lye, M.Hydrogen, { heat: 600, pressure: 2 });
-pair(M["Sulfur dioxide"], M.Water, 0, M.Acid, { chance: 0.1 });
-pair(M.Rust, M.Coal, M.Metal, M["Carbon dioxide"], {
+pair(M["Sulfur dioxide"], M.Water, 0, M["Sulfurous acid"], { chance: 0.1 });
+pair(M.Chlorine, M.Steel, 0, M.Rust, { chance: 0.04 });
+pair(M.Chlorine, M.Copper, 0, M.Patina, { chance: 0.04 });
+pair(M.Rust, M.Coal, M.Steel, M["Carbon dioxide"], {
   minimumTemperature: 700,
   chance: 0.04,
   pressure: 0.5,
@@ -58,7 +75,25 @@ function contact(w, i, j, row, x, y) {
   );
   w.set(i, forward ? rule.resultA : rule.resultB, temperature);
   w.set(j, forward ? rule.resultB : rule.resultA, temperature);
-  if (rule.pressure) w.fields.add(x, y, rule.pressure);
+  if (rule.foam) {
+    const foam = forward ? i : j;
+    w.clone[foam] = 8;
+    w.residue[foam] = M.Water;
+  }
+  const reactantGases =
+    Number(materials[rule.a].category === "gas") +
+    Number(materials[rule.b].category === "gas");
+  const productGases =
+    Number(materials[rule.resultA].category === "gas") +
+    Number(materials[rule.resultB].category === "gas");
+  // Gas production expands the local atmosphere; gas absorption reduces it.
+  // Heat-driven pressure uses the same field, instead of an explosion-only rule.
+  w.fields.add(
+    x,
+    y,
+    (rule.pressure ?? (productGases - reactantGases) * 0.8) +
+      (rule.heat || 0) * 0.002,
+  );
   return true;
 }
 export function reactContact(w, i, x, y) {

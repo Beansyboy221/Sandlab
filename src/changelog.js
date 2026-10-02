@@ -1,5 +1,22 @@
 export const changelog = [
   {
+    version: "1.5.0",
+    date: "2026-10-02",
+    title: "Fitted canvases, rotating gravity, and foaming chemistry",
+    changes: [
+      "Removed Draw temperature; placed particles use their substance’s normal starting temperature. Replace now sits beside the material picker on the main drawing controls, with a compact toggle on phones.",
+      "Baking soda and vinegar or other acids create CO₂ and an energetic, finite burst of expanding foam. Foam rises, produces local pressure, and collapses back into liquid and gas.",
+      "Added local air temperature and barrier-aware atmospheric pressure/heat diffusion. Heating, cooling, boiling, condensation, combustion, and gas-producing/absorbing reactions affect the atmosphere; Inspect and Temperature view reveal it. Atmospheric heat survives saves and resizes.",
+      "Replaced generic Gas, Metal, Metal dust, Fuel, Acid, and Insulator with Methane, Steel, Steel powder, Kerosene, Hydrochloric acid, and Mica while preserving existing save IDs. Acid-metal reactions release hydrogen; acids leave glass, oils, and water intact. Sulfur dioxide dissolves into sulfurous acid, and glass melts into molten glass.",
+      "Fixed elastic objects catching on their own connected particles. Internal contact retains displacement and momentum instead of rigid bounce and friction; detached pieces still collide, and swept movement cannot skip walls.",
+      "The world fills the available drawing area without blank margins. New canvas dimensions come from the screen; removed X/Y size fields and desktop resize handles. Mobile properties offer one pixel resolution for the shorter side.",
+      "Rotating a phone keeps the world's particle grid, paint, links, and scene orientation fixed to the device. The view counters browser rotation and gravity follows the bottom of the screen.",
+      "Powders, liquids, gases, elastics, surface fire, smoke, lightning, rain, plants, and sponge drainage respect gravity in all four orientations.",
+      "Mobile controls always open from the bottom. Drawing, Paint, selection, inspection, zoom, pan, and directional tools use the same rotated view transform.",
+      "Changing mobile resolution keeps the crop/expansion placement preview and Undo/Redo. Old saved worlds remain compatible and fill the display without automatic cropping.",
+    ],
+  },
+  {
     version: "1.4.1",
     date: "2026-10-01",
     title: "Paint, elastic motion, and canvas handles",

@@ -18,7 +18,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Furnace, 50);
-  assert.equal(materials.length, 91);
+  assert.equal(materials.length, 94);
   assert.equal(M["Liquid nitrogen"], 71);
   for (const m of materials)
     for (const key of [
@@ -40,8 +40,13 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 });
 test("neutralization and gas-generating contacts consume exactly one reactant pair, in either scan direction", () => {
   for (const [a, b, first, second] of [
-    ["Vinegar", "Baking soda", "Water", "Carbon dioxide"],
-    ["Acid", "Baking soda", "Water", "Carbon dioxide"],
+    ["Vinegar", "Baking soda", "Carbon dioxide foam", "Carbon dioxide"],
+    [
+      "Hydrochloric acid",
+      "Baking soda",
+      "Carbon dioxide foam",
+      "Carbon dioxide",
+    ],
     ["Vinegar", "Lye", "Water", "Brine"],
     ["Sodium", "Water", "Lye", "Hydrogen"],
     ["Liquid sodium", "Brine", "Lye", "Hydrogen"],
@@ -55,10 +60,12 @@ test("neutralization and gas-generating contacts consume exactly one reactant pa
       assert.equal(w.cells[211], M[second], b);
       const cells = w.cells.slice();
       react(w, 210, 10, 10); // no stale reactant repeats into another neighbor
-      assert.ok(w.count <= 2);
+      assert.ok(
+        w.count <= (a === "Vinegar" || a === "Hydrochloric acid" ? 3 : 2),
+      );
       assert.equal(w.count, w.cells.filter(Boolean).length);
       if (a.includes("sodium") || a === "Sodium") assert.ok(w.temp[211] >= 230);
-      else assert.deepEqual(w.cells, cells);
+      else if (b !== "Baking soda") assert.deepEqual(w.cells, cells);
     }
 });
 test("sodium reactions add pressure and can ignite their hydrogen byproduct without unbounded temperature", () => {
@@ -71,22 +78,22 @@ test("sodium reactions add pressure and can ignite their hydrogen byproduct with
   assert.ok(w.temp.every(Number.isFinite));
 });
 test("corrosion requires wet exposed surfaces, salt accelerates it, and copper patina stops conduction", () => {
-  const dry = sample("Metal", "Stone");
+  const dry = sample("Steel", "Stone");
   dry.random = () => 0;
   react(dry, 210, 10, 10);
-  assert.equal(dry.cells[210], M.Metal);
-  const wet = sample("Metal", "Water");
+  assert.equal(dry.cells[210], M.Steel);
+  const wet = sample("Steel", "Water");
   wet.random = () => 0.004;
   react(wet, 210, 10, 10);
-  assert.equal(wet.cells[210], M.Metal);
+  assert.equal(wet.cells[210], M.Steel);
   wet.set(211, M.Brine);
   react(wet, 210, 10, 10);
   assert.equal(wet.cells[210], M.Rust);
-  const submerged = sample("Metal", "Water");
+  const submerged = sample("Steel", "Water");
   for (const i of [209, 190, 230]) submerged.set(i, M.Water);
   submerged.random = () => 0;
   react(submerged, 210, 10, 10);
-  assert.equal(submerged.cells[210], M.Metal);
+  assert.equal(submerged.cells[210], M.Steel);
   const copper = sample("Copper", "Water");
   copper.random = () => 0;
   react(copper, 210, 10, 10);
@@ -105,7 +112,7 @@ test("lye consumes organic matter but leaves mineral vessels, metal, and glass i
     "Plant",
     "Glass",
     "Ceramic",
-    "Metal",
+    "Steel",
   ]) {
     const w = sample("Lye", target);
     w.random = () => 0;
@@ -118,7 +125,7 @@ test("rust is reduced by hot coal, and burning sulfur makes gas that reacts with
   const w = sample("Rust", "Coal", 750);
   w.random = () => 0;
   react(w, 210, 10, 10);
-  assert.equal(w.cells[210], M.Metal);
+  assert.equal(w.cells[210], M.Steel);
   assert.equal(w.cells[211], M["Carbon dioxide"]);
   w.clear();
   w.set(210, M.Sulfur, 400);
@@ -129,7 +136,7 @@ test("rust is reduced by hot coal, and burning sulfur makes gas that reacts with
   gas.random = () => 0;
   react(gas, 210, 10, 10);
   assert.equal(gas.cells[210], 0);
-  assert.equal(gas.cells[211], M.Acid);
+  assert.equal(gas.cells[211], M["Sulfurous acid"]);
 });
 test("wet clay dries into separate clay and steam, then fires into stable brick", () => {
   const w = sample("Wet clay", "Ceramic", 130);

@@ -3,8 +3,9 @@ import { M, materials } from "./materials.js";
 // Alternate phases remain stable simulation/save IDs, but share one palette entry.
 const families = {
   Water: ["Ice", "Steam", "Snow", "Cloud"],
+  Glass: ["Molten glass"],
   Stone: ["Lava"],
-  Metal: ["Molten metal"],
+  Steel: ["Molten steel"],
   Salt: ["Molten salt"],
   Copper: ["Molten copper"],
   Sodium: ["Liquid sodium"],

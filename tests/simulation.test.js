@@ -42,8 +42,8 @@ test("temperature transfer is conservative between particles", () => {
   const w = new World(10, 10),
     a = 44,
     b = 45;
-  w.set(a, M.Metal, 100);
-  w.set(b, M.Metal, 20);
+  w.set(a, M.Steel, 100);
+  w.set(b, M.Steel, 20);
   w.transferHeat(a, b);
   assert.ok(w.temp[a] < 100);
   assert.ok(w.temp[b] > 20);
@@ -56,7 +56,7 @@ test("registry phase transitions: water, steam, ice, lava, snow and metal", () =
     [M.Ice, 10, M.Water],
     [M.Lava, 600, M.Stone],
     [M.Snow, 10, M.Water],
-    [M.Metal, 1500, M["Molten metal"]],
+    [M.Steel, 1500, M["Molten steel"]],
   ]) {
     const w = new World(10, 10);
     w.set(55, id, temp);
@@ -79,7 +79,7 @@ test("combustion burns fuel in place and water quenches fire", () => {
 });
 test("electric pulse crosses a wire, then recovers for another pulse", () => {
   const w = new World(30, 10);
-  for (let x = 3; x < 26; x++) w.set(index(w, x, 5), M.Metal);
+  for (let x = 3; x < 26; x++) w.set(index(w, x, 5), M.Steel);
   w.set(index(w, 2, 5), M.Spark);
   let reached = false;
   for (let t = 0; t < 50; t++) {
@@ -95,7 +95,7 @@ test("electric pulse crosses a wire, then recovers for another pulse", () => {
 });
 test("acid attacks stone but cannot dissolve glass", () => {
   const w = new World(10, 10);
-  w.set(55, M.Acid);
+  w.set(55, M["Hydrochloric acid"]);
   w.set(56, M.Wood);
   w.set(54, M.Glass);
   for (let i = 0; i < 100; i++) react(w, 55, 5, 5);
@@ -192,7 +192,7 @@ test("settled chunks wake immediately when a supporting floor is erased", () => 
 test("heat sources keep working in settled chunks", () => {
   const w = new World(32, 32);
   w.set(index(w, 15, 20), M.Heater);
-  w.set(index(w, 16, 20), M.Metal);
+  w.set(index(w, 16, 20), M.Steel);
   run(w, 120);
   assert.ok(w.temp[index(w, 16, 20)] > 200);
   w.set(index(w, 15, 20), M.Cooler);
@@ -229,7 +229,7 @@ test("malformed clone IDs and overflowing temperatures cannot corrupt a world", 
 });
 test("a cold electrical pulse cannot reach the end of a long wire in one tick", () => {
   const w = new World(40, 12);
-  for (let x = 3; x < 36; x++) w.set(index(w, x, 6), M.Metal);
+  for (let x = 3; x < 36; x++) w.set(index(w, x, 6), M.Steel);
   w.set(index(w, 2, 6), M.Spark);
   w.step();
   assert.equal(w.charge[index(w, 35, 6)], 0);
@@ -442,7 +442,7 @@ test("seeds germinate in moist soil, grow upward, and stop growing in freezing c
 });
 test("lightning stays connected, strikes a conductor, heats it, and activates its wire", () => {
   const w = new World(40, 40);
-  for (let y = 18; y < 35; y++) w.set(index(w, 22, y), M.Metal);
+  for (let y = 18; y < 35; y++) w.set(index(w, 22, y), M.Steel);
   w.set(index(w, 20, 1), M.Lightning);
   w.step();
   assert.ok(count(w, M.Lightning) > 12);
@@ -539,7 +539,7 @@ test("pressure and vacuum brushes produce bounded opposite forces and never wrap
   assert.ok(w.fields.pressure.every(Number.isFinite));
 });
 test("sponge absorbs several liquid types up to capacity and cannot mix oil with water", () => {
-  for (const liquid of [M.Water, M.Brine, M.Oil, M.Fuel]) {
+  for (const liquid of [M.Water, M.Brine, M.Oil, M.Kerosene]) {
     const w = new World(12, 12),
       i = index(w, 6, 6),
       j = i + 1;
@@ -576,7 +576,7 @@ test("sponge releases liquid under squeeze or pressure and heat produces steam i
   const fuel = new World(16, 16),
     i = index(fuel, 8, 8);
   fuel.set(i, M.Sponge, 220);
-  fuel.storedLiquid[i] = M.Fuel;
+  fuel.storedLiquid[i] = M.Kerosene;
   fuel.storedAmount[i] = 3;
   react(fuel, i, 8, 8);
   assert.ok(count(fuel, M.Fire) > 0);
@@ -596,7 +596,7 @@ test("sponge save state is deterministic, backward compatible, and validated bef
   assert.deepEqual(snapshot(copy), snapshot(w));
   const valid = snapshot(copy),
     bad = snapshot(copy);
-  bad.arrays.storedLiquid[i] = M.Metal;
+  bad.arrays.storedLiquid[i] = M.Steel;
   assert.throws(() => restore(copy, bad));
   assert.deepEqual(snapshot(copy), valid);
   const old = snapshot(w);
@@ -663,7 +663,7 @@ test("tool strength scales heating and force, and particle-only erase preserves 
   applyTool(w, "warm", 8, 8, 0, "circle", 1, 0, 3);
   assert.equal(w.temp[i], 56);
   applyTool(w, "pressure", 8, 8, 0, "circle", 1, 0, 3);
-  assert.equal(w.fields.pressure[w.fields.index(8, 8)], 9);
+  assert.ok(Math.abs(w.fields.pressure[w.fields.index(8, 8)] - 9.9) < 0.001);
   w.set(i + 1, M.Sponge);
   applyTool(w, "erase-mobile", 8, 8, 2);
   assert.equal(w.cells[i], 0);

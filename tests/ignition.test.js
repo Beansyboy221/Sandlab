@@ -29,7 +29,7 @@ test("TNT requires sustained heat, can be cooled before ignition, and responds p
 });
 
 test("gunpowder deflagrates using its own oxidizer while liquid fuel burns without detonating", () => {
-  for (const id of [M.Gunpowder, M.Fuel]) {
+  for (const id of [M.Gunpowder, M.Kerosene]) {
     const w = new World(30, 30),
       i = 465;
     w.set(i, id, 650);
@@ -48,7 +48,7 @@ test("gunpowder deflagrates using its own oxidizer while liquid fuel burns witho
 
 test("electrical arcs require an open conductor gap and hot embers never energize wires", () => {
   const w = new World(20, 20);
-  w.set(210, M.Metal);
+  w.set(210, M.Steel);
   w.set(212, M.Copper);
   arcGap(w, 210, 10, 10);
   assert.equal(w.cells[211], M.Spark);
@@ -66,15 +66,15 @@ test("electrical arcs require an open conductor gap and hot embers never energiz
   react(w, 211, 11, 10);
   assert.equal(w.cells[211], M.Ash);
   const edge = new World(8, 8);
-  edge.set(7, M.Metal);
-  edge.set(9, M.Metal);
+  edge.set(7, M.Steel);
+  edge.set(9, M.Steel);
   arcGap(edge, 7, 7, 0);
   assert.ok(!edge.cells.includes(M.Spark));
 });
 
 test("conductors do not instantly ignite neighboring fuel and cold water quenches sparks without vaporizing", () => {
   const w = new World(20, 20);
-  w.set(210, M.Metal);
+  w.set(210, M.Steel);
   w.set(211, M.Wood);
   w.charge[210] = 6;
   w.tick = 1;

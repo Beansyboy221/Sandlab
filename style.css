@@ -638,27 +638,6 @@ kbd {
   letter-spacing: 1.1px;
   color: #8c9da3;
 }
-.replace-option {
-  display: flex;
-  align-items: center;
-  font-size: 9px;
-  gap: 8px;
-  color: #8ba0a8;
-  min-height: 36px;
-  margin: 5px 0;
-}
-.replace-option input {
-  accent-color: var(--accent);
-  margin: 0;
-}
-.replace-option > span:last-child {
-  margin-left: auto;
-  color: #6e838b;
-}
-.replace-option svg {
-  width: 12px;
-  height: 12px;
-}
 .mobile-material,
 .mobile-only {
   display: none;
@@ -1209,10 +1188,6 @@ dialog::backdrop {
   .material-section-title {
     font-size: 9px;
   }
-  .replace-option {
-    min-height: 35px;
-    font-size: 11px;
-  }
   .view-control {
     display: flex;
     position: absolute;
@@ -1307,9 +1282,6 @@ dialog::backdrop {
   .material-detail {
     min-height: 52px;
     padding-top: 8px;
-  }
-  .replace-option {
-    margin: 0;
   }
   .canvas-tip {
     display: none;
@@ -2201,75 +2173,6 @@ dialog::backdrop {
     white-space: nowrap;
   }
 }
-/* Desktop handles resize the particle grid, with the opposite edge anchored. */
-.canvas-resize-handles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 4;
-}
-.canvas-resize-handle {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  touch-action: none;
-  display: grid;
-  place-items: center;
-}
-.canvas-resize-handle::after {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border: 1px solid #b4d2c5;
-  border-radius: 2px;
-  background: #23342ef0;
-  box-shadow: 0 0 0 1px #081312aa;
-}
-.canvas-resize-handle:hover::after,
-.canvas-resize-handle:focus-visible::after {
-  background: #a6d5bd;
-}
-.canvas-resize-handle[data-resize-handle="n"],
-.canvas-resize-handle[data-resize-handle="s"] {
-  cursor: ns-resize;
-}
-.canvas-resize-handle[data-resize-handle="e"],
-.canvas-resize-handle[data-resize-handle="w"] {
-  cursor: ew-resize;
-}
-.canvas-resize-handle[data-resize-handle="nw"],
-.canvas-resize-handle[data-resize-handle="se"] {
-  cursor: nwse-resize;
-}
-.canvas-resize-handle[data-resize-handle="ne"],
-.canvas-resize-handle[data-resize-handle="sw"] {
-  cursor: nesw-resize;
-}
-.canvas-resize-outline {
-  position: absolute;
-  border: 2px solid #a6d5bd;
-  background: #a6d5bd08;
-  pointer-events: none;
-}
-.canvas-resize-outline span {
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  padding: 5px 9px;
-  border-radius: 5px;
-  background: #12201ff0;
-  color: #d7efe5;
-  white-space: nowrap;
-  font-size: 12px;
-}
-.mobile-layout .canvas-resize-handles {
-  display: none;
-}
-
 /* Paint controls share the drawing dock; the picker only opens on demand. */
 .paint-color {
   width: 44px;
@@ -2530,4 +2433,81 @@ dialog::backdrop {
 .mobile-layout .color-dialog .dialog-heading .dialog-close {
   min-width: 44px;
   min-height: 44px;
+}
+
+.canvas-resolution input {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+/* Draw properties stay beside the material picker and never cover the world. */
+.material-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.toolbox .mobile-material {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 140px;
+  min-width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #162127;
+  color: var(--text);
+  min-height: 36px;
+}
+.toolbox .mobile-material i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
+}
+.toolbox .mobile-material > span:not([data-icon]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toolbox .mobile-material svg {
+  width: 14px;
+  height: 14px;
+}
+.draw-replace {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #162127;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.draw-replace input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.draw-replace svg {
+  width: 16px;
+  height: 16px;
+}
+.draw-replace:has(input:checked) {
+  background: #a6d5bd22;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.draw-replace:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

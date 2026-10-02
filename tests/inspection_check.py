@@ -39,13 +39,14 @@ def init(browser, width, height, touch=False):
 
 def point(page, x=100, y=80):
     return page.evaluate('''([x,y]) => {
-      const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(), v=r.viewport, ratio=r.canvas.width/b.width;
-      return {x:b.left+(v.x+(x+.5)*v.scale)/ratio, y:b.top+(v.y+(y+.5)*v.scale)/ratio};
+      const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(), ratio=r.canvas.width/b.width,p=r.project(x+.5,y+.5);
+      return {x:b.left+p.x/ratio,y:b.top+p.y/ratio};
     }''', [x,y])
 
 def choose(page, tool):
     page.locator('#tool-picker-toggle').click()
     page.locator(f'[data-tool-option="{tool}"]').click()
+    if page.locator("#controls-toggle").is_visible() and page.locator("#controls-toggle").get_attribute("aria-expanded")=="true":page.locator("#controls-toggle").click()
 
 def properties(page):
     return page.locator('#inspection-card dl').inner_text()

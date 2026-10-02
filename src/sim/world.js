@@ -16,6 +16,8 @@ export class World {
     this.length = width * height;
     this.seed = seed;
     this.tick = 0;
+    this.gravityX = 0;
+    this.gravityY = 1;
     this.cells = new Uint8Array(this.length);
     this.temp = new Float32Array(this.length);
     this.temp.fill(20);
@@ -94,8 +96,14 @@ export class World {
       this.elastic.locations.delete(this.elasticId[i]);
       for (const field of this.elasticParticleFields) field[i] = 0;
     }
+    this.elastic.components[i] = 0;
     this.pigment[i] = 0;
     this.paintMark[i] = 0;
+    if (
+      !this.fields.obstaclesDirty &&
+      this.fields.blocks(this.cells[i]) !== this.fields.blocks(id)
+    )
+      this.fields.markObstacle(i, this);
     this.cells[i] = id;
     this.temp[i] = temperature;
     const variation = materials[id].lifetimeVariation || 0;
@@ -150,6 +158,7 @@ export class World {
   }
   clear() {
     this.elastic.locations.clear();
+    this.elastic.components.fill(0);
     this.elastic.nextId = 1;
     for (const key of elasticFields) this[key].fill(0);
     for (const key of [
@@ -181,6 +190,18 @@ export class World {
     this.count = 0;
     this.energyBudgetTick = -1;
   }
+  setGravity(x, y) {
+    if (
+      !Number.isInteger(x) ||
+      !Number.isInteger(y) ||
+      Math.abs(x) + Math.abs(y) !== 1
+    )
+      return;
+    if (this.gravityX === x && this.gravityY === y) return;
+    this.gravityX = x;
+    this.gravityY = y;
+    this.motionStamp.fill(this.tick + 1);
+  }
   index(x, y) {
     if (x >= 0 && x < this.width && y >= 0 && y < this.height)
       return y * this.width + x;
@@ -188,6 +209,12 @@ export class World {
     return (
       (((y % this.height) + this.height) % this.height) * this.width +
       (((x % this.width) + this.width) % this.width)
+    );
+  }
+  relativeIndex(x, y, across, down) {
+    return this.index(
+      x + this.gravityY * across + this.gravityX * down,
+      y - this.gravityX * across + this.gravityY * down,
     );
   }
   eachNeighbor(x, y, fn) {
@@ -216,6 +243,13 @@ export class World {
     return true;
   }
   swap(i, j) {
+    if (
+      !this.fields.obstaclesDirty &&
+      this.fields.blocks(this.cells[i]) !== this.fields.blocks(this.cells[j])
+    ) {
+      this.fields.markObstacle(i, this);
+      this.fields.markObstacle(j, this);
+    }
     if (!this.cells[j]) {
       const a = this.chunk(i),
         b = this.chunk(j);
@@ -236,6 +270,9 @@ export class World {
         field[i] = field[j];
         field[j] = value;
       }
+    const component = this.elastic.components[i];
+    this.elastic.components[i] = this.elastic.components[j];
+    this.elastic.components[j] = component;
     this.updated[i] = this.tick;
     this.updated[j] = this.tick;
     if (this.elasticId[i]) this.elastic.locations.set(this.elasticId[i], i);
@@ -267,7 +304,11 @@ export class World {
       return;
     }
     const gas = m.gas,
-      dy = gas ? (m.density > 0 ? 1 : -1) : 1;
+      fall = gas ? (m.density > 0 ? 1 : -1) : 1,
+      downX = this.gravityX,
+      downY = this.gravityY,
+      acrossX = downY,
+      acrossY = -downX;
     const direction = this.random() < 0.5 ? -1 : 1;
     const fx = x >> 2,
       fy = y >> 2,
@@ -276,14 +317,23 @@ export class World {
     if (
       (Math.abs(gx) > 1 || Math.abs(gy) > 1) &&
       this.random() < 0.6 &&
-      this.tryMove(i, x + Math.sign(gx), y + Math.sign(gy), Math.sign(gy))
+      this.tryMove(
+        i,
+        x + Math.sign(gx),
+        y + Math.sign(gy),
+        Math.sign(gx) * downX + Math.sign(gy) * downY,
+      )
     )
       return;
     if (this.cells[i] === M.Fire && moveSurfaceFlame(this, i, x, y)) return;
-    const ny = y + dy;
-    if (this.tryMove(i, x, ny, dy)) return;
-    for (let side = 0; side < 2; side++)
-      if (this.tryMove(i, x + (side ? -direction : direction), ny, dy)) return;
+    const nx = x + downX * fall,
+      ny = y + downY * fall;
+    if (this.tryMove(i, nx, ny, fall)) return;
+    for (let side = 0; side < 2; side++) {
+      const sign = side ? -direction : direction;
+      if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
+        return;
+    }
     if (cat === "liquid" || gas) {
       if (this.random() > 1 / m.viscosity) return;
       const reach = gas ? 1 : 4;
@@ -291,8 +341,9 @@ export class World {
         const sign = side ? -direction : direction;
         let target = -1;
         for (let d = 1; d <= reach; d++) {
-          const nx = x + sign * d;
-          const j = this.index(nx, y);
+          const nx = x + acrossX * sign * d,
+            ny = y + acrossY * sign * d;
+          const j = this.index(nx, ny);
           if (j < 0) {
             if (this.border === "void") {
               this.set(i, 0);
@@ -324,12 +375,13 @@ export class World {
     this.elastic.world = this;
     this.tick++;
     this.fields.border = this.border;
-    this.fields.update();
+    this.fields.update(this);
     const w = this.width,
       h = this.height,
-      reverse = this.tick % 2;
+      reverse = this.gravityX ? (this.gravityX > 0 ? 1 : 0) : this.tick % 2;
     // Skip empty 16-cell blocks; a tick stamp prevents moved cells from updating twice.
-    for (let y = h - 1; y >= 0; y--)
+    for (let row = 0; row < h; row++) {
+      const y = this.gravityY < 0 ? row : h - 1 - row;
       for (let k = 0; k < this.chunkWidth; k++) {
         const cx = reverse ? this.chunkWidth - 1 - k : k;
         if (!this.chunks[(y >> 4) * this.chunkWidth + cx]) continue;
@@ -345,8 +397,7 @@ export class World {
               below = this.index(x, y + 1);
             if (right >= 0) this.transferHeat(i, right);
             if (below >= 0) this.transferHeat(i, below);
-            if (materials[this.cells[i]].category !== "special")
-              this.temp[i] += (20 - this.temp[i]) * 0.0008;
+            this.fields.exchange(this, i, x, y);
           }
           react(this, i, x, y);
           if (this.cells[i] === M.Fan) {
@@ -373,9 +424,10 @@ export class World {
           }
         }
       }
+    }
     this.elastic.step();
   }
-  explode(x, y, radius) {
+  explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);
     const r2 = radius * radius;
     const loop = this.border === "looping",
@@ -400,11 +452,13 @@ export class World {
           !m.id ||
           !["solid", "elastic"].includes(m.category) ||
           this.random() > (m.resistance || 0.6)
-        )
+        ) {
           this.set(i, M.Fire, 850, 15 + this.random() * 30);
-        else this.temp[i] += 500 * (1 - d2 / r2);
+          if (product) this.residue[i] = product;
+        } else this.temp[i] += 500 * (1 - d2 / r2);
       }
     this.set(this.index(x, y), M.Fire, 1100, 50);
+    if (product) this.residue[this.index(x, y)] = product;
   }
   brush(
     x,

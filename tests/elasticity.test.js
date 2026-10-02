@@ -185,7 +185,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 79);
+  assert.equal(paletteMaterials.length, 81);
   for (const [base, phase, temp] of [
     ["Salt", "Molten salt", 850],
     ["Water", "Ice", -20],
@@ -302,4 +302,68 @@ test("a detached jelly piece continues falling after a full-width cut", () => {
     ),
   );
   assert.equal(w.count, 285);
+});
+
+test("connected elastic contact preserves momentum; detached pieces still collide", () => {
+  const w = new World(32, 32),
+    i = 10 * 32 + 10,
+    j = i + 1;
+  w.set(i, M.Jelly);
+  w.set(j, M.Jelly);
+  w.elastic.substep(0);
+  w.velocityX[i] = 0.7;
+  w.velocityY[i] = 0.4;
+  w.elastic.moveAxis(i, 0.7, true);
+  assert.equal(w.velocityX[i], Math.fround(0.7));
+  assert.equal(w.velocityY[i], Math.fround(0.4));
+  w.elastic.cutBrush(10.5, 10, 0, "circle");
+  w.elastic.substep(0);
+  w.velocityX[i] = 0.7;
+  w.elastic.moveAxis(i, 0.7, true);
+  assert.ok(w.velocityX[i] < 0);
+  assert.equal(w.count, 2);
+  assert.equal(w.elastic.locations.size, 2);
+});
+test("deforming elastic blocks do not arrest shared diagonal motion", () => {
+  for (const name of ["Rope", "Rubber", "Jelly"]) {
+    const w = new World(180, 220);
+    for (let y = 20; y < 45; y++)
+      for (let x = 30; x < 60; x++) {
+        const i = y * w.width + x;
+        w.set(i, M[name]);
+        w.velocityX[i] = 0.35 + (w.random() - 0.5) * 0.1;
+        w.velocityY[i] = 0.8 + (w.random() - 0.5) * 0.1;
+      }
+    for (let n = 0; n < 90; n++) w.step();
+    const positions = [...w.elastic.locations.values()];
+    const x =
+      positions.reduce((s, i) => s + (i % w.width) + w.offsetX[i], 0) / w.count;
+    const y =
+      positions.reduce(
+        (s, i) => s + Math.floor(i / w.width) + w.offsetY[i],
+        0,
+      ) / w.count;
+    assert.ok(x > 65, `${name} self-jammed horizontally: ${x}`);
+    assert.ok(y > 110, `${name} self-jammed vertically: ${y}`);
+    assert.equal(w.count, 750);
+    assert.equal(w.elastic.locations.size, 750);
+  }
+});
+
+test("delayed elastic raster placement survives saves and cannot tunnel through rigid walls", () => {
+  const w = new World(32, 32),
+    i = 10 * 32 + 10;
+  w.set(i, M.Jelly);
+  w.offsetX[i] = 1.4;
+  const loaded = new World();
+  restore(loaded, snapshot(w));
+  assert.equal(loaded.offsetX[i], Math.fround(1.4));
+  w.set(i + 1, M.Stone);
+  w.velocityX[i] = 0.8;
+  w.elastic.moveAxis(i, 1.8, true);
+  assert.equal(w.cells[i], M.Jelly);
+  assert.equal(w.cells[i + 1], M.Stone);
+  assert.equal(w.cells[i + 2], 0);
+  assert.ok(w.velocityX[i] < 0);
+  assert.equal(w.count, 2);
 });

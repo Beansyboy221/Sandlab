@@ -15,7 +15,10 @@ export function cellProperties(world, point) {
   const { x, y, index: i, material: m } = cell,
     life = world.life[i];
   const rows = [
-    ["Temperature", `${world.temp[i].toFixed(1)}°C`],
+    [
+      "Temperature",
+      `${(m.id ? world.temp[i] : world.fields.temperature[world.fields.index(x, y)]).toFixed(1)}°C`,
+    ],
     [
       m.ignitionDelay
         ? "Ignition timer"
@@ -35,6 +38,16 @@ export function cellProperties(world, point) {
     ["Charge", world.charge[i] ? `${world.charge[i]} ticks` : "None"],
     ["Pressure", world.fields.pressure[world.fields.index(x, y)].toFixed(2)],
   ];
+  rows.push(
+    [
+      "Air temperature",
+      `${world.fields.temperature[world.fields.index(x, y)].toFixed(1)}°C`,
+    ],
+    [
+      "Ambient",
+      `${world.fields.ambientTemperature.toFixed(1)}°C · ${world.fields.ambientPressure.toFixed(2)} atm`,
+    ],
+  );
   if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
   if (world.moisture[i] || [M.Plant, M.Seed, M.Dirt, M.Mud].includes(m.id))
     rows.push(["Moisture", `${Math.round((world.moisture[i] / 255) * 100)}%`]);
@@ -147,6 +160,10 @@ export class Inspector {
     ctx.fillStyle = "#0b1317";
     ctx.fillRect(0, 0, size, size);
     ctx.imageSmoothingEnabled = false;
+    ctx.save();
+    ctx.translate(size / 2, size / 2);
+    ctx.rotate((this.renderer.rotation * Math.PI) / 2);
+    ctx.translate(-size / 2, -size / 2);
     // Clip source bounds explicitly so edge cells keep their position in the lens.
     ctx.drawImage(
       this.renderer.worldImage(),
@@ -167,5 +184,6 @@ export class Inspector {
       scale - 2,
       scale - 2,
     );
+    ctx.restore();
   }
 }

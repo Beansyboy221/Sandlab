@@ -118,7 +118,7 @@ function reflect(w, i, x, y, dx, dy) {
 }
 function fission(w, j, x, y) {
   if (!budget(w, "energyReactions", 32)) return;
-  w.set(j, M.Metal, 900);
+  w.set(j, M.Steel, 900);
   w.fields.add(x, y, 12);
   emitRays(w, x, y, M.Neutron, 3);
 }

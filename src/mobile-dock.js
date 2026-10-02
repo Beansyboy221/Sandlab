@@ -1,21 +1,12 @@
 import { icon } from "./icons.js";
 
-// Compare fitted canvas area rather than relying on phone or material names.
-export function mobilePlacement(width, height, worldWidth, worldHeight) {
-  const landscape = width > height;
-  const sideScale = Math.min(
-    (width - 132) / worldWidth,
-    (height - 8) / worldHeight,
-  );
-  const bottomScale = Math.min(
-    (width - 8) / worldWidth,
-    (height - 66) / worldHeight,
-  );
-  return {
-    landscape,
-    side: landscape && sideScale > bottomScale,
-    alignLeft: landscape && worldHeight > worldWidth,
-  };
+import { orientationTurn, gravityForTurn } from "./canvas-view.js";
+export function phoneOrientation() {
+  const angle =
+    typeof window.orientation === "number"
+      ? window.orientation
+      : screen.orientation?.angle;
+  return Number.isFinite(angle) ? angle : 0;
 }
 
 export class MobileDock {
@@ -25,9 +16,7 @@ export class MobileDock {
     this.renderer = renderer;
     this.manualFocus = false;
     this.landscapeExit = false;
-    this.media = matchMedia(
-      "(max-width: 700px), (max-height: 500px) and (pointer: coarse)",
-    );
+    this.media = matchMedia("(max-width: 700px), (pointer: coarse)");
     this.handle = document.createElement("button");
     this.handle.id = "controls-toggle";
     this.handle.className = "controls-toggle";
@@ -58,9 +47,7 @@ export class MobileDock {
     });
     this.handle.addEventListener("pointermove", (e) => {
       if (!start) return;
-      const delta = document.body.classList.contains("dock-side")
-        ? e.clientX - start.x
-        : e.clientY - start.y;
+      const delta = e.clientY - start.y;
       if (Math.abs(delta) > 18) {
         this.setExpanded(delta < 0);
         moved = true;
@@ -82,6 +69,8 @@ export class MobileDock {
     );
     this.media.addEventListener("change", () => this.layout());
     window.addEventListener("resize", () => this.layout());
+    window.addEventListener("orientationchange", () => this.layout());
+    screen.orientation?.addEventListener("change", () => this.layout());
     window.visualViewport?.addEventListener("resize", () => this.layout());
     this.setExpanded(false);
     this.layout();
@@ -98,25 +87,15 @@ export class MobileDock {
       "canvas-focus",
       this.manualFocus || (landscape && !this.landscapeExit),
     );
-    const focused = document.body.classList.contains("canvas-focus");
-    const availableHeight = innerHeight - (focused ? 0 : 82);
-    const placement = mobilePlacement(
-      innerWidth,
-      availableHeight,
-      this.world.width,
-      this.world.height,
-    );
-    const side = mobile && landscape && placement.side;
-    if (orientationChanged || this.side !== side) this.setExpanded(false);
-    this.side = side;
-    document.body.classList.toggle("dock-side", side);
-    this.toolbox.style.setProperty(
-      "--side-panel-width",
-      `${Math.min(300, innerWidth * 0.4)}px`,
-    );
-    this.renderer.alignLeft =
-      mobile && landscape && this.world.height > this.world.width;
-    if (orientationChanged) this.renderer.resetView();
+    const focused = document.body.classList.contains("canvas-focus"),
+      turn = mobile ? orientationTurn(phoneOrientation()) : 0;
+    if (turn !== this.renderer.rotation) {
+      this.onOrientationChange?.();
+      this.renderer.rotation = turn;
+      this.renderer.resetView();
+    }
+    if (orientationChanged) this.setExpanded(false);
+    this.world.setGravity(...gravityForTurn(turn));
     this.renderer.resize();
     document
       .querySelector("#fullscreen-btn")

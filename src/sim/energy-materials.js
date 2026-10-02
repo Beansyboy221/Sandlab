@@ -69,7 +69,7 @@ export const energyMaterials = [
       conductive: true,
       resistance: 0.95,
       melt: 1400,
-      meltTo: "Molten metal",
+      meltTo: "Molten steel",
     },
   ],
   [
@@ -83,7 +83,7 @@ export const energyMaterials = [
       conductivity: 0.18,
       resistance: 0.8,
       melt: 1200,
-      meltTo: "Molten metal",
+      meltTo: "Molten steel",
     },
   ],
   [

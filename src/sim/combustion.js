@@ -27,7 +27,7 @@ export function burnFuel(world, i, x, y, material) {
     if (
       materials[cells[j]].waterLike &&
       temp[j] < 100 &&
-      (material.category !== "liquid" || j !== world.index(x, y + 1))
+      (material.category !== "liquid" || j !== world.relativeIndex(x, y, 0, 1))
     )
       wet = j;
   });
@@ -47,27 +47,31 @@ export function burnFuel(world, i, x, y, material) {
   }
   temp[i] = Math.max(650, temp[i]);
   if (--life[i] === 0) {
-    world.set(i, material.residue || M.Smoke, 120);
+    world.set(i, material.residue || material.combustionGas || M.Smoke, 120);
     return;
   }
 
+  // Heating and combustion generate pressure even for non-explosive fuels.
+  world.fields.add(x, y, 0.025);
   if (material.burnPressure) world.fields.add(x, y, material.burnPressure);
   if (material.sparkChance && world.random() < material.sparkChance)
     emitSpark(world, i, x, y, material.residue || M.Ash);
 
   // Prefer the exposed upper face. Side vents also support walls and overhangs.
-  const above = world.index(x, y - 1);
+  const above = world.relativeIndex(x, y, 0, -1);
   emitFlame(world, i, above, 0.32);
-  emitFlame(world, i, world.index(x - 1, y), 0.08);
-  emitFlame(world, i, world.index(x + 1, y), 0.08);
+  emitFlame(world, i, world.relativeIndex(x, y, -1, 0), 0.08);
+  emitFlame(world, i, world.relativeIndex(x, y, 1, 0), 0.08);
   if (world.random() < 0.1) {
     const dx = Math.floor(world.random() * 3) - 1,
-      vent = world.index(x + dx, y - 2);
+      vent = world.relativeIndex(x, y, dx, -2);
     if (above >= 0 && vent >= 0 && plumePassage(cells[above])) {
       if (!cells[vent])
         world.set(
           vent,
-          material.combustionGas || M.Smoke,
+          material.category === "gas" || world.random() < 0.45
+            ? material.combustionGas || M.Smoke
+            : M.Smoke,
           Math.max(120, temp[i] * 0.3),
         );
     } else if (above >= 0 && !cells[above])
@@ -108,8 +112,10 @@ export function reactFire(world, i, x, y) {
       const heat = Math.min(60, Math.max(0, (temp[i] - temp[j]) * 0.1));
       temp[j] += heat;
       temp[i] -= heat;
-      if (temp[j] > 100 && materials[cells[j]].dryTo === undefined)
+      if (temp[j] > 100 && materials[cells[j]].dryTo === undefined) {
         world.set(j, M.Steam, Math.max(105, temp[j]));
+        world.fields.add(x, y, 1.5);
+      }
       quenched = true;
     }
   });
@@ -134,8 +140,8 @@ export function reactFire(world, i, x, y) {
   });
   // Radiant heat reaches the next exposed cell on a fuel surface, not through walls.
   for (const dx of [-1, 1]) {
-    const across = world.index(x + dx, y),
-      below = world.index(x + dx, y + 1);
+    const across = world.relativeIndex(x, y, dx, 0),
+      below = world.relativeIndex(x, y, dx, 1);
     if (
       across >= 0 &&
       below >= 0 &&
@@ -149,7 +155,7 @@ export function reactFire(world, i, x, y) {
 // A flame next to a fuel surface lingers or creeps sideways before rising.
 // Free flames retain the shared gas movement and pressure response.
 export function moveSurfaceFlame(world, i, x, y) {
-  const below = world.index(x, y + 1);
+  const below = world.relativeIndex(x, y, 0, 1);
   if (below < 0) return false;
   if (!materials[world.cells[below]].ignite) return false;
   // An ignition flame needs contact time before it can travel to the next cell.
@@ -160,9 +166,9 @@ export function moveSurfaceFlame(world, i, x, y) {
     return world.random() < 0.97;
   const direction = world.random() < 0.5 ? -1 : 1;
   for (let side = 0; side < 2; side++) {
-    const nx = x + (side ? -direction : direction);
-    const j = world.index(nx, y),
-      support = world.index(nx, y + 1);
+    const across = side ? -direction : direction;
+    const j = world.relativeIndex(x, y, across, 0),
+      support = world.relativeIndex(x, y, across, 1);
     if (j < 0 || support < 0) continue;
     const id = world.cells[j];
     if (

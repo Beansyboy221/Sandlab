@@ -59,10 +59,10 @@ test("paste defaults to empty cells, replaces on request, and leaves transparent
   w.set(at(w, 2, 2), M.Sand);
   w.set(at(w, 4, 2), M.Fire, 650, 30);
   const clip = copyRegion(w, { x: 2, y: 2, width: 3, height: 1 });
-  w.set(at(w, 8, 8), M.Metal);
+  w.set(at(w, 8, 8), M.Steel);
   w.set(at(w, 9, 8), M.Stone);
   assert.equal(pasteRegion(w, clip, 8, 8), 1);
-  assert.equal(w.cells[at(w, 8, 8)], M.Metal);
+  assert.equal(w.cells[at(w, 8, 8)], M.Steel);
   assert.equal(w.cells[at(w, 9, 8)], M.Stone);
   assert.equal(pasteRegion(w, clip, 8, 8, true), 2);
   assert.equal(w.cells[at(w, 8, 8)], M.Sand);
@@ -122,7 +122,7 @@ test("copied electrical stamps follow the destination clock and absent stamps st
   const w = new World(20, 20);
   w.tick = 80;
   const i = at(w, 2, 2);
-  w.set(i, M.Metal);
+  w.set(i, M.Steel);
   w.charge[i] = 5;
   w.chargedAt[i] = 79;
   const clip = copyRegion(w, { x: 2, y: 2, width: 2, height: 1 });
@@ -133,7 +133,7 @@ test("copied electrical stamps follow the destination clock and absent stamps st
 });
 test("circle strokes accumulate, interpolate gaps, clip, and erase only the selection", () => {
   const w = new World(40, 30);
-  for (let x = 2; x < 35; x++) w.set(at(w, x, 10), M.Metal);
+  for (let x = 2; x < 35; x++) w.set(at(w, x, 10), M.Steel);
   const before = snapshot(w);
   let mutations = 0;
   const s = new Selection(
@@ -288,7 +288,7 @@ test("overlapping selection moves preserve holes, exclude particles in holes, an
   // A one-cell shift overlaps the old source and must retain every selected value.
   s.clear();
   w.clear();
-  for (let x = 2; x <= 4; x++) w.set(at(w, x, 3), M.Metal, 100 + x);
+  for (let x = 2; x <= 4; x++) w.set(at(w, x, 3), M.Steel, 100 + x);
   s.begin({ x: 2, y: 3 });
   s.move({ x: 4, y: 3 });
   s.end();

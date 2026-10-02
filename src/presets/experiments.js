@@ -49,7 +49,7 @@ export function buildExperiment(w, id) {
     }
   } else if (id === "storm") {
     rect(W * 0.32, ground - 12, W * 0.36, 12, "Water");
-    line(W * 0.5, ground, W * 0.5, H * 0.48, "Metal", 1);
+    line(W * 0.5, ground, W * 0.5, H * 0.48, "Steel", 1);
     const source = Math.round(H * 0.12) * W + Math.round(W * 0.5);
     w.set(source, M.Storm);
     w.life[source] = 80;
@@ -67,14 +67,14 @@ export function buildExperiment(w, id) {
     rect(x, y, 3, height, "Ceramic");
     rect(x + size, y, 3, height, "Ceramic");
     rect(x, y + height - 3, size + 3, 3, "Furnace");
-    rect(x + 3, y + height - 15, size - 3, 12, "Metal dust");
-    rect(x + 3, y + height - 22, size - 3, 7, "Molten metal");
+    rect(x + 3, y + height - 15, size - 3, 12, "Steel powder");
+    rect(x + 3, y + height - 22, size - 3, 7, "Molten steel");
     for (let yy = y; yy < ground; yy++)
       for (let xx = x; xx <= x + size + 2; xx++)
         if (w.cells[yy * W + xx] === M.Ceramic) w.temp[yy * W + xx] = 1200;
     cup(W * 0.64, ground - 25, W * 0.22, 25);
     rect(W * 0.64 + 3, ground - 3, W * 0.22 - 6, 3, "Cooler");
-    rect(W * 0.64 + 3, ground - 12, W * 0.22 - 6, 9, "Molten metal");
+    rect(W * 0.64 + 3, ground - 12, W * 0.22 - 6, 9, "Molten steel");
   } else if (id === "phase") {
     const x = Math.round(W * 0.25),
       y = Math.round(H * 0.3),
@@ -90,7 +90,7 @@ export function buildExperiment(w, id) {
       const x = Math.round(W * (0.12 + n * 0.44)),
         size = Math.round(W * 0.32);
       cup(x, ground - 45, size, 45);
-      rect(x + 3, ground - 30, size - 6, 30, n ? "Water" : "Acid");
+      rect(x + 3, ground - 30, size - 6, 30, n ? "Water" : "Hydrochloric acid");
       rect(x + size * 0.25, ground - 25, 5, 25, "Wood");
       rect(x + size * 0.7, ground - 25, 5, 25, "Ceramic");
     }
