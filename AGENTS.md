@@ -31,7 +31,7 @@ Original browser sandbox; vanilla ES modules and Canvas, no runtime dependencies
 - `npm run check -- --changed --list` shows an automatic conservative selection. Unknown/shared files fall back to the full suite; inspect the selection rather than treating it as a proof of coverage.
 - `--reuse` explicitly reuses a successful Node check for identical source/test/build inputs and Node configuration within ten minutes. Browser tests are never cached. CI and `npm test` always run fresh.
 - Run `npm test` once after changes to shared simulation rules, save schemas, material registries, broad physics or the check runner; expand checks when failures/new changes justify it. Do not repeat passed suites for unchanged inputs.
-- Benchmark only the affected system: `npm run bench:collisions`, `bench:entities`, or `bench`. Run timings without concurrent CPU-heavy tests. Prefer operation-count assertions to flaky timing thresholds.
+- Benchmark only the affected system: `npm run bench:collisions`, `bench:entities`, `bench:fire`, or `bench`. Run timings without concurrent CPU-heavy tests. Prefer operation-count assertions to flaky timing thresholds.
 - Logs/cache live in ignored `.sandlab-cache/checks/`; inspect the failure tail and relevant test, not giant snapshot diffs. For a file-level Node failure, run `node tests/<failed>.test.js` for detailed assertions.
 
 ## Finish efficiently
@@ -49,3 +49,7 @@ Publish game changes only to the existing GitHub repository and GitHub Pages sit
 
 - `brush-geometry.js` converts UI pixel diameter to the engine's cell-center half-span and owns shared odd/even footprints. Keep Draw, Color, selection, Grab, tool effects and outlines aligned. `brushSize` preferences are diameters with a persisted `brushUnit` migration marker. Check `brush-geometry.test.js` and `brush_diameter_check.py`.
 - `sim/mechanical-mass.js` derives solid/elastic mass from dry density and stored liquid units. Rigid poses refresh weighted mass properties from cached fluid moments without rebuilding topology. No derived mass fields belong in saves. Check `mechanical-mass.test.js` plus `collisions`/`elastics`; benchmark without concurrent heavy tests.
+
+- `light-reconstruction.js` caches only silhouette-dependent interpolation stencils; opaque edits invalidate nearby regions. Smoke/filter transport stays in `light-shadows.js`. Preserve exact silhouette edge queries and bounded source/range budgets. `npm run bench:fire` compares full fire rendering across optional checkouts; lightning uses its existing particle lifetime for a scene flash.
+
+- Changelog bullets should be short, one sentence each, and describe player-visible changes; optimization entries should include measured scene-specific results when available, never invented speed claims.

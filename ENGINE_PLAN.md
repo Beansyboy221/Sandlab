@@ -102,6 +102,8 @@ Existing v1.17.0 measurements on the development host: dry 60,800-cell powder ab
 
 v1.18.0 controlled comparison: a 16,000-cell rigid drawing pass averaged 18.45 ms before caching and 1.78 ms after, with 100 samples after 20 warmup draws. Dense sand/water simulation remained comparable at about 14.8 versus 14.7 ms/tick. Freezing the registry array caused a measured lookup regression and was removed; individual definitions and the name map remain frozen. `npm run bench:render` and its optional checkout argument reproduce the drawing fixture.
 
+v1.19.1 fire-lighting comparison (`npm run bench:fire`, 320×200 world, 1,000×625 display, 60 measured browser draws after 10 warmups): fire plume 28.09→15.49 ms, dense flames 47.96→25.67 ms, burning wood 50.80→24.66 ms. Each draw forces a real optical refresh; normal play retains the 30 Hz lighting cadence. Exact trace calls fell 95–97%. The tested revision also extends source reach to 112–192 pixels, adds faint smoke scattering, and uses one lifetime-driven lightning flash. Cached particle-silhouette stencils and filtered angular transport remain derived scratch, never save data. The optical field is coarser above 32,768 particles, but reconstruction and shadow edges still query full particle silhouettes. These are controlled render-only host measurements, not physical-phone FPS guarantees.
+
 ## Ordered delivery plan
 
 | Stage                           | Deliverable                                                                                                                                   | Verification / exit condition                                                                                                                                                       |

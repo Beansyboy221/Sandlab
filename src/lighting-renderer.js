@@ -1,7 +1,9 @@
 import { Lighting } from "./lighting.js";
+import { LightReconstruction } from "./light-reconstruction.js";
 export class LightOverlay {
   constructor() {
     this.field = new Lighting();
+    this.reconstruction = new LightReconstruction();
     this.mask = document.createElement("canvas");
     this.glow = document.createElement("canvas");
     this.maskContext = this.mask.getContext("2d", { alpha: false });
@@ -34,49 +36,27 @@ export class LightOverlay {
     }
     const ambient =
       w.canvasMode === "solar" ? w.environment.light : (w.ambientLight ?? 1);
-    if (!changed && this.ambient === ambient) return;
+    const flash = this.field.flash;
+    if (!changed && this.ambient === ambient && this.flash === flash) return;
     this.ambient = ambient;
+    this.flash = flash;
     const f = this.field,
       cellSize = f.cellSize;
-    // Reconstruct smooth irradiance at particle resolution. Ordinary bilinear
-    // scaling mixes a lit wall with its dark back face; reject samples crossing
-    // an actual particle silhouette instead of blurring the shadow mask.
+    this.reconstruction.prepare(f);
+    const { indices, weights } = this.reconstruction;
     for (let y = 0; y < w.height; y++) {
-      const gy = (y + 0.5) / cellSize - 0.5,
-        y0 = Math.floor(gy),
-        fy = gy - y0;
       for (let x = 0; x < w.width; x++) {
-        const gx = (x + 0.5) / cellSize - 0.5,
-          x0 = Math.floor(gx),
-          fx = gx - x0;
         const i = y * w.width + x;
         let r = 0,
           g = 0,
-          b = 0,
-          weight = 0;
+          b = 0;
         for (let n = 0; n < 4; n++) {
-          const xx = Math.max(0, Math.min(f.width - 1, x0 + (n & 1)));
-          const yy = Math.max(0, Math.min(f.height - 1, y0 + (n >> 1)));
-          const sx = Math.min(w.width - 0.5, (xx + 0.5) * cellSize);
-          const sy = Math.min(w.height - 0.5, (yy + 0.5) * cellSize);
-          const sample = Math.floor(sy) * w.width + Math.floor(sx);
-          if (!f.transmission[sample] && f.transmission[i]) continue;
-          const j = (yy * f.width + xx) * 3;
-          const visible =
-            f.light[j] || f.light[j + 1] || f.light[j + 2]
-              ? f.trace(sx, sy, x + 0.5, y + 0.5)
-              : 1;
-          if (!visible) continue;
-          const a = (n & 1 ? fx : 1 - fx) * (n >> 1 ? fy : 1 - fy);
-          r += f.light[j] * a * visible;
-          g += f.light[j + 1] * a * visible;
-          b += f.light[j + 2] * a * visible;
-          weight += a;
-        }
-        if (weight) {
-          r /= weight;
-          g /= weight;
-          b /= weight;
+          const offset = i * 4 + n,
+            j = indices[offset],
+            a = weights[offset];
+          r += f.light[j] * a;
+          g += f.light[j + 1] * a;
+          b += f.light[j + 2] * a;
         }
         const energy = f.particleEmission[i];
         if (energy) {
@@ -86,9 +66,10 @@ export class LightOverlay {
           g = Math.max(g, energy * f.emitColor[tile + 1]);
           b = Math.max(b, energy * f.emitColor[tile + 2]);
         }
-        this.shade.data[i * 4] = Math.min(1, ambient + r) * 255;
-        this.shade.data[i * 4 + 1] = Math.min(1, ambient + g) * 255;
-        this.shade.data[i * 4 + 2] = Math.min(1, ambient + b) * 255;
+        this.shade.data[i * 4] = Math.min(1, ambient + flash * 0.82 + r) * 255;
+        this.shade.data[i * 4 + 1] =
+          Math.min(1, ambient + flash * 0.9 + g) * 255;
+        this.shade.data[i * 4 + 2] = Math.min(1, ambient + flash + b) * 255;
         this.halo.data[i * 4] = Math.min(9, r * 5);
         this.halo.data[i * 4 + 1] = Math.min(9, g * 5);
         this.halo.data[i * 4 + 2] = Math.min(9, b * 5);

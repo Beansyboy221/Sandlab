@@ -25,7 +25,7 @@ test("localized lights fall off radially, remain finite, and have bounded source
   dense.cells.fill(M.Fire);
   dense.temp.fill(680);
   l.update(dense);
-  assert.ok(l.sourceCount <= 96);
+  assert.ok(l.sourceCount <= 24);
   assert.ok(l.light.every(Number.isFinite));
   assert.ok(
     cell(l, 4, 4) > 0 && cell(l, 508, 252) > 0,
@@ -213,4 +213,159 @@ test("shadow depth rays remain finite for emitters on integer grid boundaries", 
   l.shadows.prepare(l, 20, 20, 60);
   assert.ok(l.shadows.depth.every(Number.isFinite));
   assert.ok(Math.abs(l.shadows.depth[0] - 20) < 1e-5);
+});
+
+test("smoke transport reuses bounded angular paths instead of tracing every lit sample", () => {
+  const w = new World(160, 100),
+    l = new Lighting();
+  w.cells.fill(M.Smoke);
+  w.cells[50 * w.width + 30] = M.Fire;
+  w.temp.fill(20);
+  l.resize(w);
+  l.gather(w);
+  const s = l.shadows;
+  s.prepare(l, 30.37, 50.29, 96);
+  assert.equal(
+    s.enabled,
+    false,
+    "transparent-only worlds still cache attenuation",
+  );
+  assert.equal(s.filtered, true);
+  let samples = 0;
+  for (let y = 10; y < 90; y += 2)
+    for (let x = 40; x < 120; x += 2) {
+      const distance = Math.hypot(x + 0.23 - 30.37, y + 0.17 - 50.29);
+      const cached = s.visibility(x + 0.23, y + 0.17, distance, l.cellSize);
+      const exact = l.trace(30.37, 50.29, x + 0.23, y + 0.17, true);
+      assert.ok(
+        Math.abs(cached - exact) < 0.04,
+        "smoke attenuation follows the exact reference",
+      );
+      samples++;
+    }
+  assert.ok(
+    s.exactQueries < samples / 20,
+    "diffuse smoke does not retrace long paths",
+  );
+  assert.ok(
+    s.raySteps <= 768 * (96 * 2 + 2),
+    "ray traversal is bounded by radius, not sample count",
+  );
+  const buffer = s.attenuation;
+  s.prepare(l, 30.5, 50.5, 56);
+  assert.equal(
+    s.attenuation,
+    buffer,
+    "reuse the scratch allocation for smaller sources",
+  );
+});
+
+test("cached filters refresh after removal and preserve walls, narrow vents and wrapped smoke", () => {
+  const w = new World(160, 100),
+    l = new Lighting();
+  for (let y = 0; y < 100; y++) {
+    w.set(y * w.width + 48, M.Smoke);
+    if (y !== 50) w.set(y * w.width + 64, M.Wall);
+  }
+  w.set(50 * w.width + 30, M.Fire);
+  l.update(w, 0);
+  const s = l.shadows;
+  s.prepare(l, 30.5, 50.5, 96);
+  assert.ok(
+    s.visibility(90.5, 50.5, 60, 2) > 0.9,
+    "a one-pixel vent survives filtering",
+  );
+  assert.equal(s.visibility(90.5, 40.5, Math.hypot(60, 10), 2), 0);
+  w.clear();
+  l.update(w, 0);
+  s.prepare(l, 30.5, 50.5, 96);
+  assert.equal(
+    s.visibility(90.5, 50.5, 60, 2),
+    1,
+    "removed smoke leaves no stale attenuation",
+  );
+  w.border = "looping";
+  w.cells.fill(M.Smoke);
+  l.update(w, 0);
+  s.prepare(l, 2.5, 50.5, 96);
+  const cached = s.visibility(-20.5, 50.5, 23, 2);
+  assert.ok(Math.abs(cached - l.trace(2.5, 50.5, -20.5, 50.5, true)) < 0.04);
+});
+
+test("light reaches distant surfaces and lightning uses a bounded scene flash", () => {
+  const w = new World(320, 200),
+    l = new Lighting();
+  w.set(100 * w.width + 40, M.Fire);
+  l.update(w, 0);
+  assert.ok(
+    cell(l, 142, 100) > 0.0005,
+    "ordinary light fades beyond the previous 96-pixel cutoff",
+  );
+  w.clear();
+  for (let y = 0; y < 190; y++) w.set(y * w.width + 40, M.Lightning, 1800, 8);
+  l.update(w, 0);
+  assert.equal(l.flash, 1);
+  assert.equal(l.sourceCount, 0, "bolt segments do not multiply shadow casts");
+  w.life.fill(2);
+  l.update(w, 0);
+  assert.equal(l.flash, 0.25);
+  w.clear();
+  l.update(w, 0);
+  assert.equal(l.flash, 0, "no stale flash after clearing the world");
+});
+
+test("reconstruction caches silhouettes and locally rebuilds edits while ignoring moving smoke", async () => {
+  const { LightReconstruction } =
+    await import("../src/light-reconstruction.js");
+  const w = new World(160, 100),
+    l = new Lighting(),
+    r = new LightReconstruction();
+  l.update(w, 0);
+  r.prepare(l);
+  assert.equal(r.work, w.length);
+  w.set(50 * w.width + 40, M.Fire);
+  w.set(40 * w.width + 60, M.Smoke);
+  l.update(w, 0);
+  r.prepare(l);
+  assert.equal(
+    r.work,
+    0,
+    "brightness and transparent material changes reuse stencils",
+  );
+  w.set(50 * w.width + 40, M.Wall);
+  l.update(w, 0);
+  r.prepare(l);
+  assert.ok(
+    r.work > 0 && r.work <= 4 * 256,
+    "one silhouette edit invalidates nearby chunks only",
+  );
+  const rebuiltWeights = Array.from(r.weights),
+    rebuiltIndices = Array.from(r.indices);
+  l.dirtySilhouette.fill(1);
+  r.prepare(l);
+  assert.deepEqual(
+    Array.from(r.weights),
+    rebuiltWeights,
+    "local invalidation matches a complete rebuild",
+  );
+  assert.deepEqual(Array.from(r.indices), rebuiltIndices);
+  w.set(50 * w.width + 40, 0);
+  l.update(w, 0);
+  r.prepare(l);
+  assert.ok(r.work > 0, "removed walls invalidate the same region");
+  assert.ok(r.weights.every(Number.isFinite));
+});
+
+test("smoke disperses a faint bounded incident-colored bounce without crossing sealed walls", () => {
+  const w = new World(160, 100),
+    l = new Lighting();
+  w.set(50 * w.width + 30, M.Fire);
+  for (let y = 20; y < 80; y++)
+    for (let x = 40; x < 60; x++) w.set(y * w.width + x, M.Smoke);
+  for (let y = 0; y < 100; y++) w.set(y * w.width + 64, M.Wall);
+  l.update(w, 0.2);
+  const i = (25 * l.width + 25) * 3;
+  assert.ok(l.reflected[i] > 0, "lit smoke scatters incident light");
+  assert.ok(l.reflected[i] < l.direct[i] * 0.2, "scattering remains faint");
+  assert.equal(cell(l, 80, 50), 0, "sealed wall still blocks scattered light");
 });

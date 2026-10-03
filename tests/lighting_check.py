@@ -72,6 +72,13 @@ with sync_playwright() as p:
         assert max(shadows['moved'])>max(shadows['blocked'])+1,shadows
         assert shadows['mask']==shadows['size'],shadows
         page.screenshot(path=str(ARTIFACTS/f'lighting-directional-{width}x{height}.png'))
+        # A bolt illuminates distant background without one shadow source per segment.
+        flash=page.evaluate('''()=>{const w=sandlab.world,r=sandlab.renderer;w.clear();w.ambientLight=0;w.background='#a0a0a0';
+          for(let y=0;y<Math.min(w.height,100);y++)w.set(y*w.width+8,M.Lightning,1800,8);
+          r.draw();r.draw();r.worldImage();const bright=pixel(w.width-8,w.height-8);
+          const sources=r.lighting.field.sourceCount;
+          w.clear();r.draw();r.draw();r.worldImage();return {bright,dark:pixel(w.width-8,w.height-8),sources};}''')
+        assert min(flash['bright'])>100 and max(flash['dark'])==0 and flash['sources']==0,flash
         # Diagnostic temperature colors stay readable at zero ambient.
         bright=page.evaluate('''()=>{sandlab.world.ambientLight=0;sandlab.renderer.mode='heat';sandlab.renderer.draw();sandlab.renderer.worldImage();return pixel(sandlab.world.width-8,8);}''')
         assert max(bright)>60,bright

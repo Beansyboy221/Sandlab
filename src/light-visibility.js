@@ -1,5 +1,13 @@
 // Exact particle-grid visibility, shared by shadow edges and image reconstruction.
-export function traceParticles(f, sx, sy, tx, ty, surfaceTile = false) {
+export function traceParticles(
+  f,
+  sx,
+  sy,
+  tx,
+  ty,
+  surfaceTile = false,
+  opaqueOnly = false,
+) {
   let x = Math.floor(sx),
     y = Math.floor(sy);
   const endX = Math.floor(tx),
@@ -16,14 +24,18 @@ export function traceParticles(f, sx, sy, tx, ty, surfaceTile = false) {
     bottom <= f.worldHeight
   ) {
     const stride = f.worldWidth + 1,
-      p = f.occluders;
+      p = opaqueOnly ? f.opaqueOccluders : f.occluders;
     if (
       p[bottom * stride + right] -
         p[top * stride + right] -
         p[bottom * stride + left] +
         p[top * stride + left] ===
-      (f.transmission[y * f.worldWidth + x] < 1 ? 1 : 0) +
-        (f.transmission[endY * f.worldWidth + endX] < 1 ? 1 : 0)
+      (opaqueOnly
+        ? f.silhouette[y * f.worldWidth + x]
+        : Number(f.transmission[y * f.worldWidth + x] < 1)) +
+        (opaqueOnly
+          ? f.silhouette[endY * f.worldWidth + endX]
+          : Number(f.transmission[endY * f.worldWidth + endX] < 1))
     )
       return 1;
   }
@@ -68,7 +80,7 @@ export function traceParticles(f, sx, sy, tx, ty, surfaceTile = false) {
       Math.floor(y / f.cellSize) === Math.floor(endY / f.cellSize)
     )
       return visible;
-    visible *= f.transmission[i];
+    visible *= opaqueOnly ? (f.transmission[i] ? 1 : 0) : f.transmission[i];
     if (visible < 0.01) return 0;
   }
   return visible;

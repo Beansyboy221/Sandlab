@@ -2,7 +2,7 @@ import { traceParticles } from "./light-visibility.js";
 import { LightShadows } from "./light-shadows.js";
 import { materials, M } from "./sim/materials.js";
 export const LIGHT_CELL = 2;
-const MAX_SOURCES = 96;
+const MAX_SOURCES = 24;
 const hues = materials.map((m) => {
   const rgb = [1, 3, 5].map((p) => parseInt(m.color.slice(p, p + 2), 16));
   const brightest = Math.max(...rgb, 1);
@@ -43,7 +43,7 @@ export class Lighting {
   resize(w) {
     // Keep full particle silhouettes at either density; larger worlds use a
     // coarser radiance grid to bound CPU cost, then reconstruct smooth lighting.
-    this.cellSize = w.length > 100000 ? 4 : LIGHT_CELL;
+    this.cellSize = w.length > 32768 ? 4 : LIGHT_CELL;
     this.width = Math.ceil(w.width / this.cellSize);
     this.height = Math.ceil(w.height / this.cellSize);
     this.length = this.width * this.height;
@@ -53,6 +53,7 @@ export class Lighting {
     this.light = new Float32Array(this.length * 3);
     this.opacity = new Float32Array(this.length);
     this.surface = new Float32Array(this.length * 3);
+    this.scatter = new Float32Array(this.length);
     this.emit = new Float32Array(this.length);
     this.exposed = new Uint8Array(this.length);
     this.origins = new Uint32Array(this.length);
@@ -62,6 +63,13 @@ export class Lighting {
     this.transmission = new Float32Array(w.length);
     this.particleEmission = new Float32Array(w.length);
     this.occluders = new Uint32Array((w.width + 1) * (w.height + 1));
+    this.opaqueOccluders = new Uint32Array(this.occluders.length);
+    this.silhouette = new Uint8Array(w.length);
+    this.silhouetteColumns = Math.ceil(w.width / 16);
+    this.dirtySilhouette = new Uint8Array(
+      this.silhouetteColumns * Math.ceil(w.height / 16),
+    );
+    this.dirtySilhouette.fill(1);
     this.groups = new Float32Array(this.length * 7);
     this.sources = new Float32Array(MAX_SOURCES * 7);
     this.shadows = new LightShadows();
@@ -71,6 +79,7 @@ export class Lighting {
       this.transmission,
       this.particleEmission,
       this.surface,
+      this.scatter,
       this.emit,
       this.emitColor,
       this.emitX,
@@ -105,16 +114,37 @@ export class Lighting {
     this.emitColor[i * 3 + 2] = b;
   }
   gather(w) {
+    this.flash = 0;
     this.opacity.fill(0);
-    this.transmission.fill(1);
     this.particleEmission.fill(0);
     this.opaqueCount = 0;
     this.hasFilters = false;
     this.surface.fill(0);
+    this.scatter.fill(0);
     this.emit.fill(0);
+    this.emitColor.fill(0);
     this.exposed.fill(0);
     for (let i = 0; i < w.length; i++) {
       const id = w.cells[i];
+      const solid = transparency[id] === 0 ? 1 : 0;
+      if (this.silhouette[i] !== solid) {
+        this.silhouette[i] = solid;
+        const x = i % w.width,
+          y = Math.floor(i / w.width),
+          pad = this.cellSize;
+        for (
+          let cy = Math.max(0, (y - pad) >> 4);
+          cy <= Math.min(Math.ceil(w.height / 16) - 1, (y + pad) >> 4);
+          cy++
+        )
+          for (
+            let cx = Math.max(0, (x - pad) >> 4);
+            cx <= Math.min(this.silhouetteColumns - 1, (x + pad) >> 4);
+            cx++
+          )
+            this.dirtySilhouette[cy * this.silhouetteColumns + cx] = 1;
+      }
+      this.transmission[i] = transparency[id];
       if (!id) continue;
       const m = materials[id],
         x = i % w.width,
@@ -123,7 +153,8 @@ export class Lighting {
         Math.floor(y / this.cellSize) * this.width +
         Math.floor(x / this.cellSize);
       const opaque = 1 - transparency[id];
-      this.transmission[i] = transparency[id];
+      if (id === M.Smoke)
+        this.scatter[t] += 1 / (this.cellSize * this.cellSize);
       if (opaque === 1) this.opaqueCount++;
       else if (opaque > 0) this.hasFilters = true;
       this.opacity[t] = Math.min(
@@ -141,6 +172,21 @@ export class Lighting {
       }
       const energy = emissionStrength(m, w.temp[i], w.life[i], w.charge[i]);
       this.particleEmission[i] = energy;
+      // A bolt is one scene-wide flash, not a shadow-casting source per segment.
+      // Its existing lifetime supplies the fade; no extra saved particle state.
+      if (id === M.Lightning) {
+        this.flash = Math.max(this.flash, Math.min(1, (w.life[i] || 8) / 8));
+        this.addEmitter(
+          x,
+          y,
+          energy,
+          hues[id][0],
+          hues[id][1],
+          hues[id][2],
+          false,
+        );
+        continue;
+      }
       if (energy) {
         const thermal =
           w.temp[i] > 500 && !m.lightEmission && !m.gas && !w.charge[i];
@@ -159,12 +205,17 @@ export class Lighting {
     // This matters for many emitters: an unobstructed ray takes constant work.
     const stride = w.width + 1;
     this.occluders.fill(0);
+    this.opaqueOccluders.fill(0);
     for (let y = 0; y < w.height; y++) {
-      let row = 0;
+      let row = 0,
+        opaqueRow = 0;
       for (let x = 0; x < w.width; x++) {
         row += this.transmission[y * w.width + x] < 1 ? 1 : 0;
+        opaqueRow += this.silhouette[y * w.width + x];
         this.occluders[(y + 1) * stride + x + 1] =
           this.occluders[y * stride + x + 1] + row;
+        this.opaqueOccluders[(y + 1) * stride + x + 1] =
+          this.opaqueOccluders[y * stride + x + 1] + opaqueRow;
       }
     }
     for (const a of w.stickmen.bodies) {
@@ -182,7 +233,7 @@ export class Lighting {
     for (const a of w.missiles.items)
       this.addEmitter(a.x, a.y, 0.5, 1, 0.6, 0.24);
     // Dense fire/lava pools merge spatially rather than dropping arbitrary lights.
-    // Every emitting tile still lights itself; distant lighting uses <=96 sources.
+    // Every emitting tile still lights itself; distant lighting uses <=24 sources.
     let size = 8,
       count;
     do {
@@ -233,7 +284,8 @@ export class Lighting {
         this.groups[o + 6] * (1 + Math.min(0.6, sum / 12)),
       );
       this.sources[n + 6] =
-        (56 + Math.min(40, Math.sqrt(sum) * this.cellSize)) / this.cellSize;
+        (112 + Math.min(80, Math.sqrt(sum) * this.cellSize * 2)) /
+        this.cellSize;
     }
   }
   particleIndex(x, y) {
@@ -254,8 +306,8 @@ export class Lighting {
       true,
     );
   }
-  trace(sx, sy, tx, ty, surfaceTile = false) {
-    return traceParticles(this, sx, sy, tx, ty, surfaceTile);
+  trace(sx, sy, tx, ty, surfaceTile = false, opaqueOnly = false) {
+    return traceParticles(this, sx, sy, tx, ty, surfaceTile, opaqueOnly);
   }
   illuminate() {
     this.direct.fill(0);
@@ -320,6 +372,19 @@ export class Lighting {
     if (!amount) return;
     let reflecting = false;
     for (let i = 0; i < this.length; i++) {
+      // A faint participating-medium bounce softens illuminated smoke. It uses
+      // the existing bounded diffusion pass, never a new ray per smoke pixel.
+      if (this.scatter[i] && this.opacity[i] < 1) {
+        const scale = this.scatter[i] * amount * 0.35;
+        for (let c = 0; c < 3; c++) {
+          const light = this.direct[i * 3 + c] * scale;
+          this.reflected[i * 3 + c] = Math.max(
+            this.reflected[i * 3 + c],
+            light,
+          );
+          if (light) reflecting = true;
+        }
+      }
       if (
         this.opacity[i] < 1 ||
         !(

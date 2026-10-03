@@ -1,6 +1,6 @@
 // An angular depth map reuses each light's visibility across thousands of
-// radiance samples. Its arc spacing is below one particle at the maximum range;
-// discontinuities use exact rays, keeping thin walls and narrow gaps intact.
+// radiance samples. Discontinuities use exact particle rays, keeping thin walls
+// and narrow gaps intact without retracing every smooth sample.
 const RAYS = 768,
   TAU = Math.PI * 2;
 const directions = new Float32Array(RAYS * 2);
@@ -11,6 +11,7 @@ for (let i = 0; i < RAYS; i++) {
 export class LightShadows {
   constructor() {
     this.depth = new Float32Array(RAYS);
+    this.attenuation = new Float32Array(0);
   }
   prepare(field, sx, sy, radius) {
     this.field = field;
@@ -19,7 +20,15 @@ export class LightShadows {
     const origin = field.particleIndex(Math.floor(sx), Math.floor(sy));
     this.enabled =
       field.opaqueCount > (origin >= 0 && !field.transmission[origin] ? 1 : 0);
-    if (!this.enabled) return;
+    this.filtered = field.hasFilters;
+    this.raySteps = this.exactQueries = this.samples = 0;
+    if (!this.enabled && !this.filtered) return;
+    // The same angular rays carry cumulative transmission through smoke/glass.
+    // Previously every radiance sample traced the entire filtered path again:
+    // moving fire made that source × sample × distance cost recur every update.
+    this.stride = Math.ceil(radius) + 2;
+    if (this.filtered && this.attenuation.length < RAYS * this.stride)
+      this.attenuation = new Float32Array(RAYS * this.stride);
     for (let n = 0; n < RAYS; n++) {
       const dx = directions[n * 2],
         dy = directions[n * 2 + 1];
@@ -35,9 +44,15 @@ export class LightShadows {
       let nextY = Number.isFinite(deltaY)
         ? (stepY > 0 ? y + 1 - sy : sy - y) * deltaY
         : Infinity;
-      let distance = radius;
+      let distance = radius,
+        visible = 1,
+        bin = 0;
+      const offset = n * this.stride;
       while (Math.min(nextX, nextY) < radius) {
         const crossed = Math.min(nextX, nextY);
+        this.raySteps++;
+        if (this.filtered)
+          while (bin <= crossed) this.attenuation[offset + bin++] = visible;
         if (Math.abs(nextX - nextY) < 1e-6) {
           const a = field.particleIndex(x + stepX, y),
             b = field.particleIndex(x, y + stepY);
@@ -66,25 +81,59 @@ export class LightShadows {
           distance = crossed;
           break;
         }
+        if (this.filtered) {
+          visible *= field.transmission[i];
+          if (visible < 0.01) {
+            visible = 0;
+            break;
+          }
+        }
       }
       this.depth[n] = distance;
+      if (this.filtered)
+        while (bin < this.stride) this.attenuation[offset + bin++] = visible;
     }
   }
   visibility(tx, ty, distance, cellSize) {
     const f = this.field;
+    this.samples++;
+    if (!this.enabled && !this.filtered) return 1;
+    const angle =
+      (((Math.atan2(ty - this.sy, tx - this.sx) + TAU) % TAU) * RAYS) / TAU;
+    const ray = Math.floor(angle),
+      next = (ray + 1) % RAYS;
     if (this.enabled) {
-      const angle =
-        (((Math.atan2(ty - this.sy, tx - this.sx) + TAU) % TAU) * RAYS) / TAU;
-      const a = this.depth[Math.floor(angle)],
-        b = this.depth[(Math.floor(angle) + 1) % RAYS];
+      const a = this.depth[ray],
+        b = this.depth[next];
       // Exact queries handle the first illuminated surface and angular edges.
       if (
         Math.abs(a - b) > cellSize ||
         Math.abs(distance - Math.min(a, b)) < cellSize * 1.5
       )
-        return f.trace(this.sx, this.sy, tx, ty, true);
+        return this.exact(tx, ty);
       if (distance > Math.max(a, b)) return 0;
     }
-    return f.hasFilters ? f.trace(this.sx, this.sy, tx, ty, true) : 1;
+    if (!this.filtered) return 1;
+    // Exclude the destination particle, just as exact visibility does. Nearby
+    // samples and sharp filter boundaries keep exact queries; diffuse plumes
+    // interpolate the cached transport instead of retracing long paths.
+    if (distance < cellSize * 1.5) return this.exact(tx, ty);
+    const d = Math.max(0, Math.min(this.stride - 2, distance - 0.5)),
+      lo = Math.floor(d),
+      fraction = d - lo,
+      a = ray * this.stride + lo,
+      b = next * this.stride + lo,
+      av =
+        this.attenuation[a] * (1 - fraction) +
+        this.attenuation[a + 1] * fraction,
+      bv =
+        this.attenuation[b] * (1 - fraction) +
+        this.attenuation[b + 1] * fraction;
+    if (Math.abs(av - bv) > 0.2) return this.exact(tx, ty);
+    return av + (bv - av) * (angle - ray);
+  }
+  exact(tx, ty) {
+    this.exactQueries++;
+    return this.field.trace(this.sx, this.sy, tx, ty, true);
   }
 }

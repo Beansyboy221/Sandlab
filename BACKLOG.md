@@ -15,7 +15,7 @@
 - Improve finite food chains, creature terrain navigation and obstacle-aware hunting without unbounded population growth. Measure larger flock populations before raising the current 32-body cap or introducing a spatial index.
 - Measure acoustic occlusion and richer multi-bounce audible reflections before extending the current bounded room echo.
 
-- Benchmark rapidly changing many-light scenes on physical phones before increasing optical source or bounce budgets. Particle silhouettes and smooth directional shadows are implemented; faint reflections still use the radiance grid.
+- Benchmark rapidly changing many-light scenes on physical phones before increasing optical source or bounce budgets. Fire lighting now caches silhouette stencils and filtered angular transport, with 24 merged shadow sources and a scene-wide lightning flash. Refine volumetric transport only after measuring the current faint smoke scattering and surface reflection pass.
 - Verify standard controllers on physical iOS/Android devices and add configurable controller bindings when useful.
 
 - Add grouped circuit editing and richer vehicle suspension after measuring large circuits and machine scenes; retain directional signal isolation and bounded moving-device work.

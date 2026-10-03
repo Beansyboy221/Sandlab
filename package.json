@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -39,7 +39,8 @@
     "check": "node scripts/check.mjs",
     "inspect": "node scripts/inspect.mjs",
     "test:portals": "python3 tests/portals_check.py",
-    "bench:render": "python3 tests/rigid-render-benchmark.py"
+    "bench:render": "python3 tests/rigid-render-benchmark.py",
+    "bench:fire": "python3 tests/fire-render-benchmark.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"

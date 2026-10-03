@@ -1,12 +1,23 @@
 export const changelog = [
   {
+    version: "1.19.1",
+    date: "2026-10-03",
+    title: "Faster fire lighting and lightning flashes",
+    changes: [
+      "Fire lighting refreshes are 45–51% faster in desktop browser stress tests, with dense flames improving from 47.96 to 25.67 ms and repeated ray traces reduced by 95–97%.",
+      "Light reaches farther with smooth falloff, directional shadows and faint smoke scattering.",
+      "Lightning illuminates the whole scene with a fading flash instead of a separate shadow pass for each bolt segment.",
+      "Changelog entries now use short, one-sentence bullets and measured optimization results.",
+    ],
+  },
+  {
     version: "1.19.0",
     date: "2026-10-03",
     title: "Pixel-exact brushes and contained-fluid mass",
     changes: [
-      "Brush Size is the exact diameter in canvas pixels, from 1 to 61. Odd and even sizes share one footprint across Draw, Color, Erase, Select, Grab and environmental tools. Square and circular outlines, shape previews, wheel increments and controller increments match. Existing radius preferences migrate once to equivalent diameters.",
-      "Porous solids and elastics include stored liquid in their mechanical mass. Wet solids refresh their center of mass, rotational inertia and enclosing radius only when fluid distribution changes, using existing pose scans without rebuilding topology or textures. Pressure response and buoyancy use loaded mass; gravity in empty space remains mass independent.",
-      "Elastic spring forces include liquid inertia while retaining calibrated dry stiffness. Inspect shows loaded cell/body mass. Wet bodies retain deterministic save/load behavior; particle and save schemas are unchanged.",
+      "Brush Size now measures the exact diameter in canvas pixels, from 1 to 61, with matching outlines and tool footprints.",
+      "Absorbed liquids add weight and rotational inertia to solids and elastics without rebuilding their shapes.",
+      "Inspect reports loaded mass, and existing brush preferences and saves remain compatible.",
     ],
   },
   {
@@ -14,11 +25,11 @@ export const changelog = [
     date: "2026-10-03",
     title: "Composable materials and faster solid rendering",
     changes: [
-      "Material authoring, calibrated profiles and registry compilation are separate modules. Reusable porous, elastic, combustion, conductor and surface traits compose at startup. Validation catches invalid coefficients, conflicting body types, duplicate names and missing phase/reaction products; historical IDs and aliases are preserved.",
-      "All 130 existing material definitions and coefficients are retained. Compiled typed property/capability tables and pairwise thermal rates avoid recalculating fixed coefficients during neighbor heat transfer. Registry definitions are immutable after compilation; particle state remains editable and typed.",
-      "Grid-aligned solids use a reusable local texture instead of one Canvas draw call per cell. Changed colors refresh the texture; cuts and rebuilt bodies get fresh geometry. Heat/pressure/color views, live lighting, rotation, wrapping, Inspect and previews remain supported. Irregular or excessively sparse rest geometry uses the continuous rectangle fallback.",
-      "The optional debug panel now reports individual simulation and render stages. Timing collection is disabled with the panel; it never reads clocks inside particle loops or enters world saves.",
-      "Narrow contacts sample the nearby static terrain contour so round solids keep rolling down shallow pixel ramps at different canvas sizes and gravity directions. Broad flat supports and body-to-body contact budgets remain intact.",
+      "Materials use reusable traits and a validated registry while preserving all 130 definitions and existing save IDs.",
+      "Cached solid textures reduced a 16,000-cell drawing pass from 18.45 to 1.78 ms in development benchmarks.",
+      "Compiled heat-transfer tables retained comparable dense-fluid performance at 14.8 versus 14.7 ms per tick.",
+      "The optional debug panel shows separate simulation and rendering timings.",
+      "Round solids roll more reliably down shallow pixel slopes.",
     ],
   },
   {
@@ -26,8 +37,8 @@ export const changelog = [
     date: "2026-10-03",
     title: "Fit and stretch canvas views",
     changes: [
-      "A changing-icon button beside Fullscreen switches between Fit (the entire world, with square pixels and centered margins) and Stretch (fill the available drawing area). The choice is remembered in Rendering settings. Switching resets zoom and pan without resizing or changing the world.",
-      "Drawing, selection, inspection, zoom and touch gestures use the same invertible display transform in both modes, including phone rotation.",
+      "A button beside Fullscreen switches between Fit and Stretch, with the choice saved in Rendering settings.",
+      "Drawing, inspection, selection and camera gestures follow both display modes and phone rotation.",
     ],
   },
   {
@@ -35,13 +46,13 @@ export const changelog = [
     date: "2026-10-03",
     title: "Shared pores, pressure and cleaner controls",
     changes: [
-      "The selected-material footer is removed from the material palette. Rocket is now Missile, and the Wind tool is now Blow; existing material IDs and custom shortcut actions stay compatible.",
-      "Wind and pressure share one Air & pressure switch. Blow and fans inject connected pressure differences instead of directly moving objects. The existing compressible field carries wind, pressure and momentum around obstacles. Pressure acts on exposed solid faces, pushes bodies, and breaks overloaded brittle surfaces within a fixed damage budget.",
-      "Airflow view shows optical-flow direction colors and animated streamlines. Orange surface highlights show compression; violet highlights show suction. Moving actors, missiles and vehicles sample the same localized field, including a correction to character pressure sampling coordinates.",
-      "Settings no longer shows the browser-storage success text. Reset preferences sits at the top. Sliders have larger interaction areas, speed selectors have comfortable padding, and toolbar groups and material categories have more space on desktop and mobile.",
-      "All porous materials use integer Porosity for liquid-pixel capacity, Permeability for intake and wicking rates, and Retention for clinginess. Sand drains readily, soil and clay retain water, and Sponge has a larger reservoir using the same rules. Compatible liquids wick according to saturation; incompatible mixtures stay separate.",
-      "Soil hydration and plant water uptake now use shared pore storage. Pressure releases contents, heat vents vapor or burning fuel, and frozen pores stop flow. Contents and nutrients survive movement, clipboard, saves and phase changes; sealed wet hosts wait for space before destruction instead of deleting trapped liquid.",
-      "Available liquids and wet particles drive staggered, bounded neighbor checks. Dry grains do not scan for absorption during simulation, and receiver stamps prevent liquid cascading across a bed in one tick.",
+      "Removed the selected-material footer and renamed Rocket to Missile and Wind to Blow.",
+      "Wind and pressure share one system that pushes bodies, flows around obstacles and fractures overloaded brittle surfaces.",
+      "Airflow view shows direction, streamlines, compression and suction.",
+      "Settings and toolbar groups have more space, clearer alignment and larger touch targets.",
+      "All porous materials share Porosity, Permeability and Retention for liquid storage and flow.",
+      "Absorbed liquids survive movement, editing and saves, while heat, freezing and pressure affect their release.",
+      "Liquid transport uses staggered local checks and prevents fluid from crossing an entire bed in one tick.",
     ],
   },
   {
@@ -49,9 +60,9 @@ export const changelog = [
     date: "2026-10-03",
     title: "Linked portals",
     changes: [
-      "Portal is a new indestructible Static material. Each draw stroke makes a separate shape. Drag from one Portal to another to link them in a bidirectional pair; matching colors and connection lines identify pairs. Link and Unlink controls live in Tool, with automatic or directional exits.",
-      "Powders, liquids, gases, flames and laser rays teleport on entry. Solid shapes, elastic networks, creatures, Players, missiles and vehicles pass as whole objects when they fit. Portals rotate retained motion toward the exit and preserve particle properties, bodies and bonds.",
-      "Unlinked portals act as solid surfaces. Blocked or undersized exits retain incoming matter, and short cooldowns prevent instant teleport loops. Links and cooldowns survive save/load, Undo/Redo and positioned canvas resizing; copied pairs receive independent identities.",
+      "Added Portal, a Static material whose separately drawn shapes can be linked by dragging between them.",
+      "Linked portals transport particles and fitting bodies while preserving their properties and redirecting motion.",
+      "Blocked exits retain incoming objects, cooldowns prevent teleport loops, and links survive editing and saves.",
     ],
   },
   {
@@ -59,10 +70,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Keyboard bindings and missile names",
     changes: [
-      "Laser-Guided Missile is now Guided Missile; Heat-Seeking Missile is now Seeking Missile. Their guidance, saved IDs and existing worlds are unchanged.",
-      "Keyboard settings show only active bindings. Add a binding with the plus in the top-right, choose an action and press its keys. Each row has a trash icon; clicking its key edits the binding.",
-      "Exactly seven shortcuts are bound by default: Space for Pause, Ctrl/Command+Z for Undo, Ctrl/Command+Shift+Z for Redo, and Ctrl/Command+X/C/V/S for Cut, Copy, Paste and Save. Every default has one chord. All other actions are optional bindings.",
-      "Player keyboard movement, crouch and jump use the same optional binding catalogue. Space pauses an active Player and is not a default jump key. Joystick and controller controls are unchanged. Saved and newly entered bindings reject duplicate or conflicting keys, including Ctrl/Command equivalents; rebinding resets held movement safely.",
+      "Renamed Laser-Guided Missile to Guided Missile and Heat-Seeking Missile to Seeking Missile.",
+      "Keyboard settings support adding, editing and deleting bindings while rejecting conflicting keys.",
+      "Default bindings are limited to Pause, Undo, Redo, Cut, Copy, Paste and Save, with Space assigned only to Pause.",
+      "Player movement and jumping remain available as optional keyboard bindings.",
     ],
   },
   {
@@ -70,9 +81,9 @@ export const changelog = [
     date: "2026-10-03",
     title: "Canvas dimensions and unified tool controls",
     changes: [
-      "Canvas properties and New canvas always show Width and Height in pixels. Both are editable on desktop. Mobile grays out the longer dimension and calculates it from the shorter dimension and the drawing area. Resizing retains the positioned crop/placement preview and Undo.",
-      "The canvas resolution label is removed from the main screen. View is beside Canvas properties and Fullscreen, with compact controls available in mobile fullscreen.",
-      "The Tool group contains brush controls, Replace, device facing and every tool-specific property, including selection Copy, Paste and Deselect. Tool properties no longer have their own separate section.",
+      "Canvas settings always show both dimensions, with the longer dimension calculated and disabled on mobile.",
+      "Removed the main-screen resolution label and moved View beside Canvas properties and Fullscreen.",
+      "All brush settings and tool-specific properties now live in the Tool group.",
     ],
   },
   {
@@ -80,9 +91,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Porous flow and steadier mobile controls",
     changes: [
-      "Changing tools preserves the mobile controls drawer's current state. Rotation commits gravity and canvas orientation together after viewport changes settle; horizontal gravity alternates its crosswise particle scan to avoid a directional bias.",
-      "Materials now expose density, porosity, permeability and brittleness in Inspect. Packed grains exchange liquid gradually according to pore connectivity, viscosity, density and pressure. Liquids seek nearby outlets with a bounded local search, move through permeable powder one cell at a time, or remain trapped beneath dense or poorly permeable beds. Isolated grains still sink freely, and sponge absorption and soil/clay hydration are preserved.",
-      "Brittleness influences solid impact damage. Glass, ice and ceramic fracture more readily than ductile metals; Wall remains indestructible.",
+      "Changing tools preserves the mobile drawer state, and rotation synchronizes gravity with the view.",
+      "Porosity and permeability let liquids rise through grains, find nearby outlets or remain trapped beneath dense beds.",
+      "Inspect shows density, porosity, permeability and brittleness.",
+      "Brittle solids fracture more easily under impacts while Wall remains indestructible.",
     ],
   },
   {
@@ -90,9 +102,9 @@ export const changelog = [
     date: "2026-10-03",
     title: "Home-screen icon and logo menu",
     changes: [
-      "Home-screen installs use the supplied three-grain icon, with an Apple touch icon and Android app icons. The browser favicon matches. Installed launches use standalone display mode and keep the GitHub Pages canvas URL.",
-      "Click or tap the logo or Sandlab name to open About. The separate question-mark button is removed; keyboard access and focus restoration still work.",
-      "Changelog is aligned to the right in About on desktop and mobile.",
+      "Home-screen installs and the browser favicon use the supplied three-grain icon.",
+      "Clicking the logo opens About, replacing the question-mark button.",
+      "The Changelog button is right-aligned in About.",
     ],
   },
   {
@@ -100,12 +112,12 @@ export const changelog = [
     date: "2026-10-03",
     title: "Simpler tools and clearer brush controls",
     changes: [
-      "Removed clickable zoom buttons, Fan and Squeeze tools. Pinch, Ctrl/Command-wheel and controller zoom remain available. Wind, powered fans and pressure-driven sponge absorption and release retain their physics.",
-      "The paint tool is now Color. Brush size now sits inside Tool & brush. Playback speed has its own visible border, and category tabs show monochrome versions of their material icons.",
-      "The sampling tool is now Pick, with a recognizable eyedropper icon. Its shortcut and existing custom bindings are preserved; selection Copy/Paste is unchanged.",
-      "Import and Export labels are shorter, the storage note and keyboard introduction have been removed, and the world name has more space beside the screen edge.",
-      "Simulation settings can independently toggle wind, pressure and temperature transport. Disabled pressure and wind clear their fields; stored heat remains available for direct tools and reactions.",
-      "GitHub Pages is now the sole publishing destination. ChatGPT Site updates have stopped.",
+      "Removed zoom buttons, Fan and Squeeze tools while retaining gesture zoom and powered fans.",
+      "Renamed Paint to Color and the sampling tool to Pick, with an eyedropper icon.",
+      "Brush size sits in the tool group, playback speed has a border, and category tabs show monochrome icons.",
+      "Simplified Import, Export and keyboard settings, and added space around the world name.",
+      "Added switches for wind, pressure and temperature simulation.",
+      "GitHub Pages became the sole publishing destination.",
     ],
   },
   {
@@ -113,10 +125,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Grouped controls and controller support",
     changes: [
-      "Tool menus use visibly bounded Create, Arrange, Environment, and Inspect & Guide groups. Desktop playback, editing, drawing and material controls also have labelled borders; expanded mobile controls share these boundaries.",
-      "The material dropdown now hides and restores the desktop sidebar, making more room for the canvas. About shows the actual number of registered chemical contact interactions. Changelog is a prominent button and the browser-storage note has been removed from About.",
-      "Standard controllers can draw, erase, select, inspect, use tools, move the cursor, pan, zoom, browse materials, navigate dialogs and control the Player. Drawing shares pointer input, history and solid-pause behavior. Disconnects, focus loss and dialogs release active drawing and movement safely.",
-      "Settings → Controller includes enable/disable, stick deadzone and cursor speed, plus button bindings. Back/View switches Player and Sandbox controls; LB+RB opens Settings. Availability depends on browser support and standard controller mapping.",
+      "Desktop and mobile controls use clearly bordered groups for drawing, playback, editing and tool categories.",
+      "The material dropdown toggles the desktop sidebar, and About shows the registered interaction count.",
+      "Added controller support for sandbox tools, camera movement, menus and the Player.",
+      "Controller settings include deadzone, cursor speed and button bindings.",
     ],
   },
   {
@@ -124,10 +136,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Smooth lighting and directional shadows",
     changes: [
-      "Lights now trace individual particle silhouettes instead of treating a single opaque pixel as an entire blocked lighting tile. Narrow openings, angled surfaces and moving obstacles cast directional shadows.",
-      "Smooth, particle-resolution lighting respects walls instead of blurring brightness into their dark back faces. Glass, water, faint reflected light, colored illumination and ambient darkness still work together.",
-      "Reusable angular shadow maps, exact edge rays, adaptive radiance density and unchanged-scene caching keep optical work bounded. Paused drawing, pigment changes and lighting settings invalidate cached lighting immediately on the next lighting refresh.",
-      "Development commands now select focused regressions, keep failure logs compact and optionally reuse identical passing checks. GitHub skips unnecessary site deployments for development-only changes.",
+      "Lights follow individual particle silhouettes to cast directional shadows through narrow openings.",
+      "Smooth lighting preserves dark wall faces while supporting colored light, glass, water and reflections.",
+      "Angular shadow maps and unchanged-scene caching bound lighting work while refreshing edits.",
+      "Focused development checks and deployment filtering avoid unnecessary testing and publication.",
     ],
   },
   {
@@ -135,9 +147,9 @@ export const changelog = [
     date: "2026-10-03",
     title: "Bounded solid collisions",
     changes: [
-      "Touching solid piles no longer rescan and rewrite an entire neighboring body for every contact. Each body's motion is read once and synchronized once per physics tick, while shared contact impulses still transmit weight, friction and torque.",
-      "Contact grouping uses direct lookups and at most 16 contact manifolds per candidate move. Raster placement searches at most 64 nodes and shares a per-pixel search budget. Substeps, movement attempts and support passes have fixed limits. Every obstacle still blocks overlap; a crowded placement may defer movement rather than deleting particles or restarting collision work.",
-      "Impact damage is combined by stable particle ID and applied once after the collision passes. Broken links use reverse adjacency instead of scanning all solid particles per fracture. Performance diagnostics now report solid body count, contact count and collision checks.",
+      "Touching solids synchronize body motion once per tick instead of rescanning neighbors for every contact.",
+      "Collision work is capped at 16 contact manifolds per move and 64 placement nodes without deleting blocked particles.",
+      "Fracture damage is combined once per particle, and diagnostics show body counts, contacts and collision checks.",
     ],
   },
   {
@@ -145,10 +157,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Entities and canvas modes",
     changes: [
-      "Materials and Entities now have separate tabs, searches and categories. Characters, wildlife, missiles, vehicles, electrical devices and fixed sources live in Entities. Custom groups can include entries from either catalog, and older saves retain their original IDs.",
-      "Added Laser-Guided Missile and unguided Rocket. Guided missiles turn toward the nearest visible live laser beam, or your cursor when there is no visible beam. The Guide tool sets an aim point without placing matter; tap or drag to aim on touch screens. Glass and clear liquids transmit guidance; opaque obstacles block it. Settings → Devices controls laser guidance.",
-      "New canvas and Canvas properties include Sandbox, Planet, Wandering Gravity, Whirlpool, Zero Gravity and Day And Night, with a strength slider. Planet supplies inward gravity and initial orbital motion; wandering gravity moves its center, Whirlpool adds rotating airflow, and Day And Night varies ambient light and air temperature. Modes persist through saves, history and positioned resizing.",
-      "Broken solid and elastic pieces of three pixels or fewer become material-specific fine debris, reducing spring and rigid-body work. Larger pieces, anchored strands and intact small drawings retain their original physics. Debris preserves heat, pigment and velocity. Settings → Performance can disable this optimization.",
+      "Moved creatures, missiles, vehicles and devices into a separate Entities catalog.",
+      "Added laser-guided missiles, unguided rockets and a Guide tool for cursor or touch targeting.",
+      "Added Planet, Wandering Gravity, Whirlpool, Zero Gravity and Day And Night canvas modes.",
+      "Broken pieces of three pixels or fewer can become material-specific debris while retaining heat, color and momentum.",
     ],
   },
   {
@@ -156,9 +168,10 @@ export const changelog = [
     date: "2026-10-03",
     title: "Wind and vented pressure",
     changes: [
-      "Air now carries momentum. Pressure differences drive wind through open passages, while closed walls block it. Burning fuel and flames build local pressure; a narrow vent releases a jet that carries smoke and fire. Hot air rises and flowing air transports temperature. Solid, looping and void borders retain their distinct behavior.",
-      "Added a Wind brush with direction and strength controls. Fan tools and powered fans feed the same airflow system. Settings → Atmosphere controls ambient wind strength and direction. Airflow view shows speed and direction arrows; Inspect reports local airflow. The Vented fire chamber starting world demonstrates a one-pixel outlet.",
-      "Wind responds to gravity rotation, wakes resting particles, and affects gases more strongly than dense powders and liquids. Weak currents preserve surface flames; stronger jets can lift them away. Air momentum is preserved by saves, import/export, undo and canvas resizing. Rendering and simulation remain capped at 60 per second.",
+      "Pressure drives localized wind through openings, carrying heat, smoke and flames around barriers.",
+      "Added a Wind brush, ambient wind settings, Airflow view and a Vented fire chamber example.",
+      "Wind respects gravity rotation, material density, borders and saved world state.",
+      "A complete 400×300 air field averaged 0.53 ms per tick in development benchmarks.",
     ],
   },
   {
@@ -166,10 +179,10 @@ export const changelog = [
     date: "2026-10-02",
     title: "Custom groups and real devices",
     changes: [
-      "The palette now has one Materials heading. Explosives and Fiction sections are removed; materials use their physical behavior groups. Fixed sources such as Heater, Cooler, Clone, Void and Repulsor are under Static. Moving missiles remain in Devices.",
-      "Use the plus beside Materials to create, name, edit and delete custom material groups. Choose any mix of materials; groups are saved locally and keep the original physics and built-in categories.",
-      "Devices adds Wire, Battery, AND, OR, XOR and NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan. Facing sets output direction. Input A is behind and B is on the left; Inspect shows ports and signal state. Gates read a shared tick snapshot, toggles react to rising edges, and delays hold signals for 12 ticks.",
-      "Added Drone and Rover. Drones hover and cruise; rovers drive, climb small ledges and turn at obstacles. Both respond to gravity when motors are disabled, tools, heat, collisions and damage. Settings → Devices controls motors and cruise speed. Save/load, undo and canvas resizing preserve machine and circuit state. Logic workbench and Device yard demonstrate the new systems. The 60 FPS and 60 tick limits remain in place.",
+      "Simplified material categories and added editable custom groups saved in the browser.",
+      "Added wires, batteries, directional logic gates, a signal lamp and an electric fan.",
+      "Added Drone and Rover with configurable motors, movement, damage and persistent state.",
+      "Added Logic workbench and Device yard example worlds.",
     ],
   },
   {
@@ -177,8 +190,8 @@ export const changelog = [
     date: "2026-10-02",
     title: "60 FPS and tick limits",
     changes: [
-      "Rendering and physics now run at a maximum of 60 per second, including on high-refresh displays. Slow frames drop missed ticks instead of running catch-up bursts, and returning from a hidden tab resets the clock.",
-      "Simulation speed now offers 0.25×, 0.5× and 1×; older 2× preferences return to 1×. Pause, single-step and input remain available. Performance diagnostics show the measured tick rate and dropped ticks.",
+      "Rendering and physics are capped at 60 per second, with missed ticks dropped instead of catch-up bursts.",
+      "Simulation speed offers 0.25×, 0.5× and 1×, with tick-rate diagnostics.",
     ],
   },
   {
@@ -186,9 +199,9 @@ export const changelog = [
     date: "2026-10-02",
     title: "Flocks and fish schools",
     changes: [
-      "Birds and aquatic creatures now use Boids alignment, cohesion and separation when enough nearby members of their species share a clear habitat. Groups match headings, stay together and give one another room. Lone creatures retain their individual movement; fleeing and hunting take priority. Schools avoid dry gaps, hot water and tank boundaries; flocks steer around terrain and liquid. Looping worlds use neighbors across the seam.",
-      "Settings → Wildlife now includes Flocking and schooling, Group distance and Minimum group size. The default group size is three, counting the creature itself. Inspect shows Flocking or Schooling and the local group size. New canvas → Starting world → Flocks and schools starts three birds and three fish in a safe landscape and tank.",
-      "Flock steering reads a shared frame snapshot and reuses typed buffers, keeping the capped creature population deterministic and inexpensive. Jointed bodies, collision damage, burning, severed limbs, gravity rotation and save/load retain their existing physics.",
+      "Birds and aquatic creatures use Boids to flock or school while avoiding hazards and prioritizing survival.",
+      "Wildlife settings control group distance and size, with a Flocks and schools example world.",
+      "Flock steering shares a deterministic snapshot and reusable buffers across the capped creature population.",
     ],
   },
   {
@@ -196,8 +209,8 @@ export const changelog = [
     date: "2026-10-02",
     title: "Walking over slopes",
     changes: [
-      "Players and human stickmen lift grounded feet onto nearby one- and two-pixel ledges, so walking climbs pixel slopes instead of catching on each corner. Steps require attached legs, a reachable supported landing and clearance above the head and torso. The existing joint solver pulls the body up behind each foot. Taller ledges still require jumping; low roofs block steps. Gravity rotation, keyboard and joystick movement, idle foot grip and ragdoll physics remain supported.",
-      "Feet stay planted on surfaces at different heights after movement is released. Resting contact now distinguishes leg-motor corrections from external impulses, preventing downhill slipping while preserving jumps, strong pushes and moving supports.",
+      "Players and stickmen step onto one- and two-pixel ledges when their legs and overhead clearance allow it.",
+      "Feet stay planted on uneven slopes after movement stops while preserving jumps and external pushes.",
     ],
   },
   {
@@ -205,7 +218,7 @@ export const changelog = [
     date: "2026-10-02",
     title: "Planted feet after walking",
     changes: [
-      "Grounded characters now resolve static foot grip after pose and joint corrections, preventing those corrections from reintroducing a sideways drift after walking stops. Keyboard and joystick release both benefit. AI followers stop nearby instead of walking into a stationary player and pushing them. Jump momentum, strong external pushes, moving supports, detached limbs and ragdolls retain their physics.",
+      "Fixed grounded character drift after movement stops and prevented AI followers from pushing stationary players.",
     ],
   },
   {
@@ -213,10 +226,10 @@ export const changelog = [
     date: "2026-10-02",
     title: "Local light and dark canvases",
     changes: [
-      "Added Lamp to Devices. Lamps, fire, sparks, lightning, electrical charge, burning material, hot surfaces and missile exhaust illuminate nearby matter with radial falloff. Opaque surfaces cast shadows; glass and water transmit light.",
-      "Added a faint reflected-light pass that picks up surface color and travels around nearby corners without leaking through sealed walls. Settings → Rendering → Reflected light controls the bounce amount; Bloom remains a separate glow effect.",
-      "New canvas and Canvas properties now include Ambient light. At 0%, unilluminated areas are black; low levels keep them near black. Ambient light survives saves, exports, Undo/Redo and resizing. Legacy saves retain full ambient light.",
-      "Lighting shades particles, elastic/rigid bodies, creatures, missiles and painted backgrounds together in Natural view. Inspect lenses and world thumbnails share it; Temperature, Pressure and Echolocation remain readable. The bounded optical field updates at half the display rate.",
+      "Lamps, fire, hot surfaces and electrical effects cast colored light and shadows across the scene.",
+      "Added adjustable faint surface reflections that respect sealed walls.",
+      "Canvas settings include Ambient light, with unlit areas black at 0%.",
+      "Lighting covers particles, bodies, creatures, painted backgrounds and previews while diagnostic views remain readable.",
     ],
   },
   {
@@ -224,10 +237,10 @@ export const changelog = [
     date: "2026-10-02",
     title: "Predators and heat seekers",
     changes: [
-      "Added Wolf and Shark. Cats hunt Rabbits and Birds, Wolves hunt Rabbits and Cats, and Sharks hunt Fish. Prey flee visible predators; bites require contact, respect a cooldown and leave physical ragdolls. Wildlife settings control predation and sensing distance.",
-      "Added Heat-Seeking Missile in Devices. Rockets turn gradually toward the nearest exposed hot material, leave smoke trails and explode on swept collisions. Warm, Cool, Fan, Grab and Erase work on them; saves, Undo/Redo and resizing retain them. Missile settings control homing, heat threshold, range, speed and blast radius.",
-      "Added Predator reserve and Missile range starting worlds. Inspect shows wildlife behavior and missile target, heat, speed and remaining lifetime.",
-      "Player settings now offer left/right joystick placement, size, edge inset and vertical offset. Placement stays clear of the mobile dock, resets held inputs after rotation or changes, and keeps joystick-up jumping and desktop Space/W controls.",
+      "Added Wolves and Sharks, predator hunting, prey escape and configurable sensing distances.",
+      "Added heat-seeking missiles with configurable targeting, speed, range and explosions.",
+      "Added Predator reserve and Missile range example worlds.",
+      "Player settings include joystick side, size, inset and vertical position.",
     ],
   },
   {
@@ -235,11 +248,11 @@ export const changelog = [
     date: "2026-10-02",
     title: "Creatures and echolocation",
     changes: [
-      "Character walking and jump height now scale to body size. Walking covers about one body height per second; jumps preserve horizontal momentum. A* routes use shorter reachable jumps and continue steering in the air.",
-      "Added Cat, Rabbit, Fish and Bird to Life, plus a Wildlife pond starting world. Creatures walk, hop, swim or fly with distinct jointed bodies. Fish need cool Water or Brine; birds fall when injured or dead. Bodies burn, break, collide, respond to tools and survive saves and resizing.",
-      "Removed Light and Sound materials. Their historical save IDs safely become empty space; Laser, Mirror and Solar Cell remain available.",
-      "Added audible, stereo effects for falling powders, heavy body impacts, fizzing chemistry, melting, boiling, splashes, fire, explosions, lightning and birds. Heavier impacts are louder and lower pitched. The listener follows the screen center, or the player while controlling one. Audio unlocks on interaction; Audio settings provide mute and volume.",
-      "Added Echolocation beside Natural, Temperature and Pressure. A separate damped sound-wave field reflects from solid barriers, wraps across looping edges, escapes through void edges and loses energy in sponge. Sound waves remain visible with audio muted.",
+      "Character speed and jump height scale to body size, with walking around one body height per second.",
+      "Added Cats, Rabbits, Fish, Birds and a Wildlife pond world, with jointed, burnable and breakable bodies.",
+      "Removed Light and Sound materials while preserving Laser, Mirror and Solar Cell.",
+      "Added stereo effects for impacts, chemistry, phase changes, fire, explosions and creatures, with the listener following the player.",
+      "Added Echolocation to visualize sound propagation, reflection and absorption even when audio is muted.",
     ],
   },
   {
@@ -247,7 +260,7 @@ export const changelog = [
     date: "2026-10-02",
     title: "Joystick jumping",
     changes: [
-      "Removed the separate mobile Jump button. Push the joystick up to jump, or diagonally up to jump while moving. Down crouches; desktop W and Space still jump.",
+      "Replaced the mobile Jump button with joystick-up jumping and joystick-down crouching.",
     ],
   },
   {
@@ -255,10 +268,10 @@ export const changelog = [
     date: "2026-10-02",
     title: "Stickmen and player controls",
     changes: [
-      "Added Stickman and Player in Life. Characters have jointed bodies, gravity, swept terrain collisions, liquid drag, finite burning fuel, impact damage, breakable limbs, and persistent ragdoll physics. Grab, Fan, Warm, Cool and Erase interact with them.",
-      "AI stickmen use bounded A* over supported terrain, with clearance checks, jump and drop edges, and hazard avoidance. They follow a player or patrol terrain; navigation replans as the world changes.",
-      "Player controls use A/D to move, W or Space to jump, and S to crouch. Phones and tablets get an on-screen joystick and Jump button. Release controls returns Space to normal sandbox shortcuts; P pauses while playing.",
-      "Added Stickman playground. Characters survive saves, autosaves, export/import, Undo/Redo, and canvas resizing. Inspect shows health, joints, heat and navigation state.",
+      "Added Stickman and Player with jointed bodies, collisions, burning, damage and breakable limbs.",
+      "AI stickmen use bounded A* navigation with jumps, drops and hazard avoidance.",
+      "Added desktop movement controls and a mobile joystick with jumping.",
+      "Added Stickman playground, persistent character saves and live body inspection.",
     ],
   },
   {
@@ -266,9 +279,9 @@ export const changelog = [
     date: "2026-10-02",
     title: "Shape solids before they fall",
     changes: [
-      "Draw automatically pauses physics while drawing moving solids, so a whole shape forms before falling. Mouse, pen, touch, and line/circle/rectangle gestures share this behavior.",
-      "Settings → Brush → After drawing solids offers Resume on release or Stay paused. Existing pauses are preserved; canceled strokes and two-finger navigation release the temporary stop safely.",
-      "Stationary solid strokes avoid repeated brush work while frozen. Movement and live size/shape changes still update immediately.",
+      "Drawing moving solids pauses physics until the shape is finished.",
+      "Brush settings offer Resume on release or Stay paused while preserving existing pauses.",
+      "Stationary strokes skip repeated brush work without delaying live brush changes.",
     ],
   },
   {
@@ -276,8 +289,8 @@ export const changelog = [
     date: "2026-10-02",
     title: "Pixel material icons",
     changes: [
-      "Every material group has its own colored pixel icon: powder grains, liquid droplets, gas puffs, moving solids, static bricks, elastic springs, life leaves, explosive bursts, energy bolts, device gears, and fiction stars.",
-      "The material grid and current material details share the same icons, with centered labels on desktop and mobile.",
+      "Added distinct pixel icons for every material category.",
+      "Material cards share centered icons and labels across desktop and mobile.",
     ],
   },
   {
@@ -285,7 +298,7 @@ export const changelog = [
     date: "2026-10-02",
     title: "Centered material cards",
     changes: [
-      "Material icons and labels are centered within each grid card on desktop, phones and tablets, including wrapped names.",
+      "Centered material icons and labels in desktop, phone and tablet grid cards.",
     ],
   },
   {
@@ -293,10 +306,9 @@ export const changelog = [
     date: "2026-10-02",
     title: "Material cleanup",
     changes: [
-      "Removed both Fit canvas buttons. Mouse, touch, zoom and pan controls remain available.",
-      "Removed Plasma, Dragonfire, Frostfire, Fairy Dust, Furnace, Neutron, Nutrient Water, Mica, Sulfur Dioxide and Carbon Dioxide Foam from the palette and active reactions.",
-      "Carbon Dioxide is now CO2; Glass Dust is now Glass Shards. Every word in material names starts with a capital letter.",
-      "Old save IDs migrate to remaining materials. Fertilizer dissolves into ordinary Water; Acid and Baking Soda produce Water, CO2 and local pressure. Preset fixtures use remaining materials.",
+      "Removed Fit canvas buttons and ten retired materials from the palette and reactions.",
+      "Renamed Carbon Dioxide to CO2 and Glass Dust to Glass Shards, with title-case material names.",
+      "Older saves migrate to remaining materials, including shared Acid and Baking Soda reactions.",
     ],
   },
   {
@@ -304,10 +316,11 @@ export const changelog = [
     date: "2026-10-02",
     title: "Rolling solids and faster physics",
     changes: [
-      "Solid bodies use friction, material-specific bounce, and angular momentum. Round shapes roll down slopes; ice slides more easily than wood; off-center forces and impacts create spin.",
-      "Rotating bodies resolve grid reservations without catching on themselves. Contact faces and other bodies are handled separately, with bounded support forces and weight transfer through stacks.",
-      "Chemistry skips inactive rules at stable temperatures while preserving heat, electricity, reactions and phase changes. Pressure gradients are reused until pressure changes; particle swaps and body force/update passes avoid unnecessary work.",
-      "Electricity and heat follow structural links through rotating solids. The Live wire fixture has a supported fuse and an insulated spark gap. Rolling, friction, torque, stacks, gravity directions, looping seams and rotating save/load have dedicated regression checks.",
+      "Solids roll, slide and spin using friction, bounce and angular momentum without catching on their own cells.",
+      "Inactive chemistry and repeated force calculations are skipped while preserving material interactions.",
+      "Development benchmarks improved 54,400-liquid simulation from 16.71 to 9.77 ms per tick and 43,305-powder simulation from 12.89 to 6.62 ms.",
+      "Dense tumbling solids became more expensive at 12.10 to 25.54 ms per tick as rotation and contact physics improved.",
+      "Electricity and heat follow structural links through rotating solids, with an updated Live wire example.",
     ],
   },
   {
@@ -315,10 +328,9 @@ export const changelog = [
     date: "2026-10-02",
     title: "Two-finger navigation",
     changes: [
-      "Two fingers pan the canvas and pinch to zoom around their midpoint on phones and tablets, including rotated views.",
-      "A short first-touch grace period prevents accidental dots when starting a gesture. Single-finger taps, strokes, painting, selection, inspection, and bucket fill still work.",
-      "Navigation cancels active drawing or selection movement without adding edits. Lifting one finger does not resume drawing; lift both before starting a new stroke.",
-      "Touch cancellation and focus changes stop held strokes. Canvas gestures keep the browser page from scrolling or zooming; navigation does not change particles or Undo/Redo history.",
+      "Two fingers pan and pinch around their midpoint, including rotated mobile views.",
+      "Gesture startup avoids accidental dots, and both fingers must lift before drawing resumes.",
+      "Navigation preserves particle state and history while preventing browser scrolling and zooming.",
     ],
   },
   {
@@ -326,13 +338,13 @@ export const changelog = [
     date: "2026-10-02",
     title: "Bucket fill and moving solid bodies",
     changes: [
-      "Added Fill (K) with Material, Foreground color, and Background color targets. The bucket fills connected areas with a single click or tap; material replacement is explicit, and right-click erases a region. Each fill supports Undo/Redo.",
-      "Added Static materials with Wall: fixed, indestructible to reactions and impacts, and still editable with drawing, erasing, and selection tools. Preset frames use Wall where they need permanent support.",
-      "Solids now fall as connected rigid shapes with mass, rotation, buoyancy, pressure forces, and collision momentum. Heavy impacts damage brittle surfaces; glass shatters, mineral solids form rubble, and wood can splinter into chips. Resting contact does not cause damage.",
-      "Rigid shapes keep their geometry when moved with Grab, cut into separate pieces, copied, resized, saved, or restored. They render as continuous bodies and Inspect reports mass, speed, and impact damage.",
-      "Simplified elastic connectivity: component membership is rebuilt only after links change, while gravity and spring integration continue every tick. Inspection queries nearby links instead of scanning the entire elastic world.",
-      "Consolidated hydrochloric acid, vinegar, and sulfurous acid into one Acid material. Old save IDs and absorbed liquids migrate automatically; foaming, hydrogen production, neutralization, and corrosion use the shared Acid rules.",
-      "Fixed diagonal body movement through wall corners, balanced support contacts, and updated containers and circuit fixtures for movable solids. Surface flames retain contact long enough to ignite cold fuel reliably.",
+      "Added undoable bucket fill for materials, foreground color and background color.",
+      "Added Static Wall as a fixed, indestructible support material.",
+      "Solids fall as connected bodies with mass, rotation, buoyancy, pressure response and impact damage.",
+      "Rigid shapes retain their geometry through grabbing, cutting, copying, resizing and saves.",
+      "Cached elastic connectivity reduced a 5,600-node benchmark from 8.77 to 8.26 ms per tick.",
+      "Merged the acids into one Acid material with compatible saves and shared reactions.",
+      "Fixed wall-corner collisions, balanced supports and flame contact during ignition.",
     ],
   },
   {
@@ -340,16 +352,15 @@ export const changelog = [
     date: "2026-10-02",
     title: "Fitted canvases, rotating gravity, and foaming chemistry",
     changes: [
-      "Removed Draw temperature; placed particles use their substance’s normal starting temperature. Replace now sits beside the material picker on the main drawing controls, with a compact toggle on phones.",
-      "Baking soda and vinegar or other acids create CO₂ and an energetic, finite burst of expanding foam. Foam rises, produces local pressure, and collapses back into liquid and gas.",
-      "Added local air temperature and barrier-aware atmospheric pressure/heat diffusion. Heating, cooling, boiling, condensation, combustion, and gas-producing/absorbing reactions affect the atmosphere; Inspect and Temperature view reveal it. Atmospheric heat survives saves and resizes.",
-      "Replaced generic Gas, Metal, Metal dust, Fuel, Acid, and Insulator with Methane, Steel, Steel powder, Kerosene, Hydrochloric acid, and Mica while preserving existing save IDs. Acid-metal reactions release hydrogen; acids leave glass, oils, and water intact. Sulfur dioxide dissolves into sulfurous acid, and glass melts into molten glass.",
-      "Fixed elastic objects catching on their own connected particles. Internal contact retains displacement and momentum instead of rigid bounce and friction; detached pieces still collide, and swept movement cannot skip walls.",
-      "The world fills the available drawing area without blank margins. New canvas dimensions come from the screen; removed X/Y size fields and desktop resize handles. Mobile properties offer one pixel resolution for the shorter side.",
-      "Rotating a phone keeps the world's particle grid, paint, links, and scene orientation fixed to the device. The view counters browser rotation and gravity follows the bottom of the screen.",
-      "Powders, liquids, gases, elastics, surface fire, smoke, lightning, rain, plants, and sponge drainage respect gravity in all four orientations.",
-      "Mobile controls always open from the bottom. Drawing, Paint, selection, inspection, zoom, pan, and directional tools use the same rotated view transform.",
-      "Changing mobile resolution keeps the crop/expansion placement preview and Undo/Redo. Old saved worlds remain compatible and fill the display without automatic cropping.",
+      "Removed placement temperature and moved Replace beside the material picker.",
+      "Baking Soda and acids produce CO2, expanding foam and localized pressure.",
+      "Added ambient and localized air temperature with barrier-aware heat and pressure transport.",
+      "Replaced generic substances with named materials and expanded corrosion, gas production and phase changes.",
+      "Fixed elastics catching on their own connected particles.",
+      "Canvases fill the available screen, with mobile resolution based on the shorter dimension.",
+      "Phone rotation preserves world coordinates while gravity follows screen-down.",
+      "Mobile controls stay at the bottom and share the rotated drawing and camera transform.",
+      "Resolution changes retain positioned cropping, Undo/Redo and compatible saves.",
     ],
   },
   {
@@ -357,15 +368,13 @@ export const changelog = [
     date: "2026-10-01",
     title: "Paint, elastic motion, and canvas handles",
     changes: [
-      "Added Paint with foreground and background layers. Foreground recolors occupied particles and travels with them; background strokes stay at their canvas coordinates. Paint never creates particles or changes their physics.",
-      "A circular color swatch opens a touch-friendly wheel, RGB/hex inputs, hue, saturation, brightness, opacity, and a palette. Opacity applies consistently once per stroke. Paint removal restores the original appearance without deleting materials.",
-      "Both paint layers survive local saves, export/import, Undo/Redo, and cropping or expanding the canvas. Copying particles includes their foreground coating. Paint has a rebindable O shortcut.",
-      "Elastics accelerate and fall faster. Internal damping controls deformation rather than slowing whole-body motion, and smaller physics steps stabilize spring tension.",
-      "Fixed thick bodies stalling when their own cells blocked movement. Leading edges move first, and elastic physics continues every simulation tick, including after cuts.",
-      "Elastics have a separate smooth rendering pass with connected skins, flexible joints, and thinning under tension. Temperature and pressure views, inspection, previews, and save thumbnails include the same elastic bodies.",
-      "Erasing cuts visible stretched links even through empty grid cells. Cut membranes disappear immediately, the resulting pieces stay separate, and tensioned strands can recoil.",
-      "Moved Fertilizer from Life into Powders.",
-      "Desktop canvases have draggable edge and corner handles. Drag to crop or add space, hold Shift on a corner to preserve aspect ratio, or Escape to cancel. Resizes remain undoable.",
+      "Added foreground and background painting without placing particles or changing physics.",
+      "Added a color wheel, RGB and hex inputs, color sliders, opacity and a palette.",
+      "Paint persists through editing, copying and saves.",
+      "Elastics fall faster, maintain tension and continue moving after cuts.",
+      "Elastic skins render separately and thin under tension across views and previews.",
+      "Erasing cuts stretched links and lets tensioned strands recoil.",
+      "Moved Fertilizer to Powders and added undoable desktop canvas resize handles.",
     ],
   },
   {
@@ -373,12 +382,12 @@ export const changelog = [
     date: "2026-10-01",
     title: "Elastics and bubbles",
     changes: [
-      "Rope, rubber, and jelly keep permanent spring connections from their drawn shape. They bend, stretch, react to gravity and pressure, and can be moved with Grab. Drawing against a solid anchors the attached end; erasing its support releases it.",
-      "Added soap, soapy water, and bubbles. Soap dissolves into water, agitation or warming makes bubbles, and bubbles rise through liquids and pop under heat, pressure, or with age.",
-      "Each substance has one palette entry. Alternate phases still exist in the simulation; Draw temperature lets you create hot, molten, gaseous, or frozen forms. Copy picks the substance and its sampled temperature.",
-      "Reorganized the palette by behavior, including Elastics, Life, Explosives, Devices, and Fiction. Ordinary solids remain rigid.",
-      "Mobile controls now group Playback and Edit at the top, followed by Tool & brush, material or tool properties, and View. Mobile material tiles have equal widths and heights.",
-      "Elastic links survive save/load, undo/redo, moving selections, and canvas resizing; copied selections receive independent links. Older saves remain compatible.",
+      "Added Rope, Rubber and Jelly with persistent spring connections, anchoring and elastic motion.",
+      "Added Soap, Soapy Water and Bubbles that rise and pop under heat, pressure or age.",
+      "Each substance has one palette entry while alternate phases remain simulated.",
+      "Reorganized material categories by behavior and made mobile grid tiles equally sized.",
+      "Mobile controls group playback, editing, brushes and properties logically.",
+      "Elastic links persist through saves, selections, copying and resizing.",
     ],
   },
   {
@@ -386,10 +395,9 @@ export const changelog = [
     date: "2026-10-01",
     title: "Phone rotation and fullscreen",
     changes: [
-      "Replaced the Controls caption with a grip and reduced the collapsed mobile dock to one row.",
-      "Fullscreen now has an always-visible exit button on mobile.",
-      "Rotating a phone into landscape refits the canvas and enters canvas focus. Tall canvases align left; the panel uses the side or bottom according to which fits the canvas best.",
-      "Side panels expand with a horizontal swipe, bottom panels with an upward swipe. Rotation preserves particles and returns to the portrait layout when turned upright.",
+      "Reduced the mobile dock to one row with a grip and a visible fullscreen exit.",
+      "Landscape refits the canvas and chooses side or bottom controls to preserve drawing space.",
+      "Swipe gestures expand panels while rotation preserves particles and restores portrait layout.",
     ],
   },
   {
@@ -397,10 +405,10 @@ export const changelog = [
     date: "2026-10-01",
     title: "Drawing and canvas space",
     changes: [
-      "Shift-drag previews a straight line. Control-drag previews a circle or rectangle outline using the current brush shape; release to draw, or Escape to cancel.",
-      "Scroll adjusts brush size. Control-scroll zooms around the pointer; middle-drag pans and Fit resets the view.",
-      "Phones now prioritize the canvas with a compact bottom dock. Swipe up or tap Controls for brush, history, tool properties, and zoom controls.",
-      "Canvas focus works on iPhone Safari without requiring browser fullscreen. The material browser still opens with its slide animation, including in landscape.",
+      "Shift-drag previews a line and Control-drag previews a circle or rectangle before drawing.",
+      "Scrolling changes brush size, Control-scroll zooms and middle-drag pans.",
+      "A compact mobile dock expands by tap or swipe to reveal editing controls.",
+      "Canvas focus works in iPhone Safari while retaining the animated material browser.",
     ],
   },
   {
@@ -408,7 +416,7 @@ export const changelog = [
     date: "2026-10-01",
     title: "Mobile toolbar",
     changes: [
-      "Fixed the Natural view switch overlapping Trash on mobile. Undo, Redo, Trash, visualization, and materials now share an aligned row with distinct touch targets.",
+      "Fixed the mobile View control overlapping Trash and aligned the toolbar touch targets.",
     ],
   },
   {
@@ -416,7 +424,7 @@ export const changelog = [
     date: "2026-10-01",
     title: "Tool names",
     changes: [
-      "Renamed Paint to Draw, Magnifier to Inspect, and Eyedropper to Copy in the tool picker and keyboard settings.",
+      "Renamed Paint to Draw, Magnifier to Inspect and Eyedropper to Copy.",
     ],
   },
   {
@@ -424,12 +432,11 @@ export const changelog = [
     date: "2026-10-01",
     title: "Energy and imagination",
     changes: [
-      "Every tool now has a matching line icon in a touch-friendly dropdown with keyboard navigation.",
-      "Added light, lasers, sound, neutrons, mirrors, solar cells, uranium, and glass dust.",
-      "Light reflects from mirrors, passes through glass and water, and powers solar cells. Lasers heat targets; sound makes pressure pulses; neutrons trigger uranium fission.",
-      "Added dragonfire, frostfire, antimatter, black holes, repulsors, and fairy dust, with a Fiction filter in the material palette.",
-      "Ray direction survives copying, resizing, undo, and save files. Existing saves and material IDs remain compatible.",
-      "Lightning brush size controls strike frequency: small brushes strike slowly, large brushes strike rapidly. Clicks and taps remain immediate.",
+      "Added matching line icons and keyboard navigation to the tool dropdown.",
+      "Added light, lasers, sound, neutrons, mirrors, solar cells, uranium and glass dust with corresponding interactions.",
+      "Added fictional materials including dragonfire, frostfire, antimatter, black holes, repulsors and fairy dust.",
+      "Ray directions persist through copying, resizing, history and saves.",
+      "Lightning brush size controls strike frequency while taps strike immediately.",
     ],
   },
   {
@@ -437,11 +444,10 @@ export const changelog = [
     date: "2026-10-01",
     title: "Canvas creation and resizing",
     changes: [
-      "Replaced Experiments with a plus button for creating named canvases with custom pixel dimensions, borders, and background colors.",
-      "Canvas properties can be edited beside the canvas size. Resizing includes a draggable placement preview for cropping or adding space.",
-      "Solid borders contain particles, looping borders connect opposite edges, and void borders let particles escape. Reactions, heat, and pressure follow the border type.",
-      "Canvas properties and complete particle state survive saves, exports, autosave, undo, and redo.",
-      "Fixed a timing issue that could override pause shortcuts pressed immediately after closing a menu.",
+      "Replaced Experiments with named canvases supporting custom dimensions, borders and background colors.",
+      "Canvas resizing includes a draggable preview for cropping or adding space.",
+      "Solid, looping and void borders govern particle escape, reactions, heat and pressure.",
+      "Canvas properties persist through saves and history, and menu closure no longer overrides pause shortcuts.",
     ],
   },
   {
@@ -449,56 +455,51 @@ export const changelog = [
     date: "2026-10-01",
     title: "About Sandlab",
     changes: [
-      "The question mark menu now shows the app version, changelog, and local storage information.",
-      "Removed the redundant controls list. Keyboard bindings remain in Settings → Keyboard.",
+      "The About menu shows app information and the changelog instead of redundant controls.",
     ],
   },
   {
     date: "2026-10-01",
     title: "Inspection and keyboard controls",
     changes: [
-      "Added a magnifier with live temperature, lifetime, charge, pressure, and material-specific readings.",
-      "Added an eyedropper to pick a material directly from the world.",
-      "Keyboard shortcuts can be changed, cleared, or reset in Settings → Keyboard. Help displays your current bindings.",
+      "Added live material inspection and an eyedropper for sampling the world.",
+      "Keyboard shortcuts can be edited, cleared or reset in Settings.",
     ],
   },
   {
     date: "2026-10-01",
     title: "Edit history and reaction timing",
     changes: [
-      "Added redo, cut, select all, delete selection, and common desktop shortcuts.",
-      "Added this changelog under Help → What’s new.",
-      "Gunpowder burns progressively and builds pressure; liquid fuel burns at exposed surfaces.",
-      "TNT heats up before a delayed reaction; strong pressure can still trigger it rapidly.",
-      "Burning coal, wood, and gunpowder emit hot embers. Conductors spark across small electrical gaps.",
-      "Cold water quenches without instant vaporization; brine retains salt through boiling and freezing.",
-      "Removed Terrarium. New sessions start with an empty world.",
+      "Added Redo, selection editing, desktop shortcuts and the changelog.",
+      "Gunpowder burns progressively, liquid fuel burns at exposed surfaces and TNT reacts after a delay.",
+      "Burning fuel emits embers and conductors spark across small gaps.",
+      "Cold water quenches flames and Brine retains salt during boiling and freezing.",
+      "Removed Terrarium and made empty worlds the default.",
     ],
   },
   {
     date: "2026-10-01",
     title: "Public access and security",
     changes: [
-      "Made Sandlab playable without a ChatGPT sign-in.",
-      "Blocked remote scripts and network connections, removed remote fonts, and hardened save imports.",
+      "Sandlab became playable without a ChatGPT sign-in.",
+      "Blocked remote scripts and connections, removed remote fonts and hardened save imports.",
     ],
   },
   {
     date: "2026-10-01",
     title: "Materials and experiments",
     changes: [
-      "Expanded the palette to 71 materials, including copper, sodium, clay, fertilizer, and liquid nitrogen.",
-      "Added oxidation, neutralization, nutrient transport, and ceramic firing.",
-      "Added Reaction bench and Pottery kiln.",
+      "Expanded the palette to 71 materials, including Copper, Sodium, Clay, Fertilizer and Liquid Nitrogen.",
+      "Added oxidation, neutralization, nutrient transport, ceramic firing and two example worlds.",
     ],
   },
   {
     date: "Earlier updates",
     title: "Sandbox controls",
     changes: [
-      "Added lightning, growing plants, bloom, absorption, temperature tools, and force tools.",
-      "Added rectangle and brush selections, copying, pasting, dragging, and deselection.",
-      "Added grouped settings and a full-height mobile materials palette.",
+      "Added lightning, plants, bloom, absorption, temperature tools and force tools.",
+      "Added brush and rectangle selections with copying, pasting, dragging and deselection.",
+      "Added grouped settings and a full-height mobile material palette.",
     ],
   },
 ];
