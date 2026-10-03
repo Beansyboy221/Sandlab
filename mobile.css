@@ -607,6 +607,9 @@
 .mobile-layout .toolbox:not(.expanded) #device-facing-property {
   display: none;
 }
+.mobile-layout .toolbox:not(.expanded) #portal-properties {
+  display: none;
+}
 .mobile-layout .toolbox.expanded .draw-controls .tool-properties {
   flex: 1 1 100%;
   gap: 8px;

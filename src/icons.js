@@ -1,4 +1,7 @@
 const paths = {
+  link: "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2",
+  unlink:
+    "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M7 11l-3 3a5 5 0 0 0 7 7l2-2M3 3l18 18",
   history: "M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2",
   target: "M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M12 8v8M8 12h8",
   bucket:

@@ -54,11 +54,19 @@ export function pasteRegion(
   y = Math.round(y);
   let count = 0;
   const identities = new Map();
+  const portalIds = new Map();
   if (!preserveIds)
     for (let n = 0; n < clipboard.width * clipboard.height; n++) {
       const id = clipboard.arrays.elasticId?.[n];
       if (id && (!clipboard.mask || clipboard.mask[n]) && !identities.has(id))
         identities.set(id, world.elastic.allocate());
+      const portal = clipboard.arrays.portalId?.[n];
+      if (
+        portal &&
+        (!clipboard.mask || clipboard.mask[n]) &&
+        !portalIds.has(portal)
+      )
+        portalIds.set(portal, world.portals.allocate());
     }
   for (let row = 0; row < clipboard.height; row++)
     for (let col = 0; col < clipboard.width; col++) {
@@ -86,6 +94,10 @@ export function pasteRegion(
           world[`bond${d}`][target] =
             identities.get(world[`bond${d}`][target]) || 0;
       }
+      if (!preserveIds && world.portalId[target]) {
+        world.portalId[target] = portalIds.get(world.portalId[target]);
+        world.portalLink[target] = portalIds.get(world.portalLink[target]) || 0;
+      }
       // Electrical tick stamps are relative to the copied moment, rather than the old world clock.
       world.chargedAt[target] = clipboard.arrays.chargedAt[source]
         ? Math.max(
@@ -96,6 +108,7 @@ export function pasteRegion(
       count++;
     }
   world.elastic.rebuild(world);
+  world.portals.rebuild(world);
   return count;
 }
 // Validate the whole move before clearing any source cells. Overlap is safe:

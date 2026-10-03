@@ -1,4 +1,5 @@
 import { circuitDirection } from "./sim/circuits.js";
+import { PortalInput } from "./portal-input.js";
 import { TouchNavigation } from "./touch-navigation.js";
 import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
@@ -26,6 +27,7 @@ export class Input {
     selection,
     onRead,
     drawingPause,
+    onNotice = () => {},
   ) {
     this.canvas = canvas;
     canvas.tabIndex = 0;
@@ -40,6 +42,13 @@ export class Input {
     this.selection = selection;
     this.drawingPause = drawingPause;
     this.lastSolidBrush = null;
+    this.portalInput = new PortalInput(
+      world,
+      renderer,
+      state,
+      onStroke,
+      onNotice,
+    );
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     const pointerDown = (e) => {
       if (e.button === 1) {
@@ -59,6 +68,20 @@ export class Input {
       canvas.focus({ preventScroll: true });
       if (e.pointerType !== "touch") canvas.setPointerCapture(e.pointerId);
       const point = renderer.point(e.clientX, e.clientY);
+      const portalDrawing =
+        state.tool === "paint" && state.material === M.Portal;
+      if (portalDrawing && this.pointers.size) return;
+      if (
+        this.portalInput.begin(
+          point,
+          e.button === 2 || state.erase,
+          e.shiftKey || e.ctrlKey,
+        )
+      ) {
+        this.pointers.set(e.pointerId, { ...point, portalLink: true });
+        renderer.cursor = null;
+        return;
+      }
       if (readTools.has(state.tool)) {
         const tool = state.tool;
         this.pointers.set(e.pointerId, { ...point, readOnly: tool });
@@ -93,6 +116,8 @@ export class Input {
         ["paint", "erase", "recolor"].includes(state.tool) &&
         (e.shiftKey || e.ctrlKey);
       if (geometric && this.pointers.size) return;
+      if (portalDrawing && e.button === 0 && !state.erase)
+        world.portals.beginStroke(Number(state.portalFacing ?? 7));
       if (
         state.tool === "paint" &&
         !state.erase &&
@@ -152,6 +177,11 @@ export class Input {
         last.clientY = e.clientY;
         return;
       }
+      if (last?.portalLink) {
+        this.portalInput.move(point);
+        renderer.cursor = null;
+        return;
+      }
       this.hover(point, last?.selecting && last.erase, e.shiftKey);
       if (last?.gesture) {
         last.gesture.end = this.bounded(point);
@@ -183,6 +213,11 @@ export class Input {
     };
     const pointerEnd = (e) => {
       const type = e.type;
+      if (this.pointers.get(e.pointerId)?.portalLink)
+        this.portalInput.end(
+          renderer.point(e.clientX, e.clientY),
+          type !== "pointerup",
+        );
       const gesture = this.pointers.get(e.pointerId)?.gesture;
       if (gesture) {
         if (type === "pointerup") {
@@ -219,6 +254,7 @@ export class Input {
         } else selection.cancel();
       }
       this.pointers.delete(e.pointerId);
+      if (!this.pointers.size) world.portals.endStroke();
       drawingPause?.end(e.pointerId, type !== "pointerup");
       if (e.pointerType === "touch") {
         renderer.cursor = null;
@@ -316,6 +352,7 @@ export class Input {
     this.cancelDrawing();
   }
   cancelDrawing() {
+    this.portalInput.cancel();
     this.pointers.clear();
     this.renderer.gesture = null;
     this.drawingPause?.cancel();
@@ -511,6 +548,7 @@ export class Input {
         !point.readOnly &&
         !point.gesture &&
         !point.pan &&
+        !point.portalLink &&
         !(frozen && this.drawingPause.pointers.has(id) && !changed)
       )
         this.paint(point, point, point.erase, point.dx, point.dy);

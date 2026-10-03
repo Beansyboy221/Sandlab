@@ -2,6 +2,7 @@ import { LaserGuidance, wrappedDelta } from "./missile-guidance.js";
 import { stepMachine, machineFits } from "./machine-motion.js";
 import { materials, M } from "./materials.js";
 import { clearSight } from "./predation.js";
+import { transportMissile } from "./portal-transport.js";
 export const MAX_MISSILES = 32;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const surfaces = Uint8Array.from(materials, (m) =>
@@ -226,6 +227,13 @@ export class Missiles {
           Math.floor(a.x + Math.cos(a.angle) * 2),
           Math.floor(a.y + Math.sin(a.angle) * 2),
         );
+        const portal =
+          w.cells[i] === M.Portal
+            ? i
+            : nose >= 0 && w.cells[nose] === M.Portal
+              ? nose
+              : -1;
+        if (portal >= 0 && transportMissile(w, a, portal)) break;
         if (surfaces[w.cells[i]] || (nose >= 0 && surfaces[w.cells[nose]])) {
           this.detonate(a);
           break;
@@ -276,7 +284,7 @@ export class Missiles {
   }
   snapshot() {
     return this.items.map(
-      ({ id, material, x, y, angle, vx, vy, life, temperature, health }) => ({
+      ({
         id,
         material,
         x,
@@ -286,6 +294,19 @@ export class Missiles {
         vy,
         life,
         temperature,
+        health,
+        portalUntil,
+      }) => ({
+        id,
+        material,
+        x,
+        y,
+        angle,
+        vx,
+        vy,
+        life,
+        temperature,
+        portalCooldown: Math.max(0, (portalUntil || 0) - this.world.tick),
         ...(materials[material].vehicle ? { health } : {}),
       }),
     );
@@ -308,6 +329,7 @@ export class Missiles {
       ),
       ...(materials[a.material].vehicle ? { health: a.health } : {}),
       target: -1,
+      portalUntil: this.world.tick + (a.portalCooldown || 0),
     }));
     this.nextId = Math.max(0, ...this.items.map((a) => a.id)) + 1;
     this.scanTick = -100;
@@ -328,6 +350,10 @@ export function validateMissiles(data) {
       !Number.isInteger(a.material) ||
       !materials[a.material]?.projectile ||
       !Number.isInteger(a.life) ||
+      (a.portalCooldown !== undefined &&
+        (!Number.isInteger(a.portalCooldown) ||
+          a.portalCooldown < 0 ||
+          a.portalCooldown > 12)) ||
       (materials[a.material]?.vehicle
         ? a.life !== 0 ||
           !Number.isFinite(a.health) ||

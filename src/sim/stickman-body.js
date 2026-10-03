@@ -1,6 +1,7 @@
 import { materials, M } from "./materials.js";
 
 import { actorProfile, humanProfile } from "./creature-profiles.js";
+import { transportActor } from "./portal-transport.js";
 export const restX = humanProfile.x;
 export const restY = humanProfile.y;
 export const links = humanProfile.links;
@@ -57,6 +58,7 @@ export function integrateBody(
   crouch = false,
   lift = 0,
 ) {
+  transportActor(w, a);
   const profile = actorProfile(a.material),
     { links, lengths, x: restX, y: restY } = profile;
   w.environment.sample(a.x[2], a.y[2]);

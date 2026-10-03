@@ -1,4 +1,6 @@
 import { airflowFields, MAX_AIR_SPEED } from "./sim/airflow.js";
+import { portalFields, PORTAL_COOLDOWN } from "./sim/portals.js";
+import { validatePortalState } from "./sim/portal-validation.js";
 import { validateMissiles } from "./sim/missiles.js";
 import { rigidFields } from "./sim/rigid-bodies.js";
 import { validateStickmen } from "./sim/stickmen.js";
@@ -17,6 +19,8 @@ const KEY = "sandlab.saves.v1",
 const arrays = [...particleStateFields, "backgroundPaint"];
 const floatFields = [...elasticFloatFields, ...rigidFields];
 export function snapshot(world, typed = false) {
+  world.portals.ensure();
+  world.portals.pruneLinks();
   return {
     version: 1,
     stickmen: world.stickmen.snapshot(),
@@ -104,6 +108,7 @@ export function validateSnapshot(data) {
         "growth",
         "storedLiquid",
         "storedAmount",
+        ...portalFields,
       ].includes(key)
         ? new Uint32Array(length)
         : undefined);
@@ -135,19 +140,23 @@ export function validateSnapshot(data) {
               : key === "pigment" ||
                   key === "backgroundPaint" ||
                   key === "chargedAt" ||
+                  key === "portalId" ||
+                  key === "portalLink" ||
                   ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
                     key,
                   )
                 ? 4294967295
-                : key === "life"
-                  ? 65535
-                  : key === "storedAmount"
-                    ? 48
-                    : ["cells", "clone", "residue", "storedLiquid"].includes(
-                          key,
-                        )
-                      ? materials.length - 1
-                      : 255;
+                : key === "portalCooldown"
+                  ? PORTAL_COOLDOWN
+                  : key === "life"
+                    ? 65535
+                    : key === "storedAmount"
+                      ? 48
+                      : ["cells", "clone", "residue", "storedLiquid"].includes(
+                            key,
+                          )
+                        ? materials.length - 1
+                        : 255;
     const minimum =
       key === "temp"
         ? -273
@@ -167,6 +176,7 @@ export function validateSnapshot(data) {
       throw Error("This save contains invalid particle data.");
   }
   const elasticIds = new Set();
+  validatePortalState(data);
   for (let i = 0; i < length; i++) {
     if (!data.arrays.cells[i] && data.arrays.pigment?.[i])
       throw Error("Invalid foreground paint on an empty cell.");
@@ -290,6 +300,7 @@ export function restore(world, data) {
     }
   world.elastic.rebuild(world);
   world.circuits.rebuild(world);
+  world.portals.rebuild(world);
   world.stickmen.world = world;
   world.stickmen.restore(data.stickmen);
   world.missiles.world = world;

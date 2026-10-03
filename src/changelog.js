@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.16.0",
+    date: "2026-10-03",
+    title: "Linked portals",
+    changes: [
+      "Portal is a new indestructible Static material. Each draw stroke makes a separate shape. Drag from one Portal to another to link them in a bidirectional pair; matching colors and connection lines identify pairs. Link and Unlink controls live in Tool, with automatic or directional exits.",
+      "Powders, liquids, gases, flames and laser rays teleport on entry. Solid shapes, elastic networks, creatures, Players, missiles and vehicles pass as whole objects when they fit. Portals rotate retained motion toward the exit and preserve particle properties, bodies and bonds.",
+      "Unlinked portals act as solid surfaces. Blocked or undersized exits retain incoming matter, and short cooldowns prevent instant teleport loops. Links and cooldowns survive save/load, Undo/Redo and positioned canvas resizing; copied pairs receive independent identities.",
+    ],
+  },
+  {
     version: "1.15.2",
     date: "2026-10-03",
     title: "Keyboard bindings and missile names",

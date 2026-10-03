@@ -75,10 +75,10 @@ test("fill handles the maximum supported world without recursion or duplicate wr
   assert.equal(w.count, 200000);
   assert.equal(fillRegion(w, 399, 499, { material: M.Sand }), 0);
 });
-test("Wall is the only static material and survives every destructive system and force tool", () => {
+test("Wall and Portal are static; Wall survives every destructive system and force tool", () => {
   assert.deepEqual(
     paletteMaterials.filter((m) => m.category === "static").map((m) => m.name),
-    ["Wall"],
+    ["Wall", "Portal"],
   );
   const w = new World(32, 32),
     i = at(w, 15, 15);

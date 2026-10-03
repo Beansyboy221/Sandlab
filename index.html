@@ -238,6 +238,38 @@
                 <option value="6">↑</option>
               </select>
             </label>
+            <div id="portal-properties" class="property-group" hidden>
+              <button
+                id="portal-link"
+                class="property-button"
+                type="button"
+                aria-pressed="false"
+                title="Drag between Portal shapes to link them"
+              >
+                <span data-icon="link" aria-hidden="true"></span
+                ><span>Link</span>
+              </button>
+              <button
+                id="portal-unlink"
+                class="property-button"
+                type="button"
+                aria-pressed="false"
+                title="Tap a Portal to unlink its pair"
+              >
+                <span data-icon="unlink" aria-hidden="true"></span
+                ><span>Unlink</span>
+              </button>
+              <label class="property-check"
+                >Exit
+                <select id="portal-facing" aria-label="Portal exit direction">
+                  <option value="7">Auto</option>
+                  <option value="0">→</option>
+                  <option value="2">↓</option>
+                  <option value="4">←</option>
+                  <option value="6">↑</option>
+                </select>
+              </label>
+            </div>
             <label
               id="replace-property"
               class="draw-replace"

@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.15.2",
+  "version": "1.16.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -37,7 +37,8 @@
     "bench:entities": "node tests/entities-benchmark.js",
     "bench:collisions": "node tests/collision-benchmark.js",
     "check": "node scripts/check.mjs",
-    "inspect": "node scripts/inspect.mjs"
+    "inspect": "node scripts/inspect.mjs",
+    "test:portals": "python3 tests/portals_check.py"
   },
   "devDependencies": {
     "prettier": "3.9.9"

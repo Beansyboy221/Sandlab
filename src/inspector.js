@@ -136,6 +136,28 @@ export function cellProperties(world, point) {
       ],
     };
   }
+  if (m.id === M.Portal) {
+    world.portals.ensure();
+    const portal = world.portals.shapes.get(world.portalId[i]);
+    return {
+      ...cell,
+      rows: [
+        ["Portal", `#${portal?.id ?? 0}`],
+        [
+          "Linked to",
+          portal?.link && world.portals.shapes.has(portal.link)
+            ? `#${portal.link}`
+            : "Unlinked",
+        ],
+        ["Size", `${portal?.cells.length ?? 0} cells`],
+        [
+          "Exit",
+          ["Right", "Down", "Left", "Up"][portal?.facing / 2] || "Automatic",
+        ],
+        ["Temperature", `${world.temp[i].toFixed(1)}°C`],
+      ],
+    };
+  }
   world.fields.airflow.sample(world.fields, x, y);
   const rows = [
     [

@@ -17,6 +17,8 @@ import { materials, M, canonicalMaterial } from "./materials.js";
 import { Fields } from "./fields.js";
 import { react } from "./reactions.js";
 import { moveSurfaceFlame } from "./combustion.js";
+import { Portals, portalFields } from "./portals.js";
+import { transportParticle } from "./portal-transport.js";
 
 export class World {
   constructor(width = 320, height = 200, seed = 17421) {
@@ -51,6 +53,11 @@ export class World {
     this.growth = new Uint8Array(this.length);
     this.storedLiquid = new Uint8Array(this.length);
     this.storedAmount = new Uint8Array(this.length);
+    for (const key of portalFields)
+      this[key] =
+        key === "portalCooldown"
+          ? new Uint8Array(this.length)
+          : new Uint32Array(this.length);
     for (const key of elasticFields)
       this[key] = new (
         elasticFloatFields.includes(key)
@@ -87,6 +94,7 @@ export class World {
     this.circuits = new Circuits(this);
     this.fallDistance = new Uint8Array(this.length);
     this.particleFields.push(this.fallDistance);
+    this.portals = new Portals(this);
   }
   random() {
     let s = this.seed | 0;
@@ -130,6 +138,8 @@ export class World {
       );
       return;
     }
+    this.portals.remove(i);
+    for (const key of portalFields) this[key][i] = 0;
     if (!this.cells[i] && id) {
       this.chunks[this.chunk(i)]++;
       this.count++;
@@ -179,6 +189,7 @@ export class World {
     this.residue[i] = 0;
     this.variant[i] = this.random() * 255;
     this.heading[i] = materials[id].ray ? this.variant[i] >> 5 : 0;
+    if (id === M.Portal) this.portals.add(i);
     if (materials[id].elasticity) {
       this.elastic.world = this;
       this.elastic.add(i, connectElastic);
@@ -215,6 +226,8 @@ export class World {
     }
   }
   clear() {
+    this.portals.clear();
+    for (const key of portalFields) this[key].fill(0);
     this.stickmen.world = this;
     this.stickmen.restore();
     this.sound.clear();
@@ -301,6 +314,7 @@ export class World {
   }
   tryMove(i, x, y, vertical) {
     const j = this.index(x, y);
+    this.movedTo = j;
     if (j < 0) {
       if (this.border === "void") {
         this.set(i, 0);
@@ -308,6 +322,13 @@ export class World {
       }
       return false;
     }
+    if (this.cells[j] === M.Portal)
+      return this.teleport(
+        i,
+        j,
+        x - (i % this.width),
+        y - Math.floor(i / this.width),
+      );
     if (j === i || !this.canMove(i, j, vertical) || !poreExchange(this, i, j))
       return false;
     const category = materials[this.cells[i]].category;
@@ -316,6 +337,9 @@ export class World {
     if (falling && vertical > 0)
       this.fallDistance[j] = Math.min(24, this.fallDistance[j] + 1);
     return true;
+  }
+  teleport(i, contact, dx, dy) {
+    return transportParticle(this, i, contact, dx, dy);
   }
   swap(i, j) {
     if (
@@ -502,6 +526,10 @@ export class World {
             }
             break;
           }
+          if (this.cells[j] === M.Portal) {
+            if (this.tryMove(i, nx, ny, 0)) return;
+            break;
+          }
           if (!this.canMove(i, j, 0)) break;
           target = j;
         }
@@ -524,6 +552,7 @@ export class World {
     this.temp[j] += transfer;
   }
   step() {
+    this.portals.world = this;
     this.elastic.world = this;
     this.rigid.world = this;
     this.tick++;
@@ -558,6 +587,7 @@ export class World {
             i = y * w + x;
           if (!this.cells[i] || this.updated[i] === this.tick) continue;
           this.updated[i] = this.tick;
+          if (this.portalCooldown[i]) this.portalCooldown[i]--;
           if (
             this.mechanics.temperatureSimulation !== false &&
             (i + this.tick) % 3 === 0

@@ -1,4 +1,5 @@
 import { drawCircuits } from "./sim/circuit-renderer.js";
+import { portalColor, drawPortalLinks } from "./portal-renderer.js";
 import { LightOverlay } from "./lighting-renderer.js";
 import { drawMissiles } from "./sim/missile-renderer.js";
 import { canvasView, transformPoint, inversePoint } from "./canvas-view.js";
@@ -208,6 +209,7 @@ export class Renderer {
     c.stroke();
   }
   draw() {
+    this.world.portals.ensure();
     if (
       this.buffer.width !== this.world.width ||
       this.buffer.height !== this.world.height
@@ -249,7 +251,9 @@ export class Renderer {
       if (id) {
         const base = thermal
           ? heatColors[Math.max(0, Math.min(1600, Math.round(temp[i]) + 100))]
-          : colors[id];
+          : id === M.Portal
+            ? portalColor(this.world.portals, this.world.portalId[i])
+            : colors[id];
         const shade = (variant[i] / 255 - 0.5) * 22;
         r = base[0] + shade;
         g = base[1] + shade;
@@ -427,6 +431,7 @@ export class Renderer {
       c.stroke();
     }
     this.selectionOverlay.draw(c, v, this.world, this.selection);
+    drawPortalLinks(c, v, this.world, this.showPortalLinks, this.portalDrag);
     drawGesturePreview(c, v, this.world, this.gesture);
     if (this.cursor && this.brushOutline) {
       const { x, y, radius, shape, erase, selection } = this.cursor;

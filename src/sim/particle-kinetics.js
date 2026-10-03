@@ -7,7 +7,7 @@ export function moveKinetic(w, i, x, y) {
     m = materials[w.cells[i]];
   if (
     !mode &&
-    (!m.fragment ||
+    ((!m.fragment && !w.portalCooldown[i]) ||
       Math.max(Math.abs(w.velocityX[i]), Math.abs(w.velocityY[i])) < 0.05)
   )
     return false;
@@ -29,6 +29,10 @@ export function moveKinetic(w, i, x, y) {
   } else {
     w.velocityX[i] *= 0.94;
     w.velocityY[i] *= 0.94;
+    if (w.portalCooldown[i] && !m.gas) {
+      w.velocityX[i] = clamp(w.velocityX[i] + w.gravityX * 0.12);
+      w.velocityY[i] = clamp(w.velocityY[i] + w.gravityY * 0.12);
+    }
   }
   w.offsetX[i] += w.velocityX[i];
   w.offsetY[i] += w.velocityY[i];
@@ -45,7 +49,8 @@ export function moveKinetic(w, i, x, y) {
       const falling = sign * (axis ? w.environment.y : w.environment.x);
       if (w.tryMove(i, nx, ny, falling)) {
         if (j < 0) return true;
-        i = j;
+        if (w.movedTo !== j) return true;
+        i = w.movedTo;
         x = i % w.width;
         y = Math.floor(i / w.width);
         w[offset][i] -= sign;

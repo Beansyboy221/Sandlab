@@ -1,4 +1,4 @@
-import { canonicalMaterial, materials } from "./materials.js";
+import { canonicalMaterial, materials, M } from "./materials.js";
 import { compositePaint, rgba } from "./paint.js";
 
 // Iterative four-neighbor flood fill: bounded memory even for an empty large world.
@@ -56,10 +56,12 @@ export function fillRegion(w, x, y, options = {}, beforeChange = () => {}) {
     });
   }
   beforeChange();
+  if (layer === "material" && target === M.Portal) w.portals.beginStroke();
   for (let n = 0; n < tail; n++) {
     const i = queue[n];
     if (layer === "material") w.set(i, target);
     else field[i] = newColor;
   }
+  if (layer === "material" && target === M.Portal) w.portals.endStroke();
   return tail;
 }

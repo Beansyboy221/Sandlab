@@ -1,4 +1,12 @@
 export const groups = {
+  portals: [
+    "portals",
+    "materials",
+    "selection",
+    "level",
+    "security",
+    "entities-modes",
+  ],
   quick: ["settings", "frame-clock", "editor", "materials", "security"],
   collisions: [
     "rigid-physics",
@@ -57,6 +65,7 @@ export const groups = {
   lighting: ["lighting", "energy", "inspection"],
 };
 export const browserChecks = {
+  portals: ["portals_check"],
   quick: [],
   collisions: ["rigid_physics_check"],
   elastics: ["elastic_contacts_check", "elastics_check"],

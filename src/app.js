@@ -197,6 +197,15 @@ function updateToolProperties() {
   syncBrushControl();
   if (selection.dragging && !state.paused) setPaused(true);
   const tool = state.tool;
+  const portal = tool === "paint" && state.material === M.Portal;
+  $("portal-properties").hidden = !portal;
+  renderer.showPortalLinks = portal;
+  for (const mode of ["link", "unlink"]) {
+    const button = $(`portal-${mode}`),
+      active = state.portalMode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
   document.querySelector(".toolbox").dataset.tool = tool;
   const materialTool =
     tool === "paint" || (tool === "fill" && state.fillLayer === "material");
@@ -645,7 +654,18 @@ const input = new Input(
     }
   },
   drawingPause,
+  toast,
 );
+for (const mode of ["link", "unlink"])
+  $(`portal-${mode}`).addEventListener("click", () => {
+    input.cancel();
+    state.portalMode = state.portalMode === mode ? "draw" : mode;
+    updateToolProperties();
+  });
+$("portal-facing").addEventListener("change", () => {
+  input.cancel();
+  state.portalFacing = Number($("portal-facing").value);
+});
 const playerControls = new PlayerControls(
   $("canvas-wrap"),
   world,

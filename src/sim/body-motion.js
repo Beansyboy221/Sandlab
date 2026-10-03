@@ -1,6 +1,7 @@
 import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
 import { collide, fracture } from "./body-collisions.js";
+import { transportRigid } from "./portal-transport.js";
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 const neighbors = [
   [1, 0],
@@ -157,6 +158,7 @@ export function stepBodies(solver) {
         solver.commit(body, next, false);
         Object.assign(p, next);
       } else {
+        if (transportRigid(solver, body, p, hit)) break;
         if (!hit.internal && hit.i >= 0) solver.collidedBodies.add(body.ids[0]);
         for (let c = 0; c <= (hit.others?.length || 0); c++) {
           const contact = c ? hit.others[c - 1] : hit;

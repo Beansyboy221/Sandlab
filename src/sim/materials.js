@@ -861,6 +861,20 @@ definitions.push([
   { movable: false, lightEmission: 1.4, glow: 0.65, resistance: 0.7 },
 ]);
 definitions.push(...deviceMaterials, ...fragmentMaterials);
+// Append only: existing worlds encode material IDs directly.
+definitions.push([
+  "Portal",
+  "static",
+  "#9b8af5",
+  99,
+  {
+    static: true,
+    resistance: 1,
+    conductivity: 0.01,
+    glow: 0.45,
+    lightEmission: 0.45,
+  },
+]);
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {

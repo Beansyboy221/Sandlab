@@ -1,4 +1,5 @@
 import { materials, M } from "./materials.js";
+import { portalContact, transportMissile } from "./portal-transport.js";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const obstacles = Uint8Array.from(materials, (m) =>
   Number(m.id && !m.gas && m.category !== "liquid"),
@@ -70,6 +71,8 @@ export function stepMachine(w, a) {
     tx * across + gx * vertical + clamp(w.fields.gradientX[f], -3, 3) * 0.01;
   a.vy =
     ty * across + gy * vertical + clamp(w.fields.gradientY[f], -3, 3) * 0.01;
+  const contact = portalContact(w, a.x, a.y, a.vx, a.vy, 2.2);
+  if (contact >= 0 && transportMissile(w, a, contact)) return true;
   let impact = 0;
   const grounded = blocked(w, a.x + gx * 0.7, a.y + gy * 0.7, gx, gy);
   const steps = Math.max(1, Math.ceil(Math.hypot(a.vx, a.vy) * 3));

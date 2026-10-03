@@ -285,6 +285,7 @@ export class Stickmen {
       direction: a.direction,
       cooldown: a.cooldown,
       attackCooldown: a.attackCooldown || 0,
+      portalCooldown: Math.max(0, (a.portalUntil || 0) - this.world.tick),
       bonds: Array.from(a.bonds),
       ...Object.fromEntries(bodyFields.map((f) => [f, Array.from(a[f])])),
     }));
@@ -299,6 +300,7 @@ export class Stickmen {
       grounded: false,
       cooldown: d.cooldown ?? 0,
       attackCooldown: d.attackCooldown ?? 0,
+      portalUntil: this.world.tick + (d.portalCooldown || 0),
       targetId: 0,
       behavior: "Patrolling",
       replan: 0,
@@ -338,6 +340,10 @@ export function validateStickmen(data) {
         (!Number.isInteger(a.attackCooldown) ||
           a.attackCooldown < 0 ||
           a.attackCooldown > 30)) ||
+      (a.portalCooldown !== undefined &&
+        (!Number.isInteger(a.portalCooldown) ||
+          a.portalCooldown < 0 ||
+          a.portalCooldown > 12)) ||
       !Number.isFinite(a.health) ||
       a.health < 0 ||
       a.health > 100 ||

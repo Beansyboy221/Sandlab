@@ -25,8 +25,8 @@ with sync_playwright() as p:
         if not page.evaluate('sandlab.state.paused'):page.locator('#play-btn').click()
         page.evaluate("async()=>{window.M=(await import('./src/sim/materials.js')).M;sandlab.world.clear();}")
         open_palette(page,mobile)
-        assert page.locator('#catalog-total').inner_text()=='62'
-        assert page.locator('#materials .material').count()==62
+        assert page.locator('#catalog-total').inner_text()=='63'
+        assert page.locator('#materials .material').count()==63
         assert not set(page.locator('.material-name').all_text_contents()) & {'Player','Cat','Drone','Heater','Battery'}
         page.locator('#entities-tab').click()
         assert page.locator('#entities-tab').get_attribute('aria-selected')=='true'

@@ -19,7 +19,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Heater, 38);
-  assert.equal(materials.length, 129);
+  assert.equal(materials.length, 130);
   assert.equal(M["Liquid Nitrogen"], 71);
   for (const m of materials)
     for (const key of [
@@ -42,7 +42,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 test("removed materials are unavailable, names use capitals, and renamed substances preserve IDs", () => {
   assert.equal(M.CO2, 61);
   assert.equal(M["Glass Shards"], 79);
-  assert.equal(paletteMaterials.length, 62);
+  assert.equal(paletteMaterials.length, 63);
   const retired = materials.filter((m) => m.retired);
   assert.equal(retired.length, 12);
   for (const m of retired) {

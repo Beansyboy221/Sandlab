@@ -5,7 +5,8 @@ import {
   segmentHitsBrush,
   pointInTriangle,
 } from "./elastic-geometry.js";
-import { materials } from "./materials.js";
+import { materials, M } from "./materials.js";
+import { transportElastics } from "./portal-elastics.js";
 
 export const elasticFields = [
   "elasticId",
@@ -89,7 +90,7 @@ export class Elasticity {
   }
   support(i) {
     const m = materials[this.world.cells[i]];
-    return m.id && !m.movable && !m.elasticity && !m.gas;
+    return m.id && m.id !== M.Portal && !m.movable && !m.elasticity && !m.gas;
   }
   rebuild(world = this.world) {
     this.world = world;
@@ -230,6 +231,7 @@ export class Elasticity {
     return i;
   }
   step() {
+    transportElastics(this);
     // Substeps let gravity act promptly without destabilizing stiff spring networks.
     for (let n = 0; n < 3 && this.locations.size; n++) this.substep(1 / 3);
   }

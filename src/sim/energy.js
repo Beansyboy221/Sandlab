@@ -87,6 +87,10 @@ export function moveRay(w, i, x, y, m) {
     }
     if (j === i) return;
     const target = materials[w.cells[j]];
+    if (target.id === M.Portal) {
+      w.teleport(i, j, dx, dy);
+      return;
+    }
     if (!target.id) {
       w.swap(i, j);
       i = j;

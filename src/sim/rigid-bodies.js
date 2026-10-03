@@ -257,7 +257,7 @@ export class RigidBodies {
       this.bodyOf.get(w.elasticId[j]) === body
     );
   }
-  plan(body, p, contactsOnly = false) {
+  plan(body, p, contactsOnly = false, teleport = false) {
     const w = this.world,
       cos = Math.cos(p.angle),
       sin = Math.sin(p.angle);
@@ -286,7 +286,7 @@ export class RigidBodies {
         iy = Math.floor(oldY - 1e-6);
       let axis = gx !== ix && gy === iy ? 0 : 1;
       // Sweep from the continuous position, not a displaced raster reservation.
-      if (gx !== ix && gy !== iy) {
+      if (!teleport && gx !== ix && gy !== iy) {
         const sideX = w.index(gx, iy),
           sideY = w.index(ix, gy);
         if (!this.passable(sideX, body)) {

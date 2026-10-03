@@ -16,7 +16,7 @@ with sync_playwright() as p:
  for width,height,touch in [(1440,900,False),(390,844,True),(844,390,True)]:
   context=browser.new_context(viewport={'width':width,'height':height},is_mobile=touch,has_touch=touch,device_scale_factor=2)
   context.route('http://sandlab.test/**',serve);page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-  page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.evaluate('sandlab.state.paused=true;sandlab.settings.set("autosave",false)')
+  page.goto('http://sandlab.test/');page.wait_for_function('()=>!!window.sandlab');page.evaluate('sandlab.state.paused=true;sandlab.settings.set("autosave",false)')
   if touch:page.locator('#controls-toggle').click()
   page.evaluate('''async()=>{const {M}=await import('./src/sim/materials.js');window.mat=M;const w=sandlab.world;w.clear();for(let y=20;y<=40;y++)for(let x=20;x<=50;x++)if(x===20||x===50||y===20||y===40)w.set(y*w.width+x,M.Wall);sandlab.state.material=M.Sand}''')
   choose(page,'fill');assert page.locator('#brush-control').is_hidden();assert page.locator('#shape-btn').is_hidden();assert page.locator('#fill-layer').is_visible();assert page.locator('#palette-toggle').is_visible()
@@ -42,12 +42,14 @@ with sync_playwright() as p:
   if touch:page.touchscreen.tap(**start)
   else:page.mouse.click(**start)
   assert page.evaluate('sandlab.world.backgroundPaint.every(Boolean)')
-  # The static tab contains precisely Wall, and acids have one tile.
+  # The static tab includes Wall and Portal; acids have one tile.
   if touch:page.locator('#controls-toggle').click()
-  choose(page,'paint');page.locator('#palette-toggle').click()
-  page.locator('#categories button').filter(has_text="Static").click();page.wait_for_function('document.querySelectorAll(".material").length===1')
-  page.locator('#categories button').filter(has_text="All").click();page.locator('#search').fill('acid');page.wait_for_function('document.querySelectorAll(".material").length===1')
-  page.locator('#search').fill('');assert page.locator('.material').count()==62
+  choose(page,'paint')
+  palette_open = page.locator('#palette').evaluate("e=>e.classList.contains('open')") if touch else page.evaluate("!document.body.classList.contains('palette-hidden')")
+  if not palette_open:page.locator('#palette-toggle').click()
+  page.locator('#categories button').filter(has_text="Static").click();page.wait_for_function('()=>document.querySelectorAll(".material").length===3')
+  page.locator('#categories button').filter(has_text="All").click();page.locator('#search').fill('acid');page.wait_for_function('()=>document.querySelectorAll(".material").length===1')
+  page.locator('#search').fill('');assert page.locator('.material').count()==63
   if touch:page.locator('#palette-close').click()
   page.evaluate('''()=>{const w=sandlab.world;w.clear();for(let x=0;x<w.width;x++)w.set((w.height-20)*w.width+x,mat.Wall);for(let y=15;y<23;y++)for(let x=30;x<55;x++)w.set(y*w.width+x,mat.Steel);for(let n=0;n<25;n++)w.step();sandlab.renderer.draw()}''')
   assert page.evaluate('sandlab.world.rigid.locations.size')==200
