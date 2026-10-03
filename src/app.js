@@ -1033,8 +1033,15 @@ window.addEventListener("keydown", (e) => {
     input.cancel();
     return;
   }
+  // Focused buttons own their activation keys, even if Space is a game shortcut.
   if (
     e.target.closest("input,select,textarea,[contenteditable]") ||
+    (e.target.closest("button") &&
+      [" ", "Enter"].includes(e.key) &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      !e.shiftKey) ||
     document.querySelector("dialog[open]")
   )
     return;

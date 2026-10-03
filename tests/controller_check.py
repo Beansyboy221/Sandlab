@@ -42,10 +42,18 @@ with sync_playwright() as p:
         page.keyboard.press('Escape')
         if width>1100:
             assert page.locator('.play-controls,.edit-controls,.draw-controls,.material-controls').evaluate_all("groups=>groups.every(g=>parseFloat(getComputedStyle(g).borderTopWidth)>0 && g.querySelector('.control-caption').getBoundingClientRect().top>=g.getBoundingClientRect().top)")
-        page.locator('#about-btn').click();assert not page.locator('#about-dialog .small-print').count()
+        assert page.locator('.header-actions [data-icon=help]').count()==0
+        assert page.locator('#about-btn').evaluate("e=>e.tagName==='BUTTON' && e.classList.contains('brand') && e.getBoundingClientRect().height>=44")
+        # About lives on both halves of the logo, without a page reload or lost world.
+        page.locator('#about-btn .brand-mark').click()
+        assert page.locator('#about-dialog').is_visible()
+        page.locator('#about-dialog .dialog-close').click()
+        assert page.locator('#about-btn').evaluate('e=>e===document.activeElement')
+        page.locator('#about-btn > span:last-child').click();assert not page.locator('#about-dialog .small-print').count()
         interaction_count=page.evaluate("async()=> (await import('./src/sim/chemistry.js')).interactionCount")
         assert page.locator('#app-content-count').inner_text().endswith(f'{interaction_count} interactions') and interaction_count>0
         assert page.locator('#changelog-btn').evaluate("e=>getComputedStyle(e).backgroundColor!='rgba(0, 0, 0, 0)' && e.getBoundingClientRect().height>=44")
+        assert page.locator('#changelog-btn').evaluate("e=>Math.abs(e.getBoundingClientRect().right-e.parentElement.getBoundingClientRect().right)<1")
         page.locator('#about-dialog .dialog-close').click()
         page.locator('#save-btn').click()
         assert page.locator('#export-btn').inner_text()=='Export'
@@ -93,6 +101,9 @@ with sync_playwright() as p:
         page.evaluate('testPad.connected=false;controlFrame();');assert page.evaluate('sandlab.controller.input.pointers.size')==0
         assert page.evaluate('sandlab.world.stickmen.controls.move')==0
         assert not page.locator('.controller-hud').is_visible()
+        page.locator('#about-btn').focus();page.keyboard.press('Space')
+        assert page.locator('#about-dialog').is_visible()
+        page.locator('#about-dialog .dialog-close').click()
         assert not errors,errors
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         page.screenshot(path=str(ART/f'controller-{width}x{height}.png'))

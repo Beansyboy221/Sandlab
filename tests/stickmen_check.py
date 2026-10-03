@@ -16,6 +16,7 @@ with sync_playwright() as p:
         page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
         page.evaluate('sandlab.settings.set("autosave",false);sandlab.state.paused=true')
         if touch:page.locator('#palette-toggle').click()
+        page.locator('#entities-tab').click()
         page.get_by_role('button',name='Player',exact=True).click()
         pos=page.evaluate('''async()=>{
           const {M}=await import('./src/sim/materials.js');const {world:w,renderer:r}=sandlab;w.clear();r.resetView();
@@ -34,17 +35,22 @@ with sync_playwright() as p:
         page.evaluate('sandlab.state.paused=false')
         page.wait_for_timeout(650)
         assert page.evaluate('sandlab.world.stickmen.player.grounded')
+        if not touch:
+            page.locator('#about-btn').focus();page.keyboard.press('Space')
+            assert page.locator('#about-dialog').is_visible()
+            page.locator('#about-dialog .dialog-close').click()
+            assert not page.evaluate('sandlab.state.paused')
         def position():return page.evaluate('''()=>{const w=sandlab.world,a=w.stickmen.player;return {across:a.x[2]*w.gravityY-a.y[2]*w.gravityX,down:a.x[2]*w.gravityX+a.y[2]*w.gravityY};}''')
-        before=position()
+        before=position(); walking_tick=page.evaluate("sandlab.world.tick")
         if touch:
             session=context.new_cdp_session(page);box=page.locator('.player-joystick').bounding_box()
             x=box['x']+box['width']/2;y=box['y']+box['height']/2
             session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x+24,y=y,id=1)]))
-            page.wait_for_timeout(550)
+            page.wait_for_function("tick=>sandlab.world.tick>=tick+40",arg=walking_tick)
             session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[]))
             assert page.evaluate('sandlab.world.stickmen.controls.move')==0
         else:
-            page.locator('#world').focus();page.keyboard.down('d');page.wait_for_timeout(550);page.keyboard.up('d')
+            page.locator('#world').focus();page.keyboard.down('d');page.wait_for_function('tick=>sandlab.world.tick>=tick+40',arg=walking_tick);page.keyboard.up('d')
         after=position();assert after['across']>before['across']+5,(width,before,after)
         assert page.evaluate('sandlab.world.stickmen.bodies.length')==1
         page.wait_for_timeout(80);assert page.evaluate('sandlab.world.stickmen.controls.move')==0

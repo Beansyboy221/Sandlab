@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.14.5",
+    date: "2026-10-03",
+    title: "Home-screen icon and logo menu",
+    changes: [
+      "Home-screen installs use the supplied three-grain icon, with an Apple touch icon and Android app icons. The browser favicon matches. Installed launches use standalone display mode and keep the GitHub Pages canvas URL.",
+      "Click or tap the logo or Sandlab name to open About. The separate question-mark button is removed; keyboard access and focus restoration still work.",
+      "Changelog is aligned to the right in About on desktop and mobile.",
+    ],
+  },
+  {
     version: "1.14.4",
     date: "2026-10-03",
     title: "Simpler tools and clearer brush controls",

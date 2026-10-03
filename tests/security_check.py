@@ -1,5 +1,6 @@
 """Exercise the real browser's policy and hostile saved-world inputs."""
-import json, mimetypes
+import json, mimetypes, struct
+from urllib.parse import urljoin
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -96,4 +97,43 @@ with sync_playwright() as p:
     assert not external, external
     print(json.dumps({'browser_policy':'pass','hostile_saves':'pass',
                       'unexpected_external_requests':external,'runtime_errors':errors}))
-    browser.close()
+    context.close()
+    # Read the built release under the real GitHub Pages path, not just root URLs.
+    installed = browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
+    prefix='https://sandlab.test/Sandlab/'
+    missing=[]
+    def release(route):
+        path=ROOT/'dist'/(route.request.url.removeprefix(prefix).split('?')[0] or 'index.html')
+        if path.is_file():
+            route.fulfill(body=path.read_bytes(),content_type=mimetypes.guess_type(path)[0] or 'application/octet-stream')
+        else:
+            missing.append(route.request.url);route.fulfill(status=404)
+    installed.route(prefix+'**',release)
+    app=installed.new_page();app.goto(prefix);app.wait_for_function('!!window.sandlab')
+    manifest=installed.new_cdp_session(app).send('Page.getAppManifest')
+    assert not manifest['errors'],manifest['errors']
+    assert manifest['url']==prefix+'public/manifest.webmanifest'
+    settings=json.loads(manifest['data']);assert settings['display']=='standalone'
+    for key in ['id','start_url','scope']:
+        assert urljoin(manifest['url'],settings[key])==prefix
+    assets=[(app.locator('link[rel=apple-touch-icon]').get_attribute('href'),180),(app.locator('link[rel=icon]').get_attribute('href'),32)]
+    assert app.locator('meta[name=apple-mobile-web-app-capable]').get_attribute('content')=='yes'
+    assert app.locator('meta[name=apple-mobile-web-app-title]').get_attribute('content')=='Sandlab'
+    for item in settings['icons']:
+        assets.append((urljoin(manifest['url'],item['src']),int(item['sizes'].split('x')[0])))
+        assert item['purpose']=='any maskable' and item['type']=='image/png'
+    for path,size in assets:
+        url=urljoin(prefix,path)
+        decoded=app.evaluate('''async url=>{const image=new Image();image.src=url;await image.decode();return [image.naturalWidth,image.naturalHeight]}''',url)
+        assert decoded==[size,size]
+        png=(ROOT/'dist'/url.removeprefix(prefix)).read_bytes();assert png[:8]==b'\x89PNG\r\n\x1a\n'
+        assert struct.unpack('>II',png[16:24])==(size,size)
+    if app.locator('#mobile-exit-focus').is_visible():app.locator('#mobile-exit-focus').tap()
+    app.locator('#about-btn').focus();app.keyboard.press('Enter');assert app.locator('#about-dialog').is_visible()
+    app.locator('#changelog-btn').tap();assert app.locator('#changelog-dialog').is_visible()
+    app.locator('#changelog-dialog .dialog-close').tap()
+    assert app.locator('#about-btn').evaluate('e=>e===document.activeElement')
+    app.keyboard.press('Space');assert app.locator('#about-dialog').is_visible()
+    assert not missing,missing
+    print('Built /Sandlab/ manifest, icon dimensions, standalone metadata, keyboard logo access and modal focus restoration passed.')
+    installed.close();browser.close()

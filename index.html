@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"
+      content="default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; font-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"
     />
     <meta name="referrer" content="no-referrer" />
     <meta
@@ -12,6 +12,9 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#10171b" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Sandlab" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta
       name="description"
       content="A browser-based falling-sand simulation."
@@ -19,17 +22,32 @@
     <title>Sandlab</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23192328'/%3E%3Cpath d='M15 43h34L32 18z' fill='%23dfbb78'/%3E%3C/svg%3E"
+      type="image/png"
+      sizes="32x32"
+      href="public/icons/favicon.png"
     />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="public/icons/apple-touch-icon.png"
+    />
+    <link rel="manifest" href="public/manifest.webmanifest" />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="mobile.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="./" aria-label="Sandlab home"
-        ><span class="brand-mark"><i></i><i></i><i></i></span
-        ><span>sandlab<span class="brand-dot">.</span></span></a
+      <button
+        id="about-btn"
+        class="brand"
+        type="button"
+        aria-label="About Sandlab"
+        aria-haspopup="dialog"
+        title="About Sandlab"
       >
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span
+        ><span>sandlab<span class="brand-dot">.</span></span>
+      </button>
       <nav class="header-actions" aria-label="World actions">
         <button
           id="new-canvas-btn"
@@ -43,15 +61,6 @@
         <button id="save-btn" class="quiet-button">
           <span data-icon="folder"></span
           ><span class="save-label">My worlds</span>
-        </button>
-        <button
-          id="about-btn"
-          class="icon-button"
-          aria-label="About Sandlab"
-          aria-haspopup="dialog"
-          title="About Sandlab"
-        >
-          <span data-icon="help"></span>
         </button>
         <button
           id="settings-btn"
@@ -844,9 +853,11 @@
       </div>
       <p id="app-version"></p>
       <p id="app-content-count"></p>
-      <button id="changelog-btn" class="primary-button">
-        <span data-icon="history"></span>Changelog
-      </button>
+      <div class="about-actions">
+        <button id="changelog-btn" class="primary-button">
+          <span data-icon="history"></span>Changelog
+        </button>
+      </div>
     </dialog>
     <dialog id="changelog-dialog" aria-labelledby="changelog-heading">
       <div class="dialog-heading">

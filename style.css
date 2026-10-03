@@ -71,6 +71,8 @@ svg {
   border-bottom: 1px solid var(--line);
 }
 .brand {
+  padding: 0;
+  min-height: 44px;
   color: var(--text);
   text-decoration: none;
   display: flex;
@@ -1851,8 +1853,9 @@ dialog::backdrop {
   font-size: 13px;
   line-height: 1.7;
 }
-#changelog-btn {
-  margin-top: 12px;
+.about-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 @media (max-width: 700px) {
   .utility-controls > #undo-btn,

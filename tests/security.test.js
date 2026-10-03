@@ -98,6 +98,7 @@ test("the shipped page disables remote execution and external stylesheets", () =
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   for (const directive of [
     "script-src 'self'",
+    "manifest-src 'self'",
     "connect-src 'none'",
     "object-src 'none'",
     "base-uri 'none'",
@@ -115,6 +116,7 @@ test("build excludes hidden and unrelated files and refuses source symlinks", ()
   const directory = mkdtempSync(join(tmpdir(), "sandlab-build-security-"));
   try {
     mkdirSync(join(directory, "src"));
+    mkdirSync(join(directory, "public/icons"), { recursive: true });
     for (const name of [
       "index.html",
       "style.css",
@@ -122,6 +124,13 @@ test("build excludes hidden and unrelated files and refuses source symlinks", ()
       "src/app.js",
       "src/.env",
       "src/unrelated.exe",
+      "public/manifest.webmanifest",
+      "public/icons/favicon.png",
+      "public/icons/apple-touch-icon.png",
+      "public/icons/icon-192.png",
+      "public/icons/icon-512.png",
+      "public/.env",
+      "public/unrelated.js",
     ])
       writeFileSync(join(directory, name), "test fixture");
     const script = new URL("../scripts/build.mjs", import.meta.url).pathname;
@@ -132,10 +141,27 @@ test("build excludes hidden and unrelated files and refuses source symlinks", ()
       });
     assert.equal(build().status, 0);
     assert.deepEqual(readdirSync(join(directory, "dist/src")), ["app.js"]);
+    assert.deepEqual(readdirSync(join(directory, "dist/public")), [
+      "icons",
+      "manifest.webmanifest",
+    ]);
+    assert.equal(
+      readFileSync(join(directory, "dist/public/icons/icon-512.png"), "utf8"),
+      "test fixture",
+    );
     symlinkSync(join(directory, "src/.env"), join(directory, "src/leak.js"));
     const blocked = build();
     assert.notEqual(blocked.status, 0);
     assert.match(blocked.stderr, /refuses symlink/);
+    rmSync(join(directory, "src/leak.js"));
+    rmSync(join(directory, "public/icons/icon-512.png"));
+    symlinkSync(
+      join(directory, "public/.env"),
+      join(directory, "public/icons/icon-512.png"),
+    );
+    const blockedIcon = build();
+    assert.notEqual(blockedIcon.status, 0);
+    assert.match(blockedIcon.stderr, /refuses symlink/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

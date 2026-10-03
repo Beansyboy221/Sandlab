@@ -10,7 +10,7 @@ Live site: **https://beansyboy221.github.io/Sandlab/**. GitHub Pages is the sole
 npm start
 ```
 
-Open **http://localhost:3000**. The development server uses Python 3. For deployment, upload `index.html`, `style.css`, `mobile.css`, and `src/` to any static host. JavaScript modules require HTTP serving rather than opening the HTML as a local file. The interface uses system fonts and needs no external services.
+Open **http://localhost:3000**. The development server uses Python 3. For deployment, upload `index.html`, `style.css`, `mobile.css`, `src/`, and `public/` to any static host. JavaScript modules require HTTP serving rather than opening the HTML as a local file. The interface uses system fonts and needs no external services.
 
 ## Play
 
@@ -288,3 +288,5 @@ Pair a standard controller, then press a button so the browser can detect it. In
 A controlled Player uses the left stick or D-pad to move, A/up to jump, and down to crouch. Back/View switches between player and sandbox control. Settings → Controller includes a toggle, stick deadzone and cursor speed. Availability depends on browser Gamepad API support and a standard button mapping.
 
 Settings → Simulation can independently disable wind, pressure, or temperature transport. Disabled wind clears air momentum and ignores wind brushes and fans. Disabled pressure clears the relative pressure field and ignores new pressure sources; wind and temperature remain independent. Disabled temperature preserves stored heat and stops particle/air heat exchange and atmospheric diffusion; direct Warm/Cool tools and heat-producing chemical reactions still work. Re-enabling a system resumes its solver. These switches are browser preferences rather than world-save properties.
+
+Add Sandlab to your home screen from Safari’s Share menu on iPhone or the browser’s Install/Add to home screen menu on Android. The Apple touch icon and web app manifest use the supplied three-grain artwork. The installed app opens the GitHub Pages game in standalone mode. Icon assets remain local, and a service worker is not installed; launching still requires a network connection. Click or tap the logo/name for About and Changelog.

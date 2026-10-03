@@ -79,6 +79,7 @@ export class PlayerControls {
           e.metaKey ||
           e.altKey ||
           document.querySelector("dialog[open]") ||
+          (e.code === "Space" && e.target.closest("button")) ||
           e.target.closest("input,textarea,select,[contenteditable]")
         )
           return;
