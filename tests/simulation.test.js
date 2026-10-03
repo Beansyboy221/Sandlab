@@ -173,12 +173,14 @@ test("seeded identical input produces identical simulation", () => {
   assert.deepEqual(a.cells, b.cells);
   assert.deepEqual(a.temp, b.temp);
 });
-test("pressure diffusion stays finite and decays", () => {
+test("a sealed pressure pulse stays finite and spreads without losing its mean instantly", () => {
   const w = new World(32, 32);
   w.fields.add(16, 16, 50);
   run(w, 100);
   assert.ok(w.fields.pressure.every(Number.isFinite));
-  assert.ok(Math.max(...w.fields.pressure) < 0.05);
+  assert.ok(Math.max(...w.fields.pressure) < 2);
+  const total = w.fields.pressure.reduce((a, b) => a + b, 0);
+  assert.ok(Math.abs(total - 50 * 0.999 ** 100) < 0.01);
 });
 
 test("settled chunks wake immediately when a supporting floor is erased", () => {

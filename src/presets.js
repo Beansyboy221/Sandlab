@@ -5,7 +5,15 @@ import { buildMaterialLab } from "./presets/material-labs.js";
 import { painter } from "./presets/painter.js";
 import { buildExperiment } from "./presets/experiments.js";
 import { M } from "./sim/materials.js";
+import { buildVentChamber } from "./presets/vent-chamber.js";
 export const presets = [
+  {
+    id: "vent",
+    name: "Vented fire chamber",
+    subtitle: "A one-pixel vent releases hot gas",
+    tag: "AIRFLOW",
+    color: "#84d4df",
+  },
   {
     id: "logic",
     name: "Logic workbench",
@@ -199,6 +207,10 @@ export function loadPreset(world, id) {
       world.stickmen.spawn(a.x, a.y, M.Stickman);
       world.stickmen.spawn(b.x, b.y, M.Player);
     }
+    return;
+  }
+  if (id === "vent") {
+    buildVentChamber(world);
     return;
   }
   if (buildDeviceLab(world, id)) return;

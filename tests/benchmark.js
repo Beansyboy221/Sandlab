@@ -85,3 +85,10 @@ measure("Moving devices", (w) => {
     for (let column = 0; column < 8; column++)
       w.missiles.spawn(50 + column * 24, 40 + row * 24, 1, 0, M.Drone);
 });
+
+measure("Vented fire chamber", (w) => loadPreset(w, "vent"));
+measure("Wind-driven steam", (w) => {
+  w.mechanics.windStrength = 1;
+  for (let y = 20; y < 130; y++)
+    for (let x = 20; x < 300; x++) w.set(y * w.width + x, M.Steam);
+});

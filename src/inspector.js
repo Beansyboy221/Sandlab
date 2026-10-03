@@ -130,6 +130,7 @@ export function cellProperties(world, point) {
       ],
     };
   }
+  world.fields.airflow.sample(world.fields, x, y);
   const rows = [
     [
       "Temperature",
@@ -153,6 +154,10 @@ export function cellProperties(world, point) {
     ],
     ["Charge", world.charge[i] ? `${world.charge[i]} ticks` : "None"],
     ["Pressure", world.fields.pressure[world.fields.index(x, y)].toFixed(2)],
+    [
+      "Airflow",
+      `${world.fields.airflow.x.toFixed(2)}, ${world.fields.airflow.y.toFixed(2)} cells/tick`,
+    ],
   ];
   rows.push(
     [

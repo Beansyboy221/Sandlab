@@ -42,37 +42,38 @@ My worlds stores up to eight named worlds on the current device. Autosave captur
 
 ## Architecture
 
-| Module                        | Responsibility                                                                    |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| `src/sim/materials.js`        | Stable material IDs, colors, physical properties, phase rules                     |
-| `src/sim/world.js`            | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
-| `src/sim/reactions.js`        | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
-| `src/sim/fields.js`           | Coarse pressure/temperature diffusion and cached forces                           |
-| `src/sim/rigid-bodies.js`     | Rigid topology, mass, pose, and particle state                                    |
-| `src/sim/body-motion.js`      | Integration, rolling, buoyancy, and stack support                                 |
-| `src/sim/body-collisions.js`  | Rotational contact impulses, friction, and fracture                               |
-| `src/sim/body-raster.js`      | Unique cell matching for continuous rotating shapes                               |
-| `src/sim/body-connections.js` | Cached structural electrical connections                                          |
-| `src/renderer.js`             | Canvas rendering, thermal palette, viewport, brush preview                        |
-| `src/inspector.js`            | Read-only live cell properties and magnified rendering                            |
-| `src/shortcuts.js`            | Validated shortcut catalogue, bindings, and key dispatch                          |
-| `src/input.js`                | Pointer capture, continuous strokes, multitouch, wheel control                    |
-| `src/persistence.js`          | Validated snapshots, RLE encoding, device storage                                 |
-| `src/tool-picker.js`          | Accessible icon dropdown, keyboard navigation, touch targets                      |
-| `src/sim/energy.js`           | Shared ray transport, energy absorption, thermal auras, and bounded emissions     |
-| `src/sim/energy-materials.js` | Append-only energy and fictional material definitions                             |
-| `src/level.js`                | Canvas creation and positioned resizing without losing particle state             |
-| `src/level-editor.js`         | Canvas properties dialog and touch/keyboard placement preview                     |
-| `src/level-properties.js`     | Validated canvas metadata and dimensions                                          |
-| `src/sim/circuits.js`         | Directional gates, signal snapshots, toggles, delays and electrical outputs        |
-| `src/sim/device-materials.js` | Append-only electrical and moving-device definitions                               |
-| `src/sim/machine-motion.js`   | Swept vehicle collisions, motors, gravity, step-up and damage                       |
-| `src/material-groups.js`     | Bounded, validated custom material collections and local persistence               |
-| `src/material-groups-panel.js` | Accessible custom-group editor                                                  |
-| `src/presets.js`              | Internal simulation fixtures                                                      |
-| `src/app.js`                  | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
+| Module                         | Responsibility                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------- |
+| `src/sim/materials.js`         | Stable material IDs, colors, physical properties, phase rules                     |
+| `src/sim/world.js`             | Typed-array grid, density movement, chunk occupancy/activity, brushes, explosions |
+| `src/sim/reactions.js`         | Heat-driven transitions, combustion, electrical propagation, contact chemistry    |
+| `src/sim/fields.js`            | Coarse pressure, thermal transport, cached barriers and forces                    |
+| `src/sim/airflow.js`           | Face velocities, pressure acceleration, wind and buoyancy                         |
+| `src/sim/rigid-bodies.js`      | Rigid topology, mass, pose, and particle state                                    |
+| `src/sim/body-motion.js`       | Integration, rolling, buoyancy, and stack support                                 |
+| `src/sim/body-collisions.js`   | Rotational contact impulses, friction, and fracture                               |
+| `src/sim/body-raster.js`       | Unique cell matching for continuous rotating shapes                               |
+| `src/sim/body-connections.js`  | Cached structural electrical connections                                          |
+| `src/renderer.js`              | Canvas rendering, thermal palette, viewport, brush preview                        |
+| `src/inspector.js`             | Read-only live cell properties and magnified rendering                            |
+| `src/shortcuts.js`             | Validated shortcut catalogue, bindings, and key dispatch                          |
+| `src/input.js`                 | Pointer capture, continuous strokes, multitouch, wheel control                    |
+| `src/persistence.js`           | Validated snapshots, RLE encoding, device storage                                 |
+| `src/tool-picker.js`           | Accessible icon dropdown, keyboard navigation, touch targets                      |
+| `src/sim/energy.js`            | Shared ray transport, energy absorption, thermal auras, and bounded emissions     |
+| `src/sim/energy-materials.js`  | Append-only energy and fictional material definitions                             |
+| `src/level.js`                 | Canvas creation and positioned resizing without losing particle state             |
+| `src/level-editor.js`          | Canvas properties dialog and touch/keyboard placement preview                     |
+| `src/level-properties.js`      | Validated canvas metadata and dimensions                                          |
+| `src/sim/circuits.js`          | Directional gates, signal snapshots, toggles, delays and electrical outputs       |
+| `src/sim/device-materials.js`  | Append-only electrical and moving-device definitions                              |
+| `src/sim/machine-motion.js`    | Swept vehicle collisions, motors, gravity, step-up and damage                     |
+| `src/material-groups.js`       | Bounded, validated custom material collections and local persistence              |
+| `src/material-groups-panel.js` | Accessible custom-group editor                                                    |
+| `src/presets.js`               | Internal simulation fixtures                                                      |
+| `src/app.js`                   | UI wiring, bounded undo, fixed-step loop, frame budget and diagnostics            |
 
-The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors and exchanges with a coarse air temperature field. Atmospheric heat and pressure diffuse around solid barriers and vent at void edges; looping worlds wrap both fields. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a damped coarse gameplay field relative to an ambient baseline of 1 atm, rather than a full fluid solver. Air temperature starts at 20°C; localized heat is retained, diffuses, and survives saves, Undo/Redo, and positioned resizes.
+The engine uses structure-of-arrays storage rather than objects per particle. Empty 16 × 16 chunks are skipped. Settled chunks sleep movement checks, with periodic retries and immediate wake-up when their neighborhood changes; temperature, phase changes, electricity, and chemical reactions continue. Heat moves between occupied neighbors and exchanges with a coarse air temperature field. Atmospheric heat and pressure diffuse around solid barriers and vent at void edges; looping worlds wrap both fields. Density permits particles to displace lighter fluids. Registry thresholds describe phase transitions and fuel ignition. Air provides ambient oxygen; explicit oxygen accelerates combustion. Pressure is a coarse compressible gameplay field relative to an ambient baseline of 1 atm, coupled to air momentum rather than a calibrated fluid solver. Air temperature starts at 20°C; localized heat is retained, diffuses, and survives saves, Undo/Redo, and positioned resizes.
 
 Rendering and simulation are capped at 60 frames and fixed ticks per second, including on high-refresh displays. Each rendered frame advances at most one physics tick; missed ticks are dropped instead of creating catch-up bursts. Slower hardware slows gracefully, and hidden tabs suspend drawing and physics. The 0.25× and 0.5× speed controls reduce tick frequency; 1× is the maximum. Rendering uses a low-resolution ImageData buffer scaled without smoothing; the display canvas respects device pixel ratio with a 2× cap. Thermal colors are precomputed. Seeded randomness and saved activity timestamps support reproducible continuation.
 
@@ -161,7 +162,7 @@ Undo and Redo retain eight edits, including complete particle and pressure state
 
 Gunpowder burns in place, using its own oxidizer, emitting embers and pressure instead of instantly blasting a large radius. Dense burning regions can reach its pressure trigger. TNT requires 45 hot simulation ticks before reacting; cooling cancels the countdown. A strong pressure spike bypasses the delay. Liquid fuel burns at exposed surfaces without directly detonating. Hydrogen and flammable gas require both oxygen/air and higher ignition temperatures. Electrical arcs bridge one empty cell between conductors; ordinary conducting metal does not instantly ignite adjacent fuel. Hot embers deposit ash and heat without conducting electricity. Cold water quenches fire and sparks while warming; it does not all instantly flash into steam. Brine evaporation separates salt and steam, and frozen aqueous mixtures retain their original liquid through melting.
 
-This is a qualitative cellular simulation. Relative density, heat transport, exposed combustion, phase thresholds, pressure diffusion, and reaction products follow reusable rules. Temperature changes and particle volumes are approximate; the grid does not implement calibrated thermodynamics, molecular chemistry, or calibrated structural mechanics.
+This is a qualitative cellular simulation. Relative density, heat transport, exposed combustion, phase thresholds, pressure-driven airflow, and reaction products follow reusable rules. Temperature changes and particle volumes are approximate; the grid does not implement calibrated thermodynamics, molecular chemistry, or calibrated structural mechanics.
 
 ## GitHub Pages
 
@@ -227,9 +228,18 @@ Lamp in Devices is a stationary, warm light source. Fire, sparks, lightning, cha
 
 Optics use four-pixel tiles, a maximum of 96 spatially merged sources, and one short diffuse bounce. They update every other displayed frame, including paused edits, rather than slowing or changing physics. Thin walls block their entire optical tile, so shadows are conservative at this resolution. Dense emissive fields merge spatially without dropping entire parts of the scene. Lighting applies after all material and actor drawing and also appears in Inspect and world thumbnails. This is an approximate visual model, not spectral ray tracing.
 
-
 Custom material groups use the plus beside Materials. Create a named collection, select materials, and save it; use the same button to edit the selected collection. Groups persist locally, with a limit of 16, and never change built-in physics categories. Explosives and Fiction are properties rather than palette groups; fixed sources are under Static.
 
 Devices includes fixed Wire, Battery, AND/OR/XOR/NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan, plus Heat-Seeking Missile, Drone and Rover. Gates are ideal powered logic components. Facing sets their output port; A is the cell behind, B the cell to the left of the heading. A charged conductor, correctly oriented gate output or adjacent Spark is a high input. AND/OR/XOR take A and B; NOT, Toggle, Delay, Lamp and Fan take A. Toggle flips on rising edges; Delay is a 12-tick shift register. Battery repeatedly energizes the wire in front using the shared conductor cooldown. Wire stays fixed and propagates pulses with the existing conduction, heating and arcing rules. Gate evaluations share a pre-tick signal snapshot, so update order cannot change a circuit. State uses the existing life and heading arrays and survives copying, saving and resizing. Inspect displays signal state and ports. Logic workbench provides three isolated test circuits.
 
 Drone and Rover use the existing capped moving-device pool and a separate motion module. Drones maintain flight and turn at obstacles; rovers accelerate along the gravity-relative ground, fall, step over two-cell ledges and turn at walls. Disabling motors lets both fall. Swept footprints catch thin walls; hard impacts, corrosive contact and heat reduce condition and leave debris on destruction. Warm, Cool, Fan, Grab and Erase affect machines. Settings → Devices controls motors and cruise speed. Device yard is a safe starter scene. Machines preserve condition, velocity and temperature through save/load, undo and resizing; older missile saves retain their schema.
+
+## Wind and pressure
+
+Settings → Atmosphere sets ambient wind strength and direction. Wind is a brush that adds local air momentum with the main tool direction and strength controls. Fan and Electric Fan use that same field. The Airflow view displays speed and direction arrows; Inspect reports local horizontal and vertical air velocity. The Vented fire chamber preset starts a supported burning coal bed inside a wall container with a one-pixel side vent.
+
+A compressible gameplay solver stores pressure, temperature and face velocities on four-cell air tiles. Pressure gradients accelerate air; divergence changes pressure, hot air rises opposite gravity, and bounded upwind transport carries air temperature. Four-lane barrier sampling blocks walls and gives narrow vents reduced volume flow. Burning fuel, flames, heat exchange, explosions and chemical reactions inject pressure into the same system, producing outward currents through openings rather than scripted vent attraction. Momentum dissipates gradually, and confined mean pressure decays slowly. Gases follow air currents most strongly; dense powders and liquids have lower drag. Weak currents retain surface combustion contact; strong jets can lift flames away. These are qualitative gameplay units, not calibrated fluid mechanics. Walls within a single coarse tile and diagonal microchannels remain approximate; ambient oxygen is not yet finite.
+
+Typed reusable buffers avoid per-cell allocations. Airflow survives local saves, export/import, history and positioned resizing; older saves initialize air at rest. Solid edges reflect, looping edges share flux across the seam, and void edges exchange with ambient air. Global wind follows the gravity-relative view when a phone rotates.
+
+Development measurements on 2026-10-03 (30 warm-up and 180 measured ticks): the complete air field on a 400 × 300 world averaged 0.53 ms, with 0.82 ms at the 95th percentile. A world with 30,800 steam particles and ambient wind averaged 14.39 ms per tick (p95 17.08 ms); 38,400 sand particles with wind averaged 11.08 ms (p95 14.46 ms). These measure simulation work in the development environment, not rendering or physical-phone performance. `npm run bench` includes wind-driven steam and the vented chamber.

@@ -175,6 +175,38 @@ export class Renderer {
       );
     return { x: (point.x - v.x) / v.scale, y: (point.y - v.y) / v.scale };
   }
+  drawAirflow(c, v) {
+    const f = this.world.fields;
+    c.strokeStyle = "#b8f0eea0";
+    c.lineWidth = Math.max(1, v.scale * 0.45);
+    c.beginPath();
+    for (let y = 6; y < this.world.height; y += 12)
+      for (let x = 6; x < this.world.width; x += 12) {
+        if (f.blocks(this.world.cells[y * this.world.width + x])) continue;
+        f.airflow.sample(f, x, y);
+        const speed = Math.hypot(f.airflow.x, f.airflow.y);
+        if (speed < 0.04) continue;
+        const dx = f.airflow.x / speed,
+          dy = f.airflow.y / speed;
+        const length = Math.min(7, 2 + speed * 3) * v.scale;
+        const sx = v.x + x * v.scale,
+          sy = v.y + y * v.scale;
+        const ex = sx + dx * length,
+          ey = sy + dy * length;
+        c.moveTo(sx, sy);
+        c.lineTo(ex, ey);
+        c.moveTo(
+          ex - dx * 2 * v.scale - dy * v.scale,
+          ey - dy * 2 * v.scale + dx * v.scale,
+        );
+        c.lineTo(ex, ey);
+        c.lineTo(
+          ex - dx * 2 * v.scale + dy * v.scale,
+          ey - dy * 2 * v.scale - dx * v.scale,
+        );
+      }
+    c.stroke();
+  }
   draw() {
     if (
       this.buffer.width !== this.world.width ||
@@ -198,7 +230,8 @@ export class Renderer {
       p = this.data.data;
     const pressure = this.mode === "pressure",
       thermal = this.mode === "heat",
-      echo = this.mode === "echo";
+      echo = this.mode === "echo",
+      wind = this.mode === "wind";
     for (let i = 0; i < cells.length; i++) {
       const id = cells[i],
         o = i * 4,
@@ -321,6 +354,16 @@ export class Renderer {
         g = g * (1 - a) + 103 * a;
         b = b * (1 - a) + (force < 0 ? 230 : 130) * a;
       }
+      if (wind) {
+        fields.airflow.sample(fields, x, y);
+        const speed = Math.min(
+          1,
+          Math.hypot(fields.airflow.x, fields.airflow.y) / 1.5,
+        );
+        r = r * 0.4 + 48 * speed;
+        g = g * 0.4 + 198 * speed;
+        b = b * 0.4 + 224 * speed;
+      }
       if (echo) {
         const wave = this.world.sound.wave[fields.index(x, y)],
           glow = Math.min(1, Math.abs(wave) * 2.5);
@@ -359,7 +402,8 @@ export class Renderer {
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
     this.drawElastics(c, v);
     if (this.mode === "normal") this.lighting.draw(c, this.world, v);
-    if (this.bloom && !thermal && !pressure && !echo)
+    if (wind) this.drawAirflow(c, v);
+    if (this.bloom && this.mode === "normal")
       this.glow.draw(
         c,
         this.world,

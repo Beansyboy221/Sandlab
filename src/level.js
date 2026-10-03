@@ -57,10 +57,38 @@ export function resizeLevel(world, properties, x, y) {
       if (sx >= 0 && sx < world.width && sy >= 0 && sy < world.height) {
         resized.fields.pressure[fy * resized.fields.width + fx] =
           world.fields.pressure[world.fields.index(sx, sy)];
+        const source = world.fields.index(sx, sy),
+          target = fy * resized.fields.width + fx;
+        resized.fields.airflow.velocityX[target] =
+          world.fields.airflow.velocityX[source];
+        resized.fields.airflow.velocityY[target] =
+          world.fields.airflow.velocityY[source];
         resized.fields.temperature[fy * resized.fields.width + fx] =
           world.fields.temperature[world.fields.index(sx, sy)];
       }
     }
+  for (let fy = 0; fy < resized.fields.height; fy++) {
+    if (
+      x < 0 ||
+      x >= world.width ||
+      fy * 4 + 1.5 + y < 0 ||
+      fy * 4 + 1.5 + y >= world.height
+    )
+      continue;
+    world.fields.airflow.sample(world.fields, x - 0.5, fy * 4 + 1.5 + y);
+    resized.fields.airflow.west[fy] = world.fields.airflow.x;
+  }
+  for (let fx = 0; fx < resized.fields.width; fx++) {
+    if (
+      y < 0 ||
+      y >= world.height ||
+      fx * 4 + 1.5 + x < 0 ||
+      fx * 4 + 1.5 + x >= world.width
+    )
+      continue;
+    world.fields.airflow.sample(world.fields, fx * 4 + 1.5 + x, y - 0.5);
+    resized.fields.airflow.north[fx] = world.fields.airflow.y;
+  }
   resized.elastic.rebuild(resized);
   resized.circuits.rebuild(resized);
   resized.mechanics = { ...world.mechanics };

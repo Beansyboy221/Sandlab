@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.13.0",
+    date: "2026-10-03",
+    title: "Wind and vented pressure",
+    changes: [
+      "Air now carries momentum. Pressure differences drive wind through open passages, while closed walls block it. Burning fuel and flames build local pressure; a narrow vent releases a jet that carries smoke and fire. Hot air rises and flowing air transports temperature. Solid, looping and void borders retain their distinct behavior.",
+      "Added a Wind brush with direction and strength controls. Fan tools and powered fans feed the same airflow system. Settings → Atmosphere controls ambient wind strength and direction. Airflow view shows speed and direction arrows; Inspect reports local airflow. The Vented fire chamber starting world demonstrates a one-pixel outlet.",
+      "Wind responds to gravity rotation, wakes resting particles, and affects gases more strongly than dense powders and liquids. Weak currents preserve surface flames; stronger jets can lift them away. Air momentum is preserved by saves, import/export, undo and canvas resizing. Rendering and simulation remain capped at 60 per second.",
+    ],
+  },
+  {
     version: "1.12.0",
     date: "2026-10-02",
     title: "Custom groups and real devices",

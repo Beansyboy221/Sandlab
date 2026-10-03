@@ -1,7 +1,7 @@
 # Sandlab backlog
 
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
-- Improve coarse atmospheric boundaries for walls that divide a single air tile, and model sustained confined gas pressure separately from damped pressure pulses.
+- Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.
 - Add finite ambient oxygen transport so sealed fuel can exhaust implicit air; explicit gases already affect ignition and suppression.
 - Introduce latent heat and calibrated heat capacities before adding more physical phase transitions.
 - Extend spring-body tests to folded ropes and large cut membranes touching other elastic objects.

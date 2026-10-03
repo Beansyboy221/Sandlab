@@ -395,7 +395,30 @@ export class World {
     const fi = this.fields.forceGradient(x, y),
       gx = this.fields.gradientX[fi],
       gy = this.fields.gradientY[fi];
+    this.fields.airflow.sample(this.fields, x, y);
+    const windX = this.fields.airflow.x,
+      windY = this.fields.airflow.y;
+    const windSpeed = Math.max(Math.abs(windX), Math.abs(windY));
+    // Surface contact retains weak plumes; a strong vent jet can lift them away.
     if (
+      this.cells[i] === M.Fire &&
+      windSpeed < 0.35 &&
+      moveSurfaceFlame(this, i, x, y)
+    )
+      return;
+    const drag = gas
+      ? 1
+      : cat === "powder"
+        ? 0.08 / Math.sqrt(m.density)
+        : 0.03;
+    if (windSpeed > 0.01 && this.random() < Math.min(1, windSpeed * drag)) {
+      const horizontal = Math.abs(windX) >= Math.abs(windY);
+      const dx = horizontal ? Math.sign(windX) : 0,
+        dy = horizontal ? 0 : Math.sign(windY);
+      if (this.tryMove(i, x + dx, y + dy, dx * downX + dy * downY)) return;
+    }
+    if (
+      !gas &&
       (Math.abs(gx) > 1 || Math.abs(gy) > 1) &&
       this.random() < 0.6 &&
       this.tryMove(
@@ -406,7 +429,12 @@ export class World {
       )
     )
       return;
-    if (this.cells[i] === M.Fire && moveSurfaceFlame(this, i, x, y)) return;
+    if (
+      this.cells[i] === M.Fire &&
+      windSpeed >= 0.35 &&
+      moveSurfaceFlame(this, i, x, y)
+    )
+      return;
     const nx = x + downX * fall,
       ny = y + downY * fall;
     if (this.tryMove(i, nx, ny, fall)) return;
@@ -526,6 +554,8 @@ export class World {
               const j = this.index(nx, y),
                 next = this.index(nx + 1, y);
               if (j < 0) break;
+              if (this.fields.blocks(this.cells[j])) break;
+              this.fields.airflow.impulse(this.fields, nx, y, 1, 0, 0.4);
               if (j >= 0 && materials[this.cells[j]].rigid)
                 this.velocityX[j] += 0.08;
               if (
@@ -539,12 +569,15 @@ export class World {
             }
           } else if (this.cells[i]) {
             // Only movement sleeps. Heat and chemistry continue in settled chunks.
-            const chunk = (y >> 4) * this.chunkWidth + cx;
+            const chunk = (y >> 4) * this.chunkWidth + cx,
+              air = this.fields.index(x, y);
             if (
               materials[this.cells[i]].ray ||
               this.tick + 1 - this.motionStamp[chunk] < 30 ||
               this.tick % 8 === 0 ||
-              Math.abs(this.fields.pressure[this.fields.index(x, y)]) > 1
+              Math.abs(this.fields.pressure[air]) > 1 ||
+              Math.abs(this.fields.airflow.velocityX[air]) > 0.1 ||
+              Math.abs(this.fields.airflow.velocityY[air]) > 0.1
             )
               this.move(i, x, y);
           }

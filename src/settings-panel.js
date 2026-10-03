@@ -35,6 +35,8 @@ export class SettingsPanel {
         panel.append(note);
       }
       const mechanicNotes = {
+        atmosphere:
+          "Wind and hot air share the pressure field. Closed walls block flow; vents let pressure escape. Wind direction follows the gravity-relative view. The Wind brush and fans create local air currents.",
         wildlife:
           "Birds and aquatic creatures group with nearby members of their species. Group size includes the creature itself. Hunting and fleeing take priority over grouping.",
         devices:

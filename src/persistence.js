@@ -1,3 +1,4 @@
+import { airflowFields, MAX_AIR_SPEED } from "./sim/airflow.js";
 import { validateMissiles } from "./sim/missiles.js";
 import { rigidFields } from "./sim/rigid-bodies.js";
 import { validateStickmen } from "./sim/stickmen.js";
@@ -23,6 +24,14 @@ export function snapshot(world, typed = false) {
     atmosphere: {
       ambientTemperature: world.fields.ambientTemperature,
       ambientPressure: world.fields.ambientPressure,
+      airflow: Object.fromEntries(
+        airflowFields.map((key) => [
+          key,
+          typed
+            ? world.fields.airflow[key].slice()
+            : Array.from(world.fields.airflow[key]),
+        ]),
+      ),
       temperature: typed
         ? world.fields.temperature.slice()
         : Array.from(world.fields.temperature),
@@ -211,6 +220,26 @@ export function validateSnapshot(data) {
       temperature.some((v) => !Number.isFinite(v) || v < -273 || v > 6000)
     )
       throw Error("Invalid atmosphere data.");
+    if (data.atmosphere.airflow !== undefined) {
+      const flow = data.atmosphere.airflow;
+      if (!flow || typeof flow !== "object")
+        throw Error("Invalid airflow data.");
+      for (const key of airflowFields) {
+        const values = flow[key],
+          size =
+            key === "west"
+              ? Math.ceil(data.height / 4)
+              : key === "north"
+                ? Math.ceil(data.width / 4)
+                : Math.ceil(data.width / 4) * Math.ceil(data.height / 4);
+        if (
+          !(Array.isArray(values) || ArrayBuffer.isView(values)) ||
+          values.length !== size ||
+          values.some((v) => !Number.isFinite(v) || Math.abs(v) > MAX_AIR_SPEED)
+        )
+          throw Error("Invalid airflow data.");
+      }
+    }
   }
   const chunkCount = Math.ceil(data.width / 16) * Math.ceil(data.height / 16);
   if (
@@ -271,6 +300,9 @@ export function restore(world, data) {
     world.fields.ambientTemperature = data.atmosphere.ambientTemperature;
     world.fields.ambientPressure = data.atmosphere.ambientPressure;
     world.fields.temperature.set(data.atmosphere.temperature);
+    if (data.atmosphere.airflow)
+      for (const key of airflowFields)
+        world.fields.airflow[key].set(data.atmosphere.airflow[key]);
   }
   world.fields.obstaclesDirty = true;
   if (data.activity) world.motionStamp.set(data.activity);

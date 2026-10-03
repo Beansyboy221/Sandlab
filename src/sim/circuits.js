@@ -109,7 +109,7 @@ export class Circuits {
         const next = w.index(x + dx * (d + 1), y + dy * (d + 1));
         if (next >= 0 && !w.cells[next]) w.swap(j, next);
       }
-      w.fields.add(x + dx * d, y + dy * d, 0.015);
+      w.fields.airflow.impulse(w.fields, x + dx * d, y + dy * d, dx, dy, 0.6);
     }
   }
 }

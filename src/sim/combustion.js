@@ -146,6 +146,7 @@ export function reactFire(world, i, x, y) {
     return;
   }
   temp[i] = Math.max(temp[i], 550);
+  world.fields.add(x, y, 0.04);
   world.eachNeighbor(x, y, (j) => {
     if (cells[j] === M.Oxygen) {
       world.transform(j, M.Fire, 900, 25);

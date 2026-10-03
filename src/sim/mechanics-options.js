@@ -1,6 +1,8 @@
 // Browser preferences override these defaults; standalone worlds use the same
 // rules without a UI dependency. Transient controls are not embedded in saves.
 export const defaultMechanics = {
+  windStrength: 0,
+  windDirection: "right",
   predation: true,
   predatorRange: 72,
   flocking: true,

@@ -216,9 +216,11 @@ function updateToolProperties() {
     "pressure",
     "vacuum",
     "squeeze",
+    "wind",
+    "fan",
   ].includes(tool);
   $("solids-property").hidden = !["grab", "erase"].includes(tool);
-  $("direction-property").hidden = tool !== "fan";
+  $("direction-property").hidden = tool !== "fan" && tool !== "wind";
   const shape = tool === "select" ? state.selectionShape : state.shape;
   $("brush-control").hidden =
     reading || tool === "fill" || (tool === "select" && shape === "square");
@@ -874,6 +876,7 @@ const shortcutHandlers = {
   select: () => setTool("select"),
   warm: () => setTool("warm"),
   cool: () => setTool("cool"),
+  wind: () => setTool("wind"),
   inspect: () => setTool("inspect"),
   eyedropper: () => setTool("eyedropper"),
   smaller: () => state.setRadius(state.radius - 1),
@@ -881,7 +884,7 @@ const shortcutHandlers = {
   grid: () => settings.set("grid", !settings.get("grid")),
   shape: () => $("shape-btn").click(),
   view: () => {
-    const modes = ["normal", "heat", "pressure", "echo"];
+    const modes = ["normal", "heat", "pressure", "wind", "echo"];
     settings.set(
       "view",
       modes[(modes.indexOf(renderer.mode) + 1) % modes.length],

@@ -11,6 +11,7 @@ export const shortcutDefinitions = [
   ["eyedropper", "Copy", ["i"]],
   ["warm", "Warm", ["h"]],
   ["cool", "Cool", ["c"]],
+  ["wind", "Wind", []],
   ["smaller", "Smaller brush", ["[", "-"]],
   ["larger", "Larger brush", ["]", "Plus"]],
   ["shape", "Brush shape", ["r"]],

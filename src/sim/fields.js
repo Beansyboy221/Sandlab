@@ -1,3 +1,4 @@
+import { Airflow } from "./airflow.js";
 import { materials } from "./materials.js";
 const airBlockage = Float32Array.from(materials, (m) =>
   m.static ||
@@ -8,8 +9,8 @@ const airBlockage = Float32Array.from(materials, (m) =>
     : 0,
 );
 
-// Coarse atmospheric fields share barriers and boundaries. Pressure is a damped
-// gameplay wave (relative to ambient), not a compressible Navier–Stokes solver.
+// Pressure, heat and air momentum share cached barriers and boundary rules.
+// This is a bounded compressible gameplay solver, with pressure relative to ambient.
 export class Fields {
   constructor(width, height) {
     this.border = "solid";
@@ -31,6 +32,7 @@ export class Fields {
     this.gradientY = new Float64Array(length);
     this.gradientStamp = new Uint32Array(length);
     this.gradientEpoch = 0;
+    this.airflow = new Airflow(this.width, this.height);
   }
   index(x, y) {
     return (y >> 2) * this.width + (x >> 2);
@@ -157,6 +159,7 @@ export class Fields {
       this.lastBorder = this.border;
     }
     if (world) this.rebuildBarriers(world);
+    this.airflow.step(this, world);
     const {
       width: w,
       height: h,
@@ -175,7 +178,10 @@ export class Fields {
           up = y ? i - w : loop ? i + (h - 1) * w : -1,
           down = y < h - 1 ? i + w : loop ? x : -1;
         let pressureFlux = 0,
-          heatFlux = 0;
+          heatFlux = 0,
+          divergence = 0,
+          heatAdvection = 0,
+          incoming = 0;
         // No per-cell arrays or closures in the diffusion loop.
         for (let direction = 0; direction < 4; direction++) {
           const j =
@@ -198,15 +204,44 @@ export class Fields {
                     : direction === 2
                       ? this.vertical[j]
                       : this.vertical[i];
+          const flow =
+            direction === 0
+              ? -(left < 0
+                  ? this.airflow.west[y]
+                  : this.airflow.velocityX[left])
+              : direction === 1
+                ? this.airflow.velocityX[i]
+                : direction === 2
+                  ? -(up < 0
+                      ? this.airflow.north[x]
+                      : this.airflow.velocityY[up])
+                  : this.airflow.velocityY[i];
+          divergence += flow;
+          if (flow < 0) {
+            incoming += -flow / 4;
+            heatAdvection +=
+              (-flow / 4) * ((j < 0 ? this.ambientTemperature : t[j]) - t[i]);
+          }
           pressureFlux += ((j < 0 ? 0 : p[j]) - p[i]) * permeability;
           heatFlux +=
             ((j < 0 ? this.ambientTemperature : t[j]) - t[i]) * permeability;
         }
         n[i] = Math.max(
           -80,
-          Math.min(80, (p[i] + pressureFlux * 0.105) * 0.95),
+          Math.min(
+            80,
+            (p[i] + pressureFlux * 0.025 - divergence * 0.55) * 0.999,
+          ),
         );
-        nt[i] = Math.max(-273, Math.min(6000, t[i] + heatFlux * 0.08));
+        nt[i] = Math.max(
+          -273,
+          Math.min(
+            6000,
+            t[i] +
+              heatFlux * 0.03 +
+              heatAdvection * Math.min(0.5, 0.75 / (incoming || 1)),
+          ),
+        );
       }
     this.pressure = n;
     this.next = p;
@@ -216,6 +251,7 @@ export class Fields {
   clear() {
     this.pressure.fill(0);
     this.next.fill(0);
+    this.airflow.clear();
     this.temperature.fill(this.ambientTemperature);
     this.nextTemperature.fill(this.ambientTemperature);
     this.obstaclesDirty = true;

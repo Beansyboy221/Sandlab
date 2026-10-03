@@ -7,6 +7,7 @@ export const brushTools = [
   ["warm", "Warm", "warm"],
   ["cool", "Cool", "cool"],
   ["fan", "Fan", "fan"],
+  ["wind", "Wind", "wind"],
   ["grab", "Grab", "hand"],
   ["select", "Select", "select"],
   ["inspect", "Inspect", "search"],
@@ -81,7 +82,6 @@ export function applyTool(
   w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
   if (tool === "fan") {
     moveBrush(w, x, y, radius, shape, Math.sign(dx), Math.sign(dy));
-    return;
   }
   if (tool === "erase-mobile") {
     w.elastic.world = w;
@@ -101,6 +101,12 @@ export function applyTool(
         ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
       )
         w.fields.heat(nx, ny, (tool === "warm" ? 12 : -12) * power);
+      if (
+        (tool === "wind" || tool === "fan") &&
+        !w.fields.blocks(w.cells[i]) &&
+        ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
+      )
+        w.fields.airflow.impulse(w.fields, nx, ny, dx, dy, power);
       if (tool === "erase-mobile") {
         if (
           w.cells[i] &&
