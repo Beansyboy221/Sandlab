@@ -1,3 +1,4 @@
+import { toolGroups } from "./sim/tools.js";
 import { icon } from "./icons.js";
 
 export class ToolPicker {
@@ -17,24 +18,39 @@ export class ToolPicker {
     this.menu.setAttribute("role", "listbox");
     this.menu.setAttribute("aria-label", "Drawing tools");
     this.menu.hidden = true;
-    this.options = tools.map(([value, name, symbol]) => {
-      const option = document.createElement("button");
-      option.type = "button";
-      option.tabIndex = -1;
-      option.dataset.toolOption = value;
-      option.setAttribute("role", "option");
-      option.innerHTML = icon(symbol);
-      const label = document.createElement("span");
-      label.textContent = name;
-      option.append(label);
-      option.addEventListener("click", () => {
-        select.value = value;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-        this.close();
-      });
-      this.menu.append(option);
-      return option;
-    });
+    this.options = [];
+    for (const group of toolGroups) {
+      const section = document.createElement("div");
+      section.className = "tool-picker-group";
+      section.setAttribute("role", "group");
+      section.setAttribute("aria-label", group.name);
+      const heading = document.createElement("span");
+      heading.className = "tool-picker-heading";
+      heading.textContent = group.name;
+      heading.setAttribute("aria-hidden", "true");
+      section.append(heading);
+      for (const [value, name, symbol] of tools.filter((tool) =>
+        group.tools.includes(tool[0]),
+      )) {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.tabIndex = -1;
+        option.dataset.toolOption = value;
+        option.setAttribute("role", "option");
+        option.innerHTML = icon(symbol);
+        const label = document.createElement("span");
+        label.textContent = name;
+        option.append(label);
+        option.addEventListener("click", () => {
+          select.value = value;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          this.close();
+        });
+        section.append(option);
+        this.options.push(option);
+      }
+      this.menu.append(section);
+    }
     select.after(this.button);
     document.body.append(this.menu);
     select.hidden = true;
@@ -88,9 +104,11 @@ export class ToolPicker {
     const above = rect.top - box.height - 8,
       below = rect.bottom + 8;
     this.menu.style.top = `${Math.max(8, Math.min(innerHeight - box.height - 8, above >= 8 ? above : below))}px`;
-    this.options
-      .find((option) => option.getAttribute("aria-selected") === "true")
-      .focus({ preventScroll: true });
+    const selected = this.options.find(
+      (option) => option.getAttribute("aria-selected") === "true",
+    );
+    selected.focus({ preventScroll: true });
+    selected.scrollIntoView({ block: "nearest" });
   }
   close(focus = true) {
     if (this.menu.hidden) return;
@@ -132,7 +150,7 @@ export class ToolPicker {
       const key = event.key.toLowerCase();
       for (let n = 1; n <= this.tools.length; n++) {
         const target = (index + n + this.tools.length) % this.tools.length;
-        if (this.tools[target][1].toLowerCase().startsWith(key)) {
+        if (this.options[target].textContent.toLowerCase().startsWith(key)) {
           event.preventDefault();
           this.options[target].focus();
           break;

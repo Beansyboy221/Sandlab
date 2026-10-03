@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.14.3",
+    date: "2026-10-03",
+    title: "Grouped controls and controller support",
+    changes: [
+      "Tool menus use visibly bounded Create, Arrange, Environment, and Inspect & Guide groups. Desktop playback, editing, drawing and material controls also have labelled borders; expanded mobile controls share these boundaries.",
+      "The material dropdown now hides and restores the desktop sidebar, making more room for the canvas. About shows the actual number of registered chemical contact interactions. Changelog is a prominent button and the browser-storage note has been removed from About.",
+      "Standard controllers can draw, erase, select, inspect, use tools, move the cursor, pan, zoom, browse materials, navigate dialogs and control the Player. Drawing shares pointer input, history and solid-pause behavior. Disconnects, focus loss and dialogs release active drawing and movement safely.",
+      "Settings → Controller includes enable/disable, stick deadzone and cursor speed, plus button bindings. Back/View switches Player and Sandbox controls; LB+RB opens Settings. Availability depends on browser support and standard controller mapping.",
+    ],
+  },
+  {
     version: "1.14.2",
     date: "2026-10-03",
     title: "Smooth lighting and directional shadows",

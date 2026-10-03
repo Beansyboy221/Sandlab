@@ -20,7 +20,7 @@ Original browser sandbox; vanilla ES modules and Canvas, no runtime dependencies
 | Characters, wildlife              | `src/sim/stickmen.js`, `stickman-body.js`, `creature-*.js`, `boids.js`                                           | `actors`                                         |
 | Missiles, vehicles, electricity   | `src/sim/missiles.js`, `missile-guidance.js`, `machine-motion.js`, `circuits.js`                                 | `devices`                                        |
 | Rendering and light               | `src/renderer.js`, `lighting*.js`, `light-*.js`, `bloom.js`, `src/sim/*-renderer.js`                                           | `lighting` + relevant physics group              |
-| Pointer/touch, selection, paint   | `src/input.js`, `drawing-gesture.js`, `selection*.js`, `touch-navigation.js`                                     | `input`                                          |
+| Pointer/touch, selection, paint   | `src/input.js`, `controller-controls.js`, `gamepad-state.js`, `drawing-gesture.js`, `selection*.js`, `touch-navigation.js`                                     | `input`                                          |
 | Canvas properties, saves, history | `src/level*.js`, `persistence.js`, `history.js`                                                                  | `levels`; `--all` for persistence/schema changes |
 | Toolbar, palette, settings        | `src/app.js`, `settings*.js`, `material-groups*.js`, `style.css`, `mobile.css`                                   | `ui`                                             |
 

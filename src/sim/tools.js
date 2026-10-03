@@ -1,4 +1,13 @@
 import { materials, M } from "./materials.js";
+export const toolGroups = [
+  { name: "Create", tools: ["paint", "fill", "recolor", "erase"] },
+  { name: "Arrange", tools: ["select", "grab", "squeeze"] },
+  {
+    name: "Environment",
+    tools: ["warm", "cool", "fan", "wind", "pressure", "vacuum"],
+  },
+  { name: "Inspect & Guide", tools: ["inspect", "eyedropper", "guide"] },
+];
 export const brushTools = [
   ["paint", "Draw", "brush"],
   ["fill", "Fill", "bucket"],

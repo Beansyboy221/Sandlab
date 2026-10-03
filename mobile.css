@@ -556,3 +556,20 @@
 .mobile-layout .material-detail {
   display: none;
 }
+
+/* Expanded controls use the same visible group boundaries as the desktop. */
+.mobile-layout
+  .toolbox.expanded
+  > :is(
+    .play-controls,
+    .edit-controls,
+    .draw-controls,
+    .material-controls,
+    .camera-controls,
+    .utility-controls
+  ) {
+  padding: 6px;
+  border: 1px solid #3b515b;
+  border-radius: 8px;
+  background: #141f25;
+}

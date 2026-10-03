@@ -7,6 +7,8 @@ export class PlayerControls {
     this.keys = new Set();
     this.enabled = true;
     this.touchMove = 0;
+    this.gamepadMove = 0;
+    this.gamepadCrouch = false;
     this.touchCrouch = false;
     this.jump = false;
     this.panel = document.createElement("div");
@@ -151,6 +153,8 @@ export class PlayerControls {
   reset() {
     this.cancelJoystick?.();
     this.keys.clear();
+    this.gamepadMove = 0;
+    this.gamepadCrouch = false;
     this.touchMove = 0;
     this.touchCrouch = this.upHeld = this.jump = false;
     this.world.stickmen.controls.move = 0;
@@ -183,10 +187,12 @@ export class PlayerControls {
     const control = this.world.stickmen.controls;
     control.move = this.enabled
       ? this.touchMove ||
+        this.gamepadMove ||
         Number(this.keys.has("KeyD")) - Number(this.keys.has("KeyA"))
       : 0;
     control.crouch =
-      this.enabled && (this.touchCrouch || this.keys.has("KeyS"));
+      this.enabled &&
+      (this.touchCrouch || this.gamepadCrouch || this.keys.has("KeyS"));
     if (
       this.enabled &&
       this.jump &&

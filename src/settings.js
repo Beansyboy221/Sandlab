@@ -329,6 +329,41 @@ export const settingGroups = [
     ],
   },
   {
+    id: "controller",
+    name: "Controller",
+    fields: [
+      {
+        key: "controller",
+        label: "Controller support",
+        type: "toggle",
+        default: true,
+      },
+      {
+        key: "controllerDeadzone",
+        label: "Stick deadzone",
+        type: "range",
+        min: 0.05,
+        max: 0.35,
+        step: 0.01,
+        default: 0.18,
+        displayScale: 100,
+        suffix: "%",
+        depends: "controller",
+      },
+      {
+        key: "controllerCursorSpeed",
+        label: "Cursor speed",
+        type: "range",
+        min: 0.25,
+        max: 2,
+        step: 0.25,
+        default: 1,
+        suffix: "×",
+        depends: "controller",
+      },
+    ],
+  },
+  {
     id: "storage",
     name: "Storage",
     fields: [

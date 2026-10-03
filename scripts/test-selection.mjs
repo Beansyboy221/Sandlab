@@ -34,6 +34,7 @@ export const groups = {
     "security",
   ],
   input: [
+    "gamepad",
     "editor",
     "selection",
     "touch-navigation",
@@ -63,7 +64,7 @@ export const browserChecks = {
   actors: ["creatures_audio_check", "flocking_check"],
   devices: ["devices_check", "entities_check"],
   levels: ["level_check"],
-  input: ["drawing_check", "touch_gestures_check"],
+  input: ["controller_check", "drawing_check", "touch_gestures_check"],
   ui: ["browser_check"],
   lighting: ["lighting_check"],
 };
@@ -77,7 +78,7 @@ const rules = [
   [/^src\/sim\/(paint|fill|tools)\./, ["input", "collisions"]],
   [/^src\/(level|canvas-view|history)/, ["levels"]],
   [
-    /^src\/(input|drawing-|selection|touch-|player-controls)/,
+    /^src\/(controller-controls|gamepad-state|input|drawing-|selection|touch-|player-controls)/,
     ["input", "actors"],
   ],
   [/^src\/(lighting|light-|bloom|color)/, ["lighting", "ui"]],

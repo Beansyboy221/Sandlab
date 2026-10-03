@@ -1,4 +1,5 @@
 const paths = {
+  history: "M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2",
   target: "M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M12 8v8M8 12h8",
   bucket:
     "M4 3l11 11M5 7l5-5 10 10-10 10L2 14a2 2 0 0 1 0-3l3-4ZM3 13h17M21 16s-2 3-2 4a2 2 0 0 0 4 0c0-1-2-4-2-4Z",

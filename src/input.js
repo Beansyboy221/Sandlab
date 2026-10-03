@@ -33,6 +33,7 @@ export class Input {
     this.world = world;
     this.state = state;
     this.pointers = new Map();
+    this.controllerId = -100;
     this.lastLightningAt = -Infinity;
     this.onStroke = onStroke;
     this.onHover = onHover;
@@ -224,6 +225,24 @@ export class Input {
         canvas.style.cursor = "crosshair";
       } else if (type === "pointerup")
         this.hover(renderer.point(e.clientX, e.clientY));
+    };
+    // Controller input shares every stroke/history/selection path with pointers.
+    // Call handlers directly so virtual pointers never request browser capture.
+    this.controllerPointer = (type, clientX, clientY, erase = false) => {
+      const event = {
+        type,
+        clientX,
+        clientY,
+        button: erase ? 2 : 0,
+        pointerId: this.controllerId,
+        pointerType: "touch",
+        shiftKey: false,
+        ctrlKey: false,
+        preventDefault() {},
+      };
+      if (type === "pointerdown") pointerDown(event);
+      else if (type === "pointermove") pointerMove(event);
+      else pointerEnd(event);
     };
     this.touchNavigation = new TouchNavigation(renderer, {
       down: pointerDown,

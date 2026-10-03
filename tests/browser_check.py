@@ -145,7 +145,8 @@ with sync_playwright() as p:
     page.locator('#about-btn').click()
     assert page.locator('#about-heading').inner_text() == 'About Sandlab'
     assert page.locator('#app-version').inner_text() == 'Version ' + json.loads((ROOT/'package.json').read_text())['version']
-    assert page.locator('#app-content-count').inner_text() == '62 materials · 32 entities · 114 simulation forms'
+    interactions=page.evaluate("async()=> (await import('./src/sim/chemistry.js')).interactionCount")
+    assert page.locator('#app-content-count').inner_text() == f'62 materials · 32 entities · {interactions} interactions'
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     page.screenshot(path=str(ARTIFACTS / 'about-desktop.png'))
     page.locator('#changelog-btn').click()

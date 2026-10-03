@@ -38,6 +38,13 @@ pair(M.Rust, M.Coal, M.Steel, M["CO2"], {
   chance: 0.04,
   pressure: 0.5,
 });
+// Count each registered unordered reactant pair once, independent of direction.
+export const interactionCount = contacts.reduce(
+  (count, row, a) =>
+    count +
+    (row ? row.reduce((n, rule, b) => n + Number(!!rule && b > a), 0) : 0),
+  0,
+);
 export const contactParticipants = Uint8Array.from(materials, (m) =>
   Number(!!contacts[m.id]),
 );

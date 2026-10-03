@@ -2134,7 +2134,7 @@ dialog::backdrop {
   z-index: 50;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
+  gap: 8px;
   width: min(320px, calc(100vw - 16px));
   max-height: calc(100dvh - 16px);
   overflow-y: auto;
@@ -2699,4 +2699,134 @@ dialog::backdrop {
 }
 .mobile-layout .catalog-tabs button {
   min-height: 44px;
+}
+
+/* Categories remain visible on both desktop and touch layouts. */
+.tool-picker-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  grid-column: 1/-1;
+  padding: 4px;
+  border: 1px solid #3b515b;
+  border-radius: 8px;
+  background: #121c22;
+}
+.tool-picker-heading {
+  grid-column: 1/-1;
+  padding: 8px 10px 4px;
+  color: #91a5ad;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+#changelog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: 1px solid #accfbc;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #152a22;
+  font-weight: 600;
+}
+#changelog-btn svg {
+  width: 18px;
+  height: 18px;
+}
+@media (min-width: 1101px) {
+  body:not(.mobile-layout).palette-hidden .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body:not(.mobile-layout).palette-hidden .palette {
+    display: none;
+  }
+  body:not(.mobile-layout)
+    .toolbox
+    > :is(.play-controls, .edit-controls, .draw-controls, .material-controls) {
+    position: relative;
+    padding: 18px 6px 4px;
+    border: 1px solid #3b515b;
+    border-radius: 8px;
+    background: #141f25;
+  }
+  body:not(.mobile-layout)
+    .toolbox
+    > :is(.play-controls, .edit-controls, .draw-controls, .material-controls)
+    > .control-caption {
+    display: block;
+    position: absolute;
+    top: 3px;
+    left: 8px;
+    color: #91a5ad;
+    font-size: 9px;
+    line-height: 12px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+}
+
+.controller-cursor {
+  position: absolute;
+  z-index: 6;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 0 1px #1119;
+}
+.controller-cursor::before,
+.controller-cursor::after {
+  content: "";
+  position: absolute;
+  background: #fff;
+  box-shadow: 0 0 1px #000;
+}
+.controller-cursor::before {
+  width: 26px;
+  height: 1px;
+  left: -5px;
+  top: 8px;
+}
+.controller-cursor::after {
+  height: 26px;
+  width: 1px;
+  top: -5px;
+  left: 8px;
+}
+.controller-hud {
+  position: absolute;
+  z-index: 6;
+  top: 10px;
+  left: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 11px;
+  border: 1px solid #4e646b;
+  border-radius: 7px;
+  background: #152127dd;
+  color: #d1e5da;
+}
+
+@media (min-width: 1101px) {
+  body:not(.mobile-layout) .toolbox > .material-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+}
+.mobile-layout .player-controls:not([hidden]) ~ .controller-hud {
+  top: 70px;
+}
+
+@media (min-width: 1101px) {
+  body:not(.mobile-layout) .toolbox > .tool-divider {
+    display: none;
+  }
 }

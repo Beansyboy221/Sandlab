@@ -41,6 +41,8 @@ export class SettingsPanel {
           "Birds and aquatic creatures group with nearby members of their species. Group size includes the creature itself. Hunting and fleeing take priority over grouping.",
         devices:
           "Drones hover and cruise; rovers drive, climb small ledges and turn at obstacles. Turning motors off lets them fall. Heat-seeking missiles track hot surfaces. Laser-guided missiles track the nearest visible beam, or the cursor when no beam is available. Use Guide to aim by touch. Rockets fly straight. Guidance toggles do not disable collisions.",
+        controller:
+          "Pair a standard controller with your device and press a button to connect. Sandbox: left stick moves the cursor; RT/A draws, LT/B erases; right stick pans; stick clicks zoom. Bumpers cycle materials; D-pad up/down changes brush size. X opens materials, Y opens tools, Start pauses, Back/View switches player and sandbox. LB+RB opens Settings. In menus use D-pad and A/B. Player: left stick or D-pad moves, A or up jumps, down crouches. Works where the browser supports the Gamepad API.",
         player:
           "Push up to jump and down to crouch. Position follows screen orientation. The joystick hides when expanded controls leave too little canvas; close them to play.",
       };

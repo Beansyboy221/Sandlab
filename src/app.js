@@ -1,3 +1,5 @@
+import { ControllerControls } from "./controller-controls.js";
+import { interactionCount } from "./sim/chemistry.js";
 import {
   isEntity,
   entityCategory,
@@ -449,6 +451,7 @@ function renderMaterials() {
     b.addEventListener("click", () => {
       selectMaterial(m.id);
       if (mobileDock?.media.matches) $("palette").classList.remove("open");
+      syncPaletteToggle();
     });
     $("materials").append(b);
   }
@@ -592,14 +595,34 @@ $("fullscreen-btn").addEventListener("click", async () => {
     focus();
   }
 });
-$("palette-toggle").addEventListener("click", () => {
+function paletteVisible() {
+  return mobileDock.media.matches || innerWidth <= 1100
+    ? $("palette").classList.contains("open")
+    : !document.body.classList.contains("palette-hidden");
+}
+function togglePalette() {
   if (mobileDock.media.matches || innerWidth <= 1100)
     $("palette").classList.toggle("open");
-  else $("search").focus();
+  else document.body.classList.toggle("palette-hidden");
+  syncPaletteToggle();
+}
+function syncPaletteToggle() {
+  $("palette-toggle").setAttribute("aria-expanded", String(paletteVisible()));
+  $("palette-toggle").setAttribute("aria-controls", "palette");
+  $("palette-toggle").setAttribute(
+    "aria-label",
+    `${paletteVisible() ? "Hide" : "Show"} material palette`,
+  );
+}
+$("palette-toggle").addEventListener("click", togglePalette);
+$("palette-close").addEventListener("click", () => {
+  if (mobileDock.media.matches || innerWidth <= 1100)
+    $("palette").classList.remove("open");
+  else document.body.classList.add("palette-hidden");
+  syncPaletteToggle();
 });
-$("palette-close").addEventListener("click", () =>
-  $("palette").classList.remove("open"),
-);
+window.addEventListener("resize", syncPaletteToggle);
+syncPaletteToggle();
 drawingPause = new DrawingPause(state, settings, (value) =>
   setPaused(value, true),
 );
@@ -635,6 +658,26 @@ const playerControls = new PlayerControls(
   settings,
 );
 const audio = new GameAudio(world, renderer, settings, playerControls);
+const controller = new ControllerControls(
+  input,
+  renderer,
+  playerControls,
+  settings,
+  {
+    pause: () => setPaused(!state.paused),
+    togglePalette,
+    paletteVisible,
+    settings: () => openDialog("settings-dialog"),
+    openTools: () => toolPicker.open(),
+    closeTools: () => toolPicker.close(),
+    cycleMaterial: (delta) => {
+      const list =
+        catalogKind === "entities" ? paletteEntities : paletteMaterials;
+      const index = list.findIndex((m) => m.id === state.material);
+      selectMaterial(list[(index + delta + list.length) % list.length].id);
+    },
+  },
+);
 mobileDock.onOrientationChange = () => {
   playerControls.reset();
   input.cancel();
@@ -706,7 +749,7 @@ $("settings-btn").addEventListener("click", () =>
 $("about-btn").addEventListener("click", () => openDialog("about-dialog"));
 $("app-version").textContent = `Version ${changelog[0].version}`;
 $("app-content-count").textContent =
-  `${paletteMaterials.length} materials · ${paletteEntities.length} entities · ${materials.filter((m) => m.id && !m.deprecated).length} simulation forms`;
+  `${paletteMaterials.length} materials · ${paletteEntities.length} entities · ${interactionCount} interactions`;
 for (const release of changelog) {
   const section = document.createElement("section"),
     heading = document.createElement("h3"),
@@ -1126,6 +1169,7 @@ function frame(now) {
   if (document.hidden) return;
   const elapsed = clock.takeFrame(now);
   if (!elapsed) return;
+  controller.update(elapsed);
   input.update();
   playerControls.update();
   syncMechanics();
@@ -1172,6 +1216,7 @@ window.sandlab = {
   renderer,
   audio,
   playerControls,
+  controller,
   inspector,
   selection,
   settings,
