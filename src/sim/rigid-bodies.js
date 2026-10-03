@@ -1,3 +1,4 @@
+import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
 import { BodyConnections } from "./body-connections.js";
 import { BodyRaster } from "./body-raster.js";
@@ -24,6 +25,17 @@ export class RigidBodies {
     this.dirty = true;
     this.fresh = new Set();
     this.collidedBodies = new Set();
+    this.solving = false;
+    this.impactDamage = new Map();
+    this.work = {
+      plans: 0,
+      scanned: 0,
+      posePixels: 0,
+      syncPixels: 0,
+      contacts: 0,
+      limitedPlans: 0,
+      limitedContacts: 0,
+    };
     this.parents = new Int32Array(world.length);
     this.edgeCounts = new Uint8Array(world.length);
     this.connections = new BodyConnections(this);
@@ -152,7 +164,16 @@ export class RigidBodies {
     this.connections.dirty = true;
     this.dirty = false;
   }
+  motionPose(body) {
+    return this.solving ? body.motion : this.pose(body);
+  }
+  queueFracture(i, energy) {
+    const id = this.world.elasticId[i];
+    if (id && this.locations.has(id))
+      this.impactDamage.set(id, (this.impactDamage.get(id) || 0) + energy);
+  }
   pose(body) {
+    this.work.posePixels += body.ids.length;
     const w = this.world;
     let x = 0,
       y = 0,
@@ -208,6 +229,7 @@ export class RigidBodies {
     };
   }
   sync(body, p) {
+    this.work.syncPixels += body.ids.length;
     body.motion = p;
     const w = this.world,
       cos = Math.cos(p.angle),
@@ -239,9 +261,16 @@ export class RigidBodies {
     const w = this.world,
       cos = Math.cos(p.angle),
       sin = Math.sin(p.angle);
+    this.work.plans++;
+    if (this.solving && ++body.plans > collisionLimits.plans) {
+      this.work.limitedPlans++;
+      return { i: -1, j: -1, internal: true };
+    }
     let hit = null;
     let contacts = null;
+    let contactLookup = null;
     for (let n = 0; n < body.ids.length; n++) {
+      this.work.scanned++;
       const i = this.locations.get(body.ids[n]);
       if (i === undefined) return { i: -1, j: -1 };
       const lx = w.restX[i] - body.lx,
@@ -275,16 +304,16 @@ export class RigidBodies {
           Math.sign(axis === 0 ? p.vx : p.vy) ||
           1;
         contacts ??= [];
-        let contact;
-        for (let c = 0; c < contacts.length; c++)
-          if (
-            contacts[c].owner === owner &&
-            contacts[c].axis === axis &&
-            contacts[c].sign === sign
-          ) {
-            contact = contacts[c];
-            break;
-          }
+        contactLookup ??= new Map();
+        const key =
+          (owner ? owner.ids[0] : 0) * 4 + axis * 2 + Number(sign > 0);
+        let contact = contactLookup.get(key);
+        if (!contact && contacts.length >= collisionLimits.contacts) {
+          // All obstacles still reject the move; only the impulse manifold is
+          // capped. A crowded body can never trigger a pairwise contact cascade.
+          this.work.limitedContacts++;
+          continue;
+        }
         if (!contact) {
           contact = {
             i,
@@ -302,6 +331,7 @@ export class RigidBodies {
             maxY: -Infinity,
           };
           contacts.push(contact);
+          contactLookup.set(key, contact);
           hit ??= contact;
         }
         let boundary =
@@ -352,7 +382,7 @@ export class RigidBodies {
     if (contactsOnly) return null;
     // Most rejected moves touch a support near the last row of the body. Reserve
     // occupancy only after the physical sweep succeeds, avoiding wasted matching.
-    this.raster.begin();
+    this.raster.begin(body.ids.length);
     for (let n = 0; n < body.ids.length; n++)
       if (
         !this.raster.reserve(

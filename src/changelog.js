@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.14.1",
+    date: "2026-10-03",
+    title: "Bounded solid collisions",
+    changes: [
+      "Touching solid piles no longer rescan and rewrite an entire neighboring body for every contact. Each body's motion is read once and synchronized once per physics tick, while shared contact impulses still transmit weight, friction and torque.",
+      "Contact grouping uses direct lookups and at most 16 contact manifolds per candidate move. Raster placement searches at most 64 nodes and shares a per-pixel search budget. Substeps, movement attempts and support passes have fixed limits. Every obstacle still blocks overlap; a crowded placement may defer movement rather than deleting particles or restarting collision work.",
+      "Impact damage is combined by stable particle ID and applied once after the collision passes. Broken links use reverse adjacency instead of scanning all solid particles per fracture. Performance diagnostics now report solid body count, contact count and collision checks.",
+    ],
+  },
+  {
     version: "1.14.0",
     date: "2026-10-03",
     title: "Entities and canvas modes",

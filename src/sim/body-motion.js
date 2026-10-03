@@ -1,5 +1,6 @@
+import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
-import { collide } from "./body-collisions.js";
+import { collide, fracture } from "./body-collisions.js";
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 const neighbors = [
   [1, 0],
@@ -58,7 +59,13 @@ export function stepBodies(solver) {
   const w = solver.world;
   if (solver.dirty) solver.rebuild();
   solver.collidedBodies.clear();
-  for (const body of solver.bodies) body.motion = solver.pose(body);
+  solver.impactDamage.clear();
+  for (const key of Object.keys(solver.work)) solver.work[key] = 0;
+  for (const body of solver.bodies) {
+    body.plans = 0;
+    body.motion = solver.pose(body);
+  }
+  solver.solving = true;
   // Vacate the leading bodies first, as the particle grid already does for
   // powders. Drawing order must not turn a moving lower body into a false wall.
   solver.bodies.sort((a, b) => {
@@ -71,7 +78,7 @@ export function stepBodies(solver) {
     return depthB - depthA || a.ids[0] - b.ids[0];
   });
   for (const body of solver.bodies) {
-    const p = solver.dirty ? solver.pose(body) : body.motion;
+    const p = body.motion;
     if (!p) continue;
     w.fields.beginForceSample();
     let liquid = 0,
@@ -106,7 +113,6 @@ export function stepBodies(solver) {
     }
     if (rooted) {
       p.vx = p.vy = p.omega = 0;
-      solver.sync(body, p);
       continue;
     }
     const buoyancy = contacts
@@ -131,8 +137,11 @@ export function stepBodies(solver) {
     );
     const steps = Math.max(
         1,
-        Math.ceil(
-          (Math.hypot(p.vx, p.vy) + Math.abs(p.omega) * body.radius) / 0.4,
+        Math.min(
+          collisionLimits.substeps,
+          Math.ceil(
+            (Math.hypot(p.vx, p.vy) + Math.abs(p.omega) * body.radius) / 0.4,
+          ),
         ),
       ),
       dt = 1 / steps;
@@ -181,19 +190,31 @@ export function stepBodies(solver) {
         }
       }
     }
-    solver.sync(body, p);
   }
   stabilizeSupports(solver);
+  // Every body's motion is read once and written once, irrespective of the
+  // number of neighbors. Impulses update the cached poses during all passes.
+  for (const body of solver.bodies)
+    if (body.motion) solver.sync(body, body.motion);
+  if (solver.impactDamage.size) {
+    if (solver.connections.dirty) solver.connections.rebuild();
+    for (const [id, energy] of solver.impactDamage) {
+      const i = solver.locations.get(id);
+      if (i !== undefined) fracture(solver, i, energy);
+    }
+  }
+  solver.solving = false;
 }
 
 function stabilizeSupports(solver) {
-  if (solver.dirty) solver.rebuild();
-  if (solver.bodies.length < 2) return;
+  // Void exits can remove topology mid-pass. Rebuild once next tick, after
+  // flushing the surviving cached velocities, rather than restarting contacts.
+  if (solver.dirty || solver.bodies.length < 2) return;
   const w = solver.world,
     contacts = [];
   for (const body of solver.bodies) {
     if (!solver.collidedBodies.has(body.ids[0])) continue;
-    const p = solver.pose(body);
+    const p = solver.motionPose(body);
     if (!p) continue;
     w.environment.sample(p.x, p.y);
     const hit = solver.plan(
@@ -209,9 +230,9 @@ function stabilizeSupports(solver) {
   }
   // Sequential impulse relaxation transmits weight through stacks. These passes
   // change velocity only; geometry, chemistry and damage already advanced once.
-  for (let pass = 0; pass < 3; pass++)
+  for (let pass = 0; pass < collisionLimits.supportPasses; pass++)
     for (const { body, hit } of contacts) {
-      const p = solver.pose(body);
+      const p = solver.motionPose(body);
       if (!p) continue;
       for (let c = 0; c <= (hit.others?.length || 0); c++) {
         const contact = c ? hit.others[c - 1] : hit;
@@ -225,6 +246,5 @@ function stabilizeSupports(solver) {
           false,
         );
       }
-      solver.sync(body, p);
     }
 }

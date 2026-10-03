@@ -1,3 +1,4 @@
+import { collisionLimits } from "./collision-limits.js";
 // Continuous rigid positions need unique grid cells for chemistry and editing.
 // A local augmenting path relocates earlier reservations when simple rounding
 // runs out of room. It changes occupancy, never the body's physical shape.
@@ -16,7 +17,10 @@ export class BodyRaster {
     this.epoch = 0;
     this.search = 0;
   }
-  begin() {
+  begin(pixels = this.solver.world.length) {
+    this.remaining = pixels * collisionLimits.rasterVisitsPerPixel;
+    this.visits = 0;
+    this.limited = 0;
     this.epoch = (this.epoch + 1) >>> 0 || 1;
     if (this.epoch === 1) this.reservations.fill(0);
   }
@@ -69,6 +73,11 @@ export class BodyRaster {
     let head = 0,
       tail = 1;
     while (head < tail) {
+      if (head >= collisionLimits.rasterSearch || this.remaining-- <= 0) {
+        this.limited++;
+        return false;
+      }
+      this.visits++;
       const current = this.queue[head++],
         cx = Math.floor(this.x[current]),
         cy = Math.floor(this.y[current]);
@@ -91,7 +100,7 @@ export class BodyRaster {
           if (this.visited[owner] === this.search) continue;
           this.visited[owner] = this.search;
           this.parents[owner] = current;
-          this.queue[tail++] = owner;
+          if (tail < collisionLimits.rasterSearch) this.queue[tail++] = owner;
         }
     }
     return false;

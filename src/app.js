@@ -1161,7 +1161,7 @@ function frame(now) {
     } else $("hover-info").textContent = "";
     if (!$("debug-panel").hidden)
       $("debug-panel").textContent =
-        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}`;
+        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}\nSolids: ${world.rigid.bodies.length} bodies · ${world.rigid.work.contacts} contacts\nCollision work: ${world.rigid.work.scanned.toLocaleString()} pixel checks · ${world.rigid.work.limitedPlans + world.rigid.work.limitedContacts} limited requests`;
   }
 }
 requestAnimationFrame(frame);

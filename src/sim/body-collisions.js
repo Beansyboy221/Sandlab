@@ -14,12 +14,22 @@ export function fracture(solver, i, energy) {
     return;
   }
   const id = w.elasticId[i];
-  for (const k of solver.locations.values())
-    for (let d = 0; d < 4; d++)
-      if (k === i || w["bond" + d][k] === id) {
-        w.fragments.mark(k);
-        w["bond" + d][k] = 0;
-      }
+  if (!solver.solving && solver.connections.dirty) solver.connections.rebuild();
+  // Read the tick's reverse adjacency, rather than searching every solid pixel.
+  const graph = solver.connections,
+    slot = graph.slots.get(id);
+  if (slot !== undefined)
+    for (let n = graph.offsets[slot]; n < graph.offsets[slot + 1]; n++) {
+      const k = solver.locations.get(graph.neighbors[n]);
+      if (k === undefined) continue;
+      for (let d = 0; d < 4; d++)
+        if (w["bond" + d][k] === id) {
+          w.fragments.mark(k);
+          w["bond" + d][k] = 0;
+        }
+    }
+  for (let d = 0; d < 4; d++) w["bond" + d][i] = 0;
+  w.fragments.mark(i);
   w.damage[i] = 0.001;
   solver.dirty = true;
 }
@@ -95,6 +105,7 @@ function contactNormal(solver, body, hit, dx, dy) {
 }
 export function collide(solver, body, p, hit, dx, dy, effects = true) {
   if (hit.internal || hit.i < 0 || !Math.hypot(dx, dy)) return;
+  if (solver.work) solver.work.contacts++;
   const w = solver.world,
     i = hit.i,
     j = hit.j;
@@ -126,7 +137,12 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
   const rx = cx - p.x,
     ry = cy - p.y;
   const other = j >= 0 ? solver.bodyOf.get(w.elasticId[j]) : null;
-  const op = other && other !== body ? solver.pose(other) : null;
+  const op =
+    other && other !== body
+      ? solver.solving
+        ? other.motion
+        : solver.pose(other)
+      : null;
   let ox = op ? cx - op.x : 0,
     oy = op ? cy - op.y : 0;
   if (op && w.border === "looping") {
@@ -202,7 +218,7 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
     p.omega += (impulse * shift) / body.inertia;
     if (op) op.omega -= (impulse * shift) / other.inertia;
   }
-  if (op) solver.sync(other, op);
+  if (op && !solver.solving) solver.sync(other, op);
   if (!effects) return;
   // Resting contact never accumulates damage. Only energetic, closing impacts
   // fracture brittle surfaces; heavier bodies transfer more energy.
@@ -221,8 +237,13 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
         inverse /
         Math.max(1, Math.sqrt(body.ids.length)),
     );
-    fracture(solver, j, energy);
-    fracture(solver, i, energy * 0.35);
+    if (solver.solving) {
+      solver.queueFracture(j, energy);
+      solver.queueFracture(i, energy * 0.35);
+    } else {
+      fracture(solver, j, energy);
+      fracture(solver, i, energy * 0.35);
+    }
     w.fields.add(i % w.width, Math.floor(i / w.width), energy * 0.08);
     if (materials[w.cells[i]].conductive && energy > 5)
       emitSpark(w, i, i % w.width, Math.floor(i / w.width));
