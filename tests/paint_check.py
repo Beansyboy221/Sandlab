@@ -64,7 +64,10 @@ with sync_playwright() as p:
         c=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=3);c.route('http://sandlab.test/**',serve)
         page=c.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
         if page.evaluate('!sandlab.state.paused'):page.locator('#play-btn').tap()
-        choose(page,'recolor',True);assert page.locator('#paint-color').is_visible();page.locator('#paint-layer').select_option('background')
+        choose(page,'recolor',True)
+        # Tool selection preserves the drawer; open properties explicitly.
+        if page.locator('#controls-toggle').get_attribute('aria-expanded')=='false':page.locator('#controls-toggle').tap()
+        assert page.locator('#paint-color').is_visible();page.locator('#paint-layer').select_option('background')
         page.locator('#paint-color').tap();wheel=page.locator('#color-wheel').bounding_box();page.touchscreen.tap(wheel['x']+wheel['width']*.9,wheel['y']+wheel['height']*.5)
         page.locator('#color-hex').fill('#8040ff');page.locator('#color-opacity').fill('60')
         page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'paint-picker-{width}.png'))

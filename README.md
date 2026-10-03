@@ -301,3 +301,28 @@ A controlled Player uses the left stick or D-pad to move, A/up to jump, and down
 Settings → Simulation can independently disable wind, pressure, or temperature transport. Disabled wind clears air momentum and ignores wind brushes and fans. Disabled pressure clears the relative pressure field and ignores new pressure sources; wind and temperature remain independent. Disabled temperature preserves stored heat and stops particle/air heat exchange and atmospheric diffusion; direct Warm/Cool tools and heat-producing chemical reactions still work. Re-enabling a system resumes its solver. These switches are browser preferences rather than world-save properties.
 
 Add Sandlab to your home screen from Safari’s Share menu on iPhone or the browser’s Install/Add to home screen menu on Android. The Apple touch icon and web app manifest use the supplied three-grain artwork. The installed app opens the GitHub Pages game in standalone mode. Icon assets remain local, and a service worker is not installed; launching still requires a network connection. Click or tap the logo/name for About and Changelog.
+
+## Material engine and profiling
+
+Material slots are append-only in `src/sim/material-definitions.js`. `material-authoring.js` provides `defineMaterial`, `porous`, `springy`, `combustible`, `conductor` and `surface`. Traits merge left-to-right and explicit properties override them. Definitions compile once through `material-registry.js`; shared calibrated profiles and fragment mappings live separately. Existing systems import the small `materials.js` facade. Runtime materials are frozen so typed lookup tables cannot silently become stale. This is a development authoring API, not yet an in-game material editor.
+
+```js
+defineMaterial({
+  name: "Spring Sponge",
+  representation: "elastic",
+  color: "#bca578",
+  density: 0.7,
+  traits: [
+    porous(8, 0.4, 0.9),
+    springy(0.18, 0.94, 5),
+    combustible(260, 150, "Ash"),
+  ],
+  properties: { conductivity: 0.02 },
+});
+```
+
+Append a definition without reordering slots. Reference existing materials by name for phase/combustion products. The compiler validates references, scalar coefficients, carrier conflicts and numeric storage capacity. Current thermal/electrical properties retain their existing gameplay meanings; heat capacity, latent heat and calibrated current are future work in [ENGINE_PLAN.md](ENGINE_PLAN.md). Existing material coefficients and the particle/save schema are retained.
+
+Enable Settings → Performance → Performance details to collect per-stage simulation and render timings. Profiling is disabled normally, allocates no records per particle and is omitted from saves. Grid-aligned rigid bodies reuse a local Canvas texture; color/heat/view changes update it, geometry rebuilds invalidate it, and light/shadow passes remain live. Irregular or sparse bodies use the existing rectangle drawing path. Run `python3 tests/rigid_textures_check.py` for cache reuse, live colors, cuts, split bodies and geometry fallback.
+
+`npm run bench:render` measures a 16,000-cell solid drawing pass after warmup. To compare checkouts with the same fixture, run `python3 tests/rigid-render-benchmark.py /path/to/checkout`. On the development host, v1.17.1 averaged 18.45 ms and v1.18.0 averaged 1.78 ms for this pass; this excludes simulation, lighting, browser composition and physical-phone performance. Dense sand/water simulation remained comparable at approximately 14.8 ms versus 14.7 ms per tick. These are scenario measurements, not universal frame-rate guarantees.

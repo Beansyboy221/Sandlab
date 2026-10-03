@@ -1,6 +1,6 @@
 # Sandlab engine evolution
 
-Status: proposed roadmap, based on the v1.17.1 checkout. This document is a design plan, not a claim that the systems below are implemented or calibrated.
+Status: staged roadmap. v1.18.0 implements the first material compiler/trait increment, opt-in subsystem timings, compiled heat-transfer coefficients and reusable rigid textures. All 130 prior material definitions and aliases were compared exactly before migration. Units/calibration, expanded rule authoring, editable material packs and game modes remain future stages; this is not a claim of complete physical accuracy.
 
 ## Target
 
@@ -12,7 +12,7 @@ Accuracy means defined units, stable qualitative relationships and tested conser
 
 | Area                 | Existing implementation                                                                                             | Next coherent improvement                                                                                                                      |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Material definitions | Registry objects with shared scalar properties; stable IDs; definitions mixed with post-registration patches        | Separate authoring, validation, reference resolution and compilation; organize definitions by responsibility                                   |
+| Material definitions | Composable authoring, validated immutable definitions, shared profiles and compiled tables; stable IDs        | Expand trait coverage and typed dispatch only when a concrete material or measured hot path needs it                                   |
 | Motion               | Grid particles, rigid shapes, elastic networks and jointed actors                                                   | Keep these representations; use common local force/contact/property interfaces                                                                 |
 | Density and mass     | Relative particle density; rigid mass/inertia derived from dry cells; negative gas densities encode rising behavior | Separate positive density from buoyancy; define amount/volume units and include contained liquid in mass without rebuilding unchanged topology |
 | Porous transport     | Integer capacity, permeability and retention; shared finite reservoirs                                              | Calibrate beds and drainage; describe capacity as a storage abstraction rather than literal physical void fraction                             |
@@ -20,8 +20,8 @@ Accuracy means defined units, stable qualitative relationships and tested conser
 | Electricity          | Conductive flag, timed charge propagation, gates and sparks                                                         | Separate digital signals from electrical conductivity/current, then add limited Joule heating and resistance where useful                      |
 | Chemistry            | 28 registered unordered contact pairs, plus combustion, corrosion, biology and other rule handlers                  | Declarative bounded contact/environment rules, explicit yields and heat/pressure budgets, fewer material-name branches                         |
 | Atmosphere           | Pressure and face velocity on four-cell tiles; barriers, buoyancy, temperature transport                            | Retain the shared field; calibrate sealed/vented scenes, boundary behavior and finite oxidizer                                                 |
-| Drawing              | Pixel image buffer; continuous rigid, elastic and entity passes; lighting and bloom                                 | Profile individual passes, cache rigid albedo, reuse elastic topology, and preserve one camera/light pipeline                                  |
-| Diagnostics          | Overall simulation time/FPS and collision work counters                                                             | Timings and work counters per subsystem, render pass and topology update; memory and physical-device measurements                              |
+| Drawing              | Pixel buffer; cached rigid textures with continuous fallback; elastic/entity passes; lighting and bloom                                 | Use stage timings to target the next bottleneck; reuse elastic topology and preserve one camera/light pipeline                                  |
+| Diagnostics          | Opt-in per-stage simulation/render timings, overall FPS and bounded collision work counters                                                             | Add topology/memory counters when needed; calibrate scenarios and measure on physical devices                              |
 
 ## Material composition
 
@@ -100,6 +100,8 @@ Preserve the split between simulation occupancy and visible geometry. Powders/li
 
 Existing v1.17.0 measurements on the development host: dry 60,800-cell powder about 4.1 ms/tick, an active sand/water scene about 14.9 ms/tick, and crowded rigid benchmarks about 3.7–4.6 ms/physics pass. These are scenario-specific CPU measurements, not full browser-frame or physical-phone guarantees.
 
+v1.18.0 controlled comparison: a 16,000-cell rigid drawing pass averaged 18.45 ms before caching and 1.78 ms after, with 100 samples after 20 warmup draws. Dense sand/water simulation remained comparable at about 14.8 versus 14.7 ms/tick. Freezing the registry array caused a measured lookup regression and was removed; individual definitions and the name map remain frozen. `npm run bench:render` and its optional checkout argument reproduce the drawing fixture.
+
 ## Ordered delivery plan
 
 | Stage                           | Deliverable                                                                                                                                   | Verification / exit condition                                                                                                                                                       |
@@ -114,4 +116,4 @@ Existing v1.17.0 measurements on the development host: dry 60,800-cell powder ab
 
 Use focused checks for each increment and the full suite for shared rule/state migrations. Benchmark one changed subsystem at a time. Preserve a working playable release between stages; do not bundle a registry rewrite, physics rewrite, new renderer and editor into one change.
 
-Recommended first increment: diagnostics plus a small material-definition compiler/validator. Demonstrate composition by migrating two or three existing definitions without changing their outcomes. Then correct one measurable physical inconsistency at a time. The editor and game modes build on that stable foundation.
+Next increment: document normalized mass/amount units and calibrate contained-liquid mass in rigid and elastic bodies without rebuilding unchanged topology. Keep thermal capacity/latent heat and expanded reaction authoring as separate subsequent changes. The editor and game modes build on that tested foundation.

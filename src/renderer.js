@@ -1,3 +1,7 @@
+import {
+  PerformanceCounters,
+  renderingStages,
+} from "./performance-counters.js";
 import { flowColor, drawStreamlines } from "./airflow-view.js";
 import { drawCircuits } from "./sim/circuit-renderer.js";
 import { portalColor, drawPortalLinks } from "./portal-renderer.js";
@@ -33,6 +37,7 @@ export class Renderer {
   constructor(canvas, world) {
     this.canvas = canvas;
     this.world = world;
+    this.profile = new PerformanceCounters(renderingStages);
     this.context = canvas.getContext("2d", { alpha: false });
     this.buffer = document.createElement("canvas");
     this.composite = document.createElement("canvas");
@@ -64,11 +69,14 @@ export class Renderer {
     this.resizeObserver.observe(canvas);
     this.resize();
   }
-  drawElastics(context, viewport) {
+  drawElastics(context, viewport, timed = false) {
     drawElasticBodies(context, this.world, viewport, this.elasticColors);
+    if (timed) this.profile.mark(3);
     drawRigidBodies(context, this.world, viewport, this.elasticColors);
+    if (timed) this.profile.mark(4);
     drawStickmen(context, this.world, viewport);
     drawMissiles(context, this.world, viewport);
+    if (timed) this.profile.mark(5);
   }
   worldImage() {
     if (
@@ -183,6 +191,8 @@ export class Renderer {
     drawStreamlines(c, v, this.world);
   }
   draw() {
+    const profile = this.profile;
+    profile.begin();
     this.world.portals.ensure();
     if (
       this.buffer.width !== this.world.width ||
@@ -374,8 +384,10 @@ export class Renderer {
       p[o + 2] = b;
       p[o + 3] = 255;
     }
+    profile.mark(0);
     if (this.mode === "normal")
       this.lighting.update(this.world, this.lightBounces);
+    profile.mark(1);
     this.ctx.putImageData(this.data, 0, 0);
     if (this.mode === "normal") {
       drawBubbles(this.ctx, this.world);
@@ -391,9 +403,12 @@ export class Renderer {
     c.rect(v.x, v.y, width * v.scale, height * v.scale);
     c.clip();
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
-    this.drawElastics(c, v);
+    profile.mark(2);
+    this.drawElastics(c, v, true);
     if (this.mode === "normal") this.lighting.draw(c, this.world, v);
+    profile.mark(6);
     if (wind) this.drawAirflow(c, v);
+    profile.mark(7);
     if (this.bloom && this.mode === "normal")
       this.glow.draw(
         c,
@@ -403,6 +418,7 @@ export class Renderer {
         this.bloomIntensity,
         this.elasticColors,
       );
+    profile.mark(8);
     if (this.grid) {
       c.strokeStyle = "#ffffff10";
       c.lineWidth = 1;
@@ -445,5 +461,6 @@ export class Renderer {
       c.stroke();
     }
     c.restore();
+    profile.mark(9);
   }
 }

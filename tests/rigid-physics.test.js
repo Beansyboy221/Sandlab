@@ -5,21 +5,26 @@ import { M } from "../src/sim/materials.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 import { collide } from "../src/sim/body-collisions.js";
 
-function wheel(gravity = [0, 1], slope = 0, material = M.Steel) {
-  const w = new World(180, 180),
+function wheel(
+  gravity = [0, 1],
+  slope = 0,
+  material = M.Steel,
+  { width = 180, height = 180, floor = 65, drop = 40 } = {},
+) {
+  const w = new World(width, height),
     [gx, gy] = gravity;
   w.setGravity(gx, gy);
   const map = (u, v) => {
-    const x = gy * u + gx * v + (gy < 0 || gx < 0 ? 179 : 0);
-    const y = -gx * u + gy * v + (gx > 0 || gy < 0 ? 179 : 0);
+    const x = gy * u + gx * v + (gy < 0 || gx < 0 ? width - 1 : 0);
+    const y = -gx * u + gy * v + (gx > 0 || gy < 0 ? height - 1 : 0);
     return y * w.width + x;
   };
-  for (let u = 0; u < 180; u++)
-    for (let v = Math.floor(65 + u * slope); v < 180; v++)
+  for (let u = 0; u < (gy ? width : height); u++)
+    for (let v = Math.floor(floor + u * slope); v < (gx ? width : height); v++)
       w.set(map(u, v), M.Wall);
   for (let v = -6; v <= 6; v++)
     for (let u = -6; u <= 6; u++)
-      if (u * u + v * v <= 36) w.set(map(30 + u, 40 + v), material);
+      if (u * u + v * v <= 36) w.set(map(30 + u, drop + v), material);
   w.rigid.rebuild();
   return { w, body: w.rigid.bodies[0] };
 }
@@ -75,6 +80,32 @@ test("rounded dropped solids roll downhill without raster locks under every grav
         distance - Math.hypot(w.restX[a] - w.restX[b], w.restY[a] - w.restY[b]),
       ) < 0.001,
     );
+  }
+});
+
+test("shallow pixel ramps do not become flat supports at portrait canvas offsets", () => {
+  for (const [gx, gy] of [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ]) {
+    for (const floor of [161.1, 161.5]) {
+      const { w, body } = wheel([gx, gy], 0.22, M.Steel, {
+        width: gx ? 358 : 200,
+        height: gx ? 200 : 358,
+        floor,
+        drop: 15,
+      });
+      const before = w.rigid.pose(body),
+        { pose, turn } = simulate(w, body, 130);
+      const across = (pose.x - before.x) * gy - (pose.y - before.y) * gx;
+      assert.ok(
+        across > 20 && Math.abs(turn) > 2,
+        JSON.stringify({ gx, gy, floor, across, turn }),
+      );
+      assert.equal(w.rigid.locations.size, 113);
+    }
   }
 });
 

@@ -11,19 +11,19 @@ Original browser sandbox; vanilla ES modules and Canvas, no runtime dependencies
 
 ## Code ownership
 
-| Area                              | Entry points                                                                                                               | Focused check                                        |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Grid, materials, chemistry        | `src/sim/world.js`, `materials.js`, `reactions.js`, `chemistry.js`, `phase-changes.js`                                     | `--all` for shared rules                             |
-| Solid collisions                  | `rigid-bodies.js`, `body-motion.js`, `body-collisions.js`, `body-raster.js`, `collision-limits.js` in `src/sim/`           | `collisions`                                         |
-| Springs and fine debris           | `src/sim/elasticity.js`, `elastic-geometry.js`, `fragments.js`                                                             | `elastics`                                           |
-| Air, heat, fire                   | `src/sim/fields.js`, `airflow.js`, `combustion.js`, `ignition.js`                                                          | `atmosphere`                                         |
-| Characters, wildlife              | `src/sim/stickmen.js`, `stickman-body.js`, `creature-*.js`, `boids.js`                                                     | `actors`                                             |
-| Missiles, vehicles, electricity   | `src/sim/missiles.js`, `missile-guidance.js`, `machine-motion.js`, `circuits.js`                                           | `devices`                                            |
-| Rendering and light               | `src/renderer.js`, `lighting*.js`, `light-*.js`, `bloom.js`, `src/sim/*-renderer.js`                                       | `lighting` + relevant physics group                  |
-| Pointer/touch, selection, paint   | `src/input.js`, `controller-controls.js`, `gamepad-state.js`, `drawing-gesture.js`, `selection*.js`, `touch-navigation.js` | `input`                                              |
-| Canvas properties, saves, history | `src/level*.js`, `persistence.js`, `history.js`                                                                            | `levels`; `--all` for persistence/schema changes     |
-| Portal shapes, links, transport   | `src/sim/portal*.js`, `src/portal-input.js`, `src/portal-renderer.js`                                                      | `portals`; `--all` for shared movement/state changes |
-| Toolbar, palette, settings        | `src/app.js`, `settings*.js`, `material-groups*.js`, `style.css`, `mobile.css`                                             | `ui`                                                 |
+| Area                              | Entry points                                                                                                                                    | Focused check                                        |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Grid, materials, chemistry        | `src/sim/world.js`, `materials.js`, `material-{definitions,authoring,registry,profiles}.js`, `reactions.js`, `chemistry.js`, `phase-changes.js` | `--all` for shared rules                             |
+| Solid collisions                  | `rigid-bodies.js`, `body-motion.js`, `body-collisions.js`, `body-raster.js`, `collision-limits.js` in `src/sim/`                                | `collisions`                                         |
+| Springs and fine debris           | `src/sim/elasticity.js`, `elastic-geometry.js`, `fragments.js`                                                                                  | `elastics`                                           |
+| Air, heat, fire                   | `src/sim/fields.js`, `airflow.js`, `combustion.js`, `ignition.js`                                                                               | `atmosphere`                                         |
+| Characters, wildlife              | `src/sim/stickmen.js`, `stickman-body.js`, `creature-*.js`, `boids.js`                                                                          | `actors`                                             |
+| Missiles, vehicles, electricity   | `src/sim/missiles.js`, `missile-guidance.js`, `machine-motion.js`, `circuits.js`                                                                | `devices`                                            |
+| Rendering and light               | `src/renderer.js`, `lighting*.js`, `light-*.js`, `bloom.js`, `src/sim/*-renderer.js`                                                            | `lighting` + relevant physics group                  |
+| Pointer/touch, selection, paint   | `src/input.js`, `controller-controls.js`, `gamepad-state.js`, `drawing-gesture.js`, `selection*.js`, `touch-navigation.js`                      | `input`                                              |
+| Canvas properties, saves, history | `src/level*.js`, `persistence.js`, `history.js`                                                                                                 | `levels`; `--all` for persistence/schema changes     |
+| Portal shapes, links, transport   | `src/sim/portal*.js`, `src/portal-input.js`, `src/portal-renderer.js`                                                                           | `portals`; `--all` for shared movement/state changes |
+| Toolbar, palette, settings        | `src/app.js`, `settings*.js`, `material-groups*.js`, `style.css`, `mobile.css`                                                                  | `ui`                                                 |
 
 ## Verify once per input state
 
@@ -39,3 +39,10 @@ Original browser sandbox; vanilla ES modules and Canvas, no runtime dependencies
 Use `git diff --check`; review changed responsibilities and update the changelog for user-visible game changes. Keep worthwhile future work in `BACKLOG.md`. Development-only changes do not need an app version bump or a deployment.
 
 Publish game changes only to the existing GitHub repository and GitHub Pages site. The ChatGPT Site is retired at the user’s request: do not mirror source to `/workspace/sandlab-site`, save Site versions, or deploy through Sites. Verify the pushed source and the actual GitHub Pages deployment. Do not create replacement sites/repos or persist credentials. GitHub CI skips docs-only runs and skips Pages publication when static game inputs are unchanged; manual dispatch forces publication. Superseded workflow runs are cancelled.
+
+## Material extension and profiling
+
+- `material-definitions.js` owns append-only material slots. Compose traits with `defineMaterial` from `material-authoring.js`; the registry compiler resolves references, validates and freezes definitions. Runtime state belongs in typed particle arrays, never in a material definition. Preserve the explicitly documented historical Wood Chips name collision.
+- `material-profiles.js` holds shared calibrated properties and fragment mappings. `materials.js` is the compatibility facade used by existing systems. Compile static lookup tables after every profile/migration; do not mutate definitions or tables during ticks.
+- Enable the existing debug panel for opt-in simulation/render stage timings. `PerformanceCounters` is unsaved scratch; leave clocks outside particle loops. `rigid-textures.js` caches only body geometry/current base colors, with live lighting applied separately.
+- New focused checks: `node tests/material-registry.test.js`, `node tests/performance-counters.test.js`, `python3 tests/rigid_textures_check.py`. Use the full suite for registry/schema changes.

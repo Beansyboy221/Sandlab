@@ -1,6 +1,6 @@
 # Sandlab backlog
 
-- Follow the proposed [engine evolution plan](ENGINE_PLAN.md): establish measurable physics contracts and composable material definitions before an editor or new game modes.
+- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. Next, calibrate units/thermal behavior and contained-fluid mass, then expand reaction authoring before an editor or new modes.
 
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
 - Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.

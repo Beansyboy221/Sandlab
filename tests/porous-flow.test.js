@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M, materials } from "../src/sim/materials.js";
-import { poreExchange } from "../src/sim/porous-flow.js";
+import { poreExchange, poreFlux } from "../src/sim/porous-flow.js";
 import { fracture } from "../src/sim/body-collisions.js";
 import { snapshot, restore } from "../src/persistence.js";
 import { cellProperties } from "../src/inspector.js";
@@ -80,26 +80,15 @@ test("percolation obeys porosity, viscosity and local pressure without unbounded
     j = i - 24;
   w.random = () => 0.03;
   assert.equal(poreExchange(w, i, j), true);
-  const old = materials[M.Water].viscosity;
-  try {
-    materials[M.Water].viscosity = 8;
-    assert.equal(poreExchange(w, i, j), false);
-  } finally {
-    materials[M.Water].viscosity = old;
-  }
+  const grain = materials[M.Sand],
+    liquid = materials[M.Water];
+  assert.ok(poreFlux(grain, { ...liquid, viscosity: 8 }, 4, 0) < 0.03);
   w.random = () => 0.04;
   assert.equal(poreExchange(w, i, j), false);
   w.fields.pressure.fill(10);
   assert.equal(poreExchange(w, i, j), true);
   w.fields.pressure.fill(0);
-  const permeability = materials[M.Sand].permeability;
-  try {
-    materials[M.Sand].permeability = 0;
-    w.random = () => 0;
-    assert.equal(poreExchange(w, i, j), false);
-  } finally {
-    materials[M.Sand].permeability = permeability;
-  }
+  assert.equal(poreFlux({ ...grain, permeability: 0 }, liquid, 4, 0), 0);
   w.tick = 4;
   const visits = w.porousFlow.visits;
   w.porousFlow.seep(w, i, 12, 16);

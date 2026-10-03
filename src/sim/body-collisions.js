@@ -62,36 +62,61 @@ function contactNormal(solver, body, hit, dx, dy) {
       : (blockedX && !blockedY) || (!blockedY && Math.abs(dx) > Math.abs(dy));
   let nx = normalX ? (hit.sign ?? Math.sign(dx)) : 0,
     ny = normalX ? 0 : (hit.sign ?? Math.sign(dy));
-  if (hit.count > 1 && hit.maxY - hit.minY < 0.001 && dy)
+  const owner = j >= 0 ? solver.bodyOf.get(w.elasticId[j]) : null;
+  // A narrow contact on pixel terrain can lie entirely on one stair. Sample
+  // its immediate contour instead of misclassifying the whole ramp as flat.
+  // Broad supports and body-to-body contacts retain the cheaper flat manifold.
+  const terrain = j >= 0 && !owner && materials[w.cells[j]].static;
+  if (
+    hit.count > 1 &&
+    hit.maxY - hit.minY < 0.001 &&
+    dy &&
+    (!terrain || hit.maxX - hit.minX >= 4)
+  )
     return { nx: 0, ny: Math.sign(dy) };
-  if (hit.count > 1 && hit.maxX - hit.minX < 0.001 && dx)
+  if (
+    hit.count > 1 &&
+    hit.maxX - hit.minX < 0.001 &&
+    dx &&
+    (!terrain || hit.maxY - hit.minY >= 4)
+  )
     return { nx: Math.sign(dx), ny: 0 };
   if (j >= 0) {
     const x = j % w.width,
       y = Math.floor(j / w.width),
-      owner = solver.bodyOf.get(w.elasticId[j]),
-      material = w.cells[j];
+      material = w.cells[j],
+      reach = terrain ? 3 : 1;
     let sx = 0,
       sy = 0;
-    for (let offset = -1; offset <= 1; offset++) {
-      const weight = offset === 0 ? 2 : 1;
+    for (let offset = -reach; offset <= reach; offset++) {
+      const weight = reach + 1 - Math.abs(offset);
       sx +=
         weight *
-        (contactOccupancy(solver, owner, material, w.index(x + 1, y + offset)) -
+        (contactOccupancy(
+          solver,
+          owner,
+          material,
+          w.index(x + reach, y + offset),
+        ) -
           contactOccupancy(
             solver,
             owner,
             material,
-            w.index(x - 1, y + offset),
+            w.index(x - reach, y + offset),
           ));
       sy +=
         weight *
-        (contactOccupancy(solver, owner, material, w.index(x + offset, y + 1)) -
+        (contactOccupancy(
+          solver,
+          owner,
+          material,
+          w.index(x + offset, y + reach),
+        ) -
           contactOccupancy(
             solver,
             owner,
             material,
-            w.index(x + offset, y - 1),
+            w.index(x + offset, y - reach),
           ));
     }
     const length = Math.hypot(sx, sy);

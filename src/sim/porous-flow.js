@@ -1,5 +1,19 @@
 import { materials } from "./materials.js";
 
+// Keep transport coefficients independent of grid traversal so custom material
+// profiles can be calibrated without mutating the compiled registry.
+export function poreFlux(grain, liquid, packed, pressure) {
+  const densityDrive = Math.min(1, Math.max(0, grain.density - liquid.density));
+  const pressureDrive = Math.min(0.5, Math.abs(pressure) * 0.03);
+  return Math.min(
+    0.2,
+    ((grain.porosity / (grain.porosity + 1.5)) *
+      grain.permeability *
+      (0.3 + densityDrive + pressureDrive)) /
+      (Math.max(1, liquid.viscosity) * (1 + packed * 2)),
+  );
+}
+
 // An isolated grain sinks freely. A packed bed exchanges only one neighboring
 // cell at a time; connected pore volume, viscosity and packing limit the flux.
 export function poreExchange(world, i, j) {
@@ -23,18 +37,10 @@ export function poreExchange(world, i, j) {
   }
   if (!packed) return true;
   if (world.inParticlePass && world.updated[j] === world.tick) return false;
-  const densityDrive = Math.min(1, Math.max(0, grain.density - liquid.density));
   const air = world.fields.index(x, y);
-  const pressureDrive = Math.min(
-    0.5,
-    Math.abs(world.fields.pressure[air]) * 0.03,
+  return (
+    world.random() < poreFlux(grain, liquid, packed, world.fields.pressure[air])
   );
-  const flux =
-    ((grain.porosity / (grain.porosity + 1.5)) *
-      grain.permeability *
-      (0.3 + densityDrive + pressureDrive)) /
-    (Math.max(1, liquid.viscosity) * (1 + packed * 2));
-  return world.random() < Math.min(0.2, flux);
 }
 
 // Reused scratch storage caps each search at 24 visits and six cells of reach.

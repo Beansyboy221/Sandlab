@@ -1,9 +1,16 @@
+import {
+  rigidTexture,
+  rigidTextureWork,
+  resetRigidTextureWork,
+} from "./rigid-textures.js";
 // Raster occupancy handles contacts; this separate pass shows the true continuous
 // body positions, so rigid shapes rotate without becoming loose powder pixels.
 export function drawRigidBodies(ctx, w, viewport, colors) {
+  resetRigidTextureWork();
   if (!w.rigid.locations.size) return;
   if (w.rigid.dirty) w.rigid.rebuild();
   ctx.save();
+  ctx.imageSmoothingEnabled = false;
   ctx.beginPath();
   ctx.rect(
     viewport.x,
@@ -17,6 +24,7 @@ export function drawRigidBodies(ctx, w, viewport, colors) {
   for (const body of w.rigid.bodies) {
     const pose = w.rigid.pose(body);
     if (!pose) continue;
+    const texture = rigidTexture(w, body, colors);
     const shifts = w.border === "looping" ? [-1, 0, 1] : [0];
     for (const sx of shifts)
       for (const sy of shifts) {
@@ -32,18 +40,27 @@ export function drawRigidBodies(ctx, w, viewport, colors) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(pose.angle);
-        for (const id of body.ids) {
-          const i = w.rigid.locations.get(id);
-          if (i === undefined) continue;
-          const offset = i * 3;
-          ctx.fillStyle = `rgb(${colors[offset]},${colors[offset + 1]},${colors[offset + 2]})`;
-          ctx.fillRect(
-            w.restX[i] - body.lx - 0.51,
-            w.restY[i] - body.ly - 0.51,
-            1.02,
-            1.02,
+        if (texture) {
+          ctx.drawImage(
+            texture.canvas,
+            texture.x - body.lx,
+            texture.y - body.ly,
           );
-        }
+          rigidTextureWork.draws++;
+        } else
+          for (const id of body.ids) {
+            const i = w.rigid.locations.get(id);
+            if (i === undefined) continue;
+            const offset = i * 3;
+            ctx.fillStyle = `rgb(${colors[offset]},${colors[offset + 1]},${colors[offset + 2]})`;
+            rigidTextureWork.fallbackCells++;
+            ctx.fillRect(
+              w.restX[i] - body.lx - 0.51,
+              w.restY[i] - body.ly - 0.51,
+              1.02,
+              1.02,
+            );
+          }
         ctx.restore();
       }
   }

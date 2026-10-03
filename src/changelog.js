@@ -1,5 +1,17 @@
 export const changelog = [
   {
+    version: "1.18.0",
+    date: "2026-10-03",
+    title: "Composable materials and faster solid rendering",
+    changes: [
+      "Material authoring, calibrated profiles and registry compilation are separate modules. Reusable porous, elastic, combustion, conductor and surface traits compose at startup. Validation catches invalid coefficients, conflicting body types, duplicate names and missing phase/reaction products; historical IDs and aliases are preserved.",
+      "All 130 existing material definitions and coefficients are retained. Compiled typed property/capability tables and pairwise thermal rates avoid recalculating fixed coefficients during neighbor heat transfer. Registry definitions are immutable after compilation; particle state remains editable and typed.",
+      "Grid-aligned solids use a reusable local texture instead of one Canvas draw call per cell. Changed colors refresh the texture; cuts and rebuilt bodies get fresh geometry. Heat/pressure/color views, live lighting, rotation, wrapping, Inspect and previews remain supported. Irregular or excessively sparse rest geometry uses the continuous rectangle fallback.",
+      "The optional debug panel now reports individual simulation and render stages. Timing collection is disabled with the panel; it never reads clocks inside particle loops or enters world saves.",
+      "Narrow contacts sample the nearby static terrain contour so round solids keep rolling down shallow pixel ramps at different canvas sizes and gravity directions. Broad flat supports and body-to-body contact budgets remain intact.",
+    ],
+  },
+  {
     version: "1.17.1",
     date: "2026-10-03",
     title: "Fit and stretch canvas views",

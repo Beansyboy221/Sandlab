@@ -1,3 +1,7 @@
+import {
+  PerformanceCounters,
+  simulationStages,
+} from "../performance-counters.js";
 import { releaseForChange } from "./absorption.js";
 import { CanvasEnvironment } from "./canvas-modes.js";
 import { PorousFlow, poreExchange } from "./porous-flow.js";
@@ -14,7 +18,12 @@ import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
 import { moveRay, rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
-import { materials, M, canonicalMaterial } from "./materials.js";
+import {
+  materials,
+  M,
+  canonicalMaterial,
+  materialTables,
+} from "./materials.js";
 import { Fields } from "./fields.js";
 import { react } from "./reactions.js";
 import { moveSurfaceFlame } from "./combustion.js";
@@ -25,6 +34,7 @@ export class World {
   constructor(width = 320, height = 200, seed = 17421) {
     Object.assign(this, defaultLevel);
     this.mechanics = { ...defaultMechanics };
+    this.profile = new PerformanceCounters(simulationStages);
     this.width = width;
     this.height = height;
     this.length = width * height;
@@ -564,15 +574,17 @@ export class World {
   transferHeat(i, j) {
     if (this.mechanics.temperatureSimulation === false || !this.cells[j])
       return;
-    const a = materials[this.cells[i]],
-      b = materials[this.cells[j]];
     const transfer =
       (this.temp[i] - this.temp[j]) *
-      Math.min(0.24, (a.conductivity + b.conductivity) * 0.25);
+      materialTables.heatTransfer[
+        this.cells[i] * materials.length + this.cells[j]
+      ];
     this.temp[i] -= transfer;
     this.temp[j] += transfer;
   }
   step() {
+    const profile = this.profile;
+    profile.begin();
     this.portals.world = this;
     this.elastic.world = this;
     this.rigid.world = this;
@@ -584,8 +596,10 @@ export class World {
     this.fields.border = this.border;
     this.fields.update(this);
     this.fields.beginForceSample();
+    profile.mark(0);
     this.circuits.world = this;
     this.circuits.step();
+    profile.mark(1);
     this.inParticlePass = true;
     const w = this.width,
       h = this.height,
@@ -663,15 +677,22 @@ export class World {
       }
     }
     this.inParticlePass = false;
+    profile.mark(2);
     this.rigid.step();
+    profile.mark(3);
     this.elastic.step();
+    profile.mark(4);
     this.stickmen.world = this;
     this.stickmen.step();
+    profile.mark(5);
     this.missiles.world = this;
     this.missiles.step();
+    profile.mark(6);
     this.fragments.world = this;
     this.fragments.step();
+    profile.mark(7);
     this.sound.step(this);
+    profile.mark(8);
   }
   explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);

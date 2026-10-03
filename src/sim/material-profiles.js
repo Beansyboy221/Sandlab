@@ -1,0 +1,149 @@
+export function applyMaterialProfiles(materials, M) {
+  for (const m of materials)
+    m.paletteCategory = m.device
+      ? "devices"
+      : ["Plant", "Seed"].includes(m.name)
+        ? "life"
+        : m.category === "special"
+          ? "static"
+          : m.category;
+
+  for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
+
+  for (const name of ["Steel", "Steel Powder"])
+    Object.assign(materials[M[name]], {
+      oxidizeTo: M.Rust,
+      oxidationRate: 0.0015,
+    });
+  for (const name of ["Water", "Brine"])
+    Object.assign(materials[M[name]], {
+      aqueous: true,
+      waterLike: true,
+      absorbable: true,
+    });
+  materials[M["Acid"]].acidic = true;
+  for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid Wax"])
+    materials[M[name]].organic = true;
+
+  for (const name of ["Hydrogen", "Methane"])
+    materials[M[name]].requiresOxygen = true;
+
+  materials[M.Coal].sparkChance = 0.025;
+  materials[M.Wood].sparkChance = 0.006;
+
+  // Ambient air is implicit. Real gases share buoyancy and pressure rules, with
+  // their own chemistry and products. Palette grouping never changes physical rules.
+  materials[M.Hydrogen].combustionGas = M.Steam;
+  materials[M.Methane].combustionGas = M["CO2"];
+  materials[M.Kerosene].combustionGas = M["CO2"];
+  for (const name of [
+    "Oil",
+    "Wood",
+    "Coal",
+    "Rubber",
+    "Rope",
+    "Plant",
+    "Wax",
+    "Liquid Wax",
+    "Seed",
+  ])
+    materials[M[name]].combustionGas ??= M["CO2"];
+  materials[M.Sponge].airPermeability = 0.8;
+
+  // Storage and free-fluid percolation share these properties. Fine clay holds
+  // water strongly, coarse sand drains, and sponge has a much larger reservoir.
+  for (const [name, porosity, permeability, retention, brittleness] of [
+    ["Dirt", 3, 0.22, 0.92, 0.4],
+    ["Mud", 3, 0.22, 0.92, 0.4],
+    ["Clay", 2, 0.001, 0.99, 0.35],
+    ["Wet Clay", 2, 0.001, 0.99, 0.35],
+    ["Ash", 3, 0.08, 0.95, 0.85],
+    ["Snow", 2, 0.65, 0.65, 0.7],
+    ["Salt", 1, 0.35, 0.7, 0.85],
+    ["Baking Soda", 1, 0.06, 0.8, 0.7],
+    ["Rubble", 1, 0.9, 0.25, 0.75],
+    ["Stone Gravel", 1, 0.9, 0.25, 0.75],
+    ["Brick Rubble", 2, 0.8, 0.65, 0.8],
+    ["Glass Shards", 1, 0.75, 0.2, 0.95],
+    ["Wood Chips", 3, 0.65, 0.85, 0.35],
+    ["Coal", 2, 0.35, 0.8, 0.7],
+    ["Wood", 3, 0.04, 0.95, 0.35],
+    ["Stone", 1, 0.001, 0.97, 0.65],
+    ["Concrete", 1, 0.004, 0.96, 0.65],
+    ["Brick", 2, 0.03, 0.96, 0.75],
+    ["Ceramic", 1, 0.002, 0.98, 0.85],
+    ["Glass", 0, 0, 0, 0.95],
+    ["Ice", 0, 0, 0, 0.8],
+    ["Steel", 0, 0, 0, 0.08],
+    ["Copper", 0, 0, 0, 0.08],
+    ["Jelly", 1, 0.001, 0.98, 0.02],
+    ["Rope", 3, 0.2, 0.9, 0.08],
+    ["Plant", 2, 0.35, 0.99, 0.2],
+    ["Seed", 1, 0.15, 0.99, 0.3],
+    ["Wall", 0, 0, 0, 0],
+  ])
+    Object.assign(materials[M[name]], {
+      porosity,
+      permeability,
+      retention,
+      brittleness,
+    });
+  for (const name of ["Oil", "Kerosene"]) materials[M[name]].absorbable = true;
+  for (const name of ["Plant", "Seed"]) materials[M[name]].waterOnly = true;
+
+  // Toughness is impact energy per exposed cell, separate from chemical resistance.
+  for (const m of materials)
+    if (m.rigid) {
+      m.toughness = m.conductive ? 26 : 9;
+      if ([M.Stone, M.Concrete, M.Brick, M.Ceramic].includes(m.id))
+        m.breakInto = M.Rubble;
+      if (m.id === M.Glass) {
+        m.toughness = 1.8;
+        m.breakInto = M["Glass Shards"];
+      }
+      if (m.id === M.Ice) {
+        m.toughness = 3;
+        m.breakInto = M.Snow;
+      }
+      if (m.id === M.Wood) {
+        m.toughness = 10;
+        m.breakInto = M["Wood Chips"];
+      }
+      if (m.id === M.Steel) m.breakInto = M["Steel Powder"];
+      if (m.resistance === 1) m.resistance = 0.97;
+    }
+
+  // Sliding friction and impact bounce are distinct from chemical resistance.
+  for (const [name, friction, restitution] of [
+    ["Ice", 0.035, 0.1],
+    ["Glass", 0.22, 0.08],
+    ["Wood", 0.55, 0.06],
+    ["Steel", 0.35, 0.1],
+    ["Copper", 0.35, 0.08],
+    ["Wall", 0.5, 0.05],
+  ])
+    Object.assign(materials[M[name]], { friction, restitution });
+}
+
+export function applyFragmentProfiles(materials, M) {
+  for (const [from, to] of Object.entries({
+    Wood: "Wood Chips",
+    Stone: "Stone Gravel",
+    Steel: "Steel Powder",
+    Copper: "Copper Granules",
+    Glass: "Glass Shards",
+    Mirror: "Glass Shards",
+    Ice: "Snow",
+    Rubber: "Rubber Crumbs",
+    Jelly: "Jelly Drops",
+    Rope: "Rope Fibers",
+    Wax: "Wax Shavings",
+    Brick: "Brick Rubble",
+    Ceramic: "Brick Rubble",
+    Concrete: "Brick Rubble",
+  }))
+    if (M[from] !== undefined) {
+      materials[M[from]].fragmentTo = M[to];
+      materials[M[to]].fragment = true;
+    }
+}

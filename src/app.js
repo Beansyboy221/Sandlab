@@ -1139,6 +1139,7 @@ const settingEffects = {
   },
   showFps: () => ($("fps-label").hidden = !settings.get("showFps")),
   debug: () => {
+    world.profile.enabled = renderer.profile.enabled = settings.get("debug");
     $("debug-panel").hidden = !settings.get("debug");
     $("debug-btn").setAttribute("aria-pressed", String(settings.get("debug")));
   },
@@ -1245,7 +1246,7 @@ function frame(now) {
     } else $("hover-info").textContent = "";
     if (!$("debug-panel").hidden)
       $("debug-panel").textContent =
-        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}\nSolids: ${world.rigid.bodies.length} bodies · ${world.rigid.work.contacts} contacts\nCollision work: ${world.rigid.work.scanned.toLocaleString()} pixel checks · ${world.rigid.work.limitedPlans + world.rigid.work.limitedContacts} limited requests`;
+        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation stages: ${world.profile.describe()}\nRender stages: ${renderer.profile.describe()}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}\nSolids: ${world.rigid.bodies.length} bodies · ${world.rigid.work.contacts} contacts\nCollision work: ${world.rigid.work.scanned.toLocaleString()} pixel checks · ${world.rigid.work.limitedPlans + world.rigid.work.limitedContacts} limited requests`;
   }
 }
 requestAnimationFrame(frame);
