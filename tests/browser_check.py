@@ -470,6 +470,8 @@ with sync_playwright() as p:
     phone.set_viewport_size({'width':390,'height':844})
     phone.wait_for_timeout(200)
     choose(phone, 'select')
+    assert phone.locator('#controls-toggle').get_attribute('aria-expanded')=='false'
+    phone.locator('#controls-toggle').tap()
     phone.wait_for_timeout(100)
     assert not phone.locator('#palette-toggle').is_visible()
     assert phone.locator('#copy-selection').is_visible()

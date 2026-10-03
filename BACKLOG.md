@@ -19,3 +19,5 @@
 - Add grouped circuit editing and richer vehicle suspension after measuring large circuits and machine scenes; retain directional signal isolation and bounded moving-device work.
 
 - Extend gravity-relative character navigation and contact support around Planet cores; keep orbital forces shared and bounded.
+
+- Extend the local packed-grain pore model with calibrated saturation and capillary retention in porous solid bodies; preserve liquid mass and bound outlet routing work. Current pore transport exchanges granular cells rather than resolving subpixel fluid volumes.

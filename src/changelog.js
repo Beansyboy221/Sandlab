@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.15.0",
+    date: "2026-10-03",
+    title: "Porous flow and steadier mobile controls",
+    changes: [
+      "Changing tools preserves the mobile controls drawer's current state. Rotation commits gravity and canvas orientation together after viewport changes settle; horizontal gravity alternates its crosswise particle scan to avoid a directional bias.",
+      "Materials now expose density, porosity, permeability and brittleness in Inspect. Packed grains exchange liquid gradually according to pore connectivity, viscosity, density and pressure. Liquids seek nearby outlets with a bounded local search, move through permeable powder one cell at a time, or remain trapped beneath dense or poorly permeable beds. Isolated grains still sink freely, and sponge absorption and soil/clay hydration are preserved.",
+      "Brittleness influences solid impact damage. Glass, ice and ceramic fracture more readily than ductile metals; Wall remains indestructible.",
+    ],
+  },
+  {
     version: "1.14.5",
     date: "2026-10-03",
     title: "Home-screen icon and logo menu",

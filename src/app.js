@@ -279,7 +279,6 @@ function setTool(value) {
   state.erase = tool === "erase";
   $("brush-tool").value = tool;
   toolPicker?.sync(tool);
-  mobileDock?.toolChanged(tool);
   selection.visible = tool === "select";
   inspector.setActive(tool === "inspect");
   if (tool === "inspect") inspector.follow(hover);

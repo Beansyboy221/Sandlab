@@ -7,7 +7,7 @@ export function fracture(solver, i, energy) {
   if (i < 0) return;
   const m = materials[w.cells[i]];
   if (!m.rigid || m.static) return;
-  w.damage[i] += energy;
+  w.damage[i] += energy * (0.5 + m.brittleness);
   if (w.damage[i] < m.toughness) return;
   if (m.breakInto !== undefined) {
     w.transform(i, m.breakInto, w.temp[i]);

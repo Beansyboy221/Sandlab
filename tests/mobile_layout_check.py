@@ -9,8 +9,10 @@ def serve(route):
 def point(page,x,y):
     return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width,p=r.project(x+.5,y+.5);return {x:b.x+p.x/d,y:b.y+p.y/d}}''',[x,y])
 def choose(page,tool):
+    expanded=page.locator('#controls-toggle').get_attribute('aria-expanded')
     page.locator('#tool-picker-toggle').tap();page.locator(f'[data-tool-option="{tool}"]').tap()
-    if page.locator('#controls-toggle').get_attribute('aria-expanded')=='true':page.locator('#controls-toggle').tap()
+    assert page.locator('#controls-toggle').get_attribute('aria-expanded')==expanded
+    if expanded=='true':page.locator('#controls-toggle').tap()
 def fit(page):
     data=page.evaluate('''()=>{const r=sandlab.renderer,w=sandlab.world;r.resize();r.draw();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width,ps=[[0,0],[w.width,0],[0,w.height],[w.width,w.height]].map(([x,y])=>r.project(x,y));return {box:{x:b.x,y:b.y,width:b.width,height:b.height},bounds:[Math.min(...ps.map(p=>p.x))/d,Math.min(...ps.map(p=>p.y))/d,Math.max(...ps.map(p=>p.x))/d,Math.max(...ps.map(p=>p.y))/d],pixels:[[3,3],[r.canvas.width-4,3],[3,r.canvas.height-4],[r.canvas.width-4,r.canvas.height-4]].map(([x,y])=>Array.from(r.context.getImageData(x,y,1,1).data).slice(0,3))}}''')
     assert all(abs(a-b)<.01 for a,b in zip(data['bounds'],[0,0,data['box']['width'],data['box']['height']])),data
@@ -40,6 +42,17 @@ with sync_playwright() as p:
             assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='false'
             before=page.locator('#world').bounding_box();page.locator('#controls-toggle').tap();page.wait_for_timeout(250)
             assert page.locator('#world').bounding_box()==before;assert page.locator('#shape-btn').is_visible();page.locator('#controls-toggle').tap()
+        # A sensor event arriving before resize must not briefly turn gravity sideways.
+        rotate(page,0,width,height)
+        page.evaluate("Object.defineProperty(window,'orientation',{configurable:true,value:90});window.dispatchEvent(new Event('orientationchange'))")
+        page.wait_for_timeout(120)
+        assert page.evaluate('[sandlab.world.gravityX,sandlab.world.gravityY,sandlab.renderer.rotation]')==[0,1,0]
+        page.set_viewport_size({'width':844,'height':390});page.wait_for_timeout(150)
+        assert page.evaluate('[sandlab.world.gravityX,sandlab.world.gravityY,sandlab.renderer.rotation]')==[-1,0,3]
+        # Tool changes preserve either the collapsed or manually expanded drawer.
+        rotate(page,0,width,height)
+        choose(page,'cool');assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='false'
+        page.locator('#controls-toggle').tap();choose(page,'paint')
         # Touch, copy, inspect, paint, zoom and pan share the rotated transform.
         for angle,ww,hh in [(0,width,height),(90,844,390),(-90,844,390),(180,width,height)]:
             rotate(page,angle,ww,hh);choose(page,'paint');page.evaluate('sandlab.state.material=3;sandlab.state.setRadius(1);sandlab.world.clear()')

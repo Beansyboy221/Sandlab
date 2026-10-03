@@ -175,6 +175,13 @@ export function cellProperties(world, point) {
       `${world.fields.ambientTemperature.toFixed(1)}°C · ${world.fields.ambientPressure.toFixed(2)} atm`,
     ],
   );
+  if (m.id)
+    rows.push(
+      ["Density", `${m.density.toFixed(2)} units`],
+      ["Porosity", `${Math.round(m.porosity * 100)}%`],
+      ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
+      ["Brittleness", `${Math.round(m.brittleness * 100)}%`],
+    );
   if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
   if (world.moisture[i] || [M.Plant, M.Seed, M.Dirt, M.Mud].includes(m.id))
     rows.push(["Moisture", `${Math.round((world.moisture[i] / 255) * 100)}%`]);

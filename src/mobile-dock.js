@@ -67,17 +67,31 @@ export class MobileDock {
       },
       true,
     );
-    this.media.addEventListener("change", () => this.layout());
-    window.addEventListener("resize", () => this.layout());
-    window.addEventListener("orientationchange", () => this.layout());
-    screen.orientation?.addEventListener("change", () => this.layout());
-    window.visualViewport?.addEventListener("resize", () => this.layout());
+    // iOS can report the new angle before the viewport has rotated. Commit
+    // layout and gravity together, after the browser has settled both events.
+    const schedule = () => {
+      cancelAnimationFrame(this.layoutFrame);
+      this.layoutFrame = requestAnimationFrame(() => {
+        this.layoutFrame = requestAnimationFrame(() => this.layout());
+      });
+    };
+    this.media.addEventListener("change", schedule);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("orientationchange", schedule);
+    screen.orientation?.addEventListener("change", schedule);
+    window.visualViewport?.addEventListener("resize", schedule);
     this.setExpanded(false);
     this.layout();
   }
   layout() {
     const mobile = this.media.matches;
     const landscape = mobile && innerWidth > innerHeight;
+    const reportedTurn = mobile ? orientationTurn(phoneOrientation()) : 0;
+    this.baseLandscape ??= landscape !== !!(reportedTurn % 2);
+    const turn =
+      mobile && landscape !== (this.baseLandscape !== !!(reportedTurn % 2))
+        ? this.renderer.rotation
+        : reportedTurn;
     const orientationChanged =
       this.landscape !== undefined && this.landscape !== landscape;
     if (!landscape) this.landscapeExit = false;
@@ -87,14 +101,15 @@ export class MobileDock {
       "canvas-focus",
       this.manualFocus || (landscape && !this.landscapeExit),
     );
-    const focused = document.body.classList.contains("canvas-focus"),
-      turn = mobile ? orientationTurn(phoneOrientation()) : 0;
+    const focused = document.body.classList.contains("canvas-focus");
     if (turn !== this.renderer.rotation) {
       this.onOrientationChange?.();
       this.renderer.rotation = turn;
       this.renderer.resetView();
     }
-    if (orientationChanged) this.setExpanded(false);
+    if (orientationChanged || turn !== this.committedTurn)
+      this.setExpanded(false);
+    this.committedTurn = turn;
     this.world.setGravity(...gravityForTurn(turn));
     this.renderer.resize();
     document
@@ -111,9 +126,6 @@ export class MobileDock {
       "aria-label",
       expanded ? "Collapse drawing controls" : "Expand drawing controls",
     );
-  }
-  toolChanged(tool) {
-    if (this.media.matches && tool !== "paint") this.setExpanded(true);
   }
   setFocus(focused) {
     this.manualFocus = focused;

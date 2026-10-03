@@ -1,4 +1,5 @@
 import { CanvasEnvironment } from "./canvas-modes.js";
+import { PorousFlow, poreExchange } from "./porous-flow.js";
 import { moveKinetic } from "./particle-kinetics.js";
 import { Fragments } from "./fragments.js";
 import { Circuits } from "./circuits.js";
@@ -62,6 +63,7 @@ export class World {
     this.elastic = new Elasticity(this);
     this.rigid = new RigidBodies(this);
     this.fragments = new Fragments(this);
+    this.porousFlow = new PorousFlow(this);
     this.particleFields = particleStateFields
       .filter((name) => ![...elasticFields, ...rigidFields].includes(name))
       .map((name) => this[name]);
@@ -306,7 +308,8 @@ export class World {
       }
       return false;
     }
-    if (j === i || !this.canMove(i, j, vertical)) return false;
+    if (j === i || !this.canMove(i, j, vertical) || !poreExchange(this, i, j))
+      return false;
     const category = materials[this.cells[i]].category;
     const falling = category === "powder" || category === "liquid";
     this.swap(i, j);
@@ -461,6 +464,7 @@ export class World {
       if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
         return;
     }
+    if (cat === "liquid" && this.porousFlow.seep(this, i, x, y)) return;
     if (cat === "liquid" && this.fallDistance[i] > 2) {
       this.sound.emit(
         "splash",
@@ -538,7 +542,12 @@ export class World {
       reverse = this.gravityX ? (this.gravityX > 0 ? 1 : 0) : this.tick % 2;
     // Skip empty 16-cell blocks; a tick stamp prevents moved cells from updating twice.
     for (let row = 0; row < h; row++) {
-      const y = this.gravityY < 0 ? row : h - 1 - row;
+      // Along gravity, process downstream first. Across horizontal gravity,
+      // alternate row order as we do columns for vertical gravity.
+      const y =
+        this.gravityY < 0 || (!this.gravityY && this.tick % 2)
+          ? row
+          : h - 1 - row;
       for (let k = 0; k < this.chunkWidth; k++) {
         const cx = reverse ? this.chunkWidth - 1 - k : k;
         if (!this.chunks[(y >> 4) * this.chunkWidth + cx]) continue;
