@@ -55,6 +55,7 @@ export class Renderer {
     this.cursor = null;
     this.zoom = 1;
     this.rotation = 0;
+    this.fill = "stretch";
     this.center = { x: world.width / 2, y: world.height / 2 };
     this.cameraWidth = world.width;
     this.cameraHeight = world.height;
@@ -115,6 +116,7 @@ export class Renderer {
       this.rotation,
       this.zoom,
       this.center,
+      this.fill,
     );
     this.viewport = this.view.viewport;
   }
@@ -385,6 +387,9 @@ export class Renderer {
     c.fillRect(0, 0, this.canvas.width, this.canvas.height);
     c.save();
     c.setTransform(...this.view.matrix);
+    c.beginPath();
+    c.rect(v.x, v.y, width * v.scale, height * v.scale);
+    c.clip();
     c.drawImage(this.buffer, v.x, v.y, width * v.scale, height * v.scale);
     this.drawElastics(c, v);
     if (this.mode === "normal") this.lighting.draw(c, this.world, v);

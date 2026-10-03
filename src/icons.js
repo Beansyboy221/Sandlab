@@ -36,6 +36,9 @@ const paths = {
   brush: "m14 4 6 6M5 14l9-11 7 7-11 9M5 14c-5 0-1 4-4 7 7 1 10-3 4-7Z",
   eraser: "m15 3 6 6-11 12H5l-3-3L15 3ZM8 12l7 7M10 21h11",
   circle: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z",
+  fit: "M3 3h18v18H3ZM6 8h12v8H6Z",
+  stretch:
+    "M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8 3 3M16 8l5-5M16 16l5 5M8 16l-5 5",
   square: "M4 4h16v16H4Z",
   redo: "M21 10H10a7 7 0 0 0 0 14M21 10l-5-5M21 10l-5 5",
   undo: "M3 10h11a7 7 0 0 1 0 14M3 10l5-5M3 10l5 5",

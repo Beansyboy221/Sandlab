@@ -68,6 +68,14 @@ export class Input {
       canvas.focus({ preventScroll: true });
       if (e.pointerType !== "touch") canvas.setPointerCapture(e.pointerId);
       const point = renderer.point(e.clientX, e.clientY);
+      // Letterbox margins are presentation space, not part of the world.
+      if (
+        point.x < 0 ||
+        point.y < 0 ||
+        point.x >= world.width ||
+        point.y >= world.height
+      )
+        return;
       const portalDrawing =
         state.tool === "paint" && state.material === M.Portal;
       if (portalDrawing && this.pointers.size) return;

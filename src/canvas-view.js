@@ -40,21 +40,25 @@ export function canvasView(
   turn,
   zoom,
   center,
+  fill = "stretch",
 ) {
   turn = turns(turn);
   const virtualWidth = turn % 2 ? height : width,
     virtualHeight = turn % 2 ? width : height,
     base = Math.min(virtualWidth / worldWidth, virtualHeight / worldHeight),
-    sx = virtualWidth / (worldWidth * base),
-    sy = virtualHeight / (worldHeight * base),
+    fit = fill === "fit",
+    sx = fit ? 1 : virtualWidth / (worldWidth * base),
+    sy = fit ? 1 : virtualHeight / (worldHeight * base),
+    dx = fit ? (virtualWidth - worldWidth * base) / 2 : 0,
+    dy = fit ? (virtualHeight - worldHeight * base) / 2 : 0,
     matrix =
       turn === 0
-        ? [sx, 0, 0, sy, 0, 0]
+        ? [sx, 0, 0, sy, dx, dy]
         : turn === 1
-          ? [0, sx, -sy, 0, width, 0]
+          ? [0, sx, -sy, 0, width - dy, dx]
           : turn === 2
-            ? [-sx, 0, 0, -sy, width, height]
-            : [0, -sx, sy, 0, 0, height];
+            ? [-sx, 0, 0, -sy, width - dx, height - dy]
+            : [0, -sx, sy, 0, dy, height - dx];
   return {
     matrix,
     baseWidth: worldWidth * base,

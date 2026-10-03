@@ -1,5 +1,14 @@
 export const changelog = [
   {
+    version: "1.17.1",
+    date: "2026-10-03",
+    title: "Fit and stretch canvas views",
+    changes: [
+      "A changing-icon button beside Fullscreen switches between Fit (the entire world, with square pixels and centered margins) and Stretch (fill the available drawing area). The choice is remembered in Rendering settings. Switching resets zoom and pan without resizing or changing the world.",
+      "Drawing, selection, inspection, zoom and touch gestures use the same invertible display transform in both modes, including phone rotation.",
+    ],
+  },
+  {
     version: "1.17.0",
     date: "2026-10-03",
     title: "Shared pores, pressure and cleaner controls",

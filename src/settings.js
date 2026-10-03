@@ -29,6 +29,16 @@ export const settingGroups = [
         displayScale: 100,
         suffix: "%",
       },
+      {
+        key: "canvasFill",
+        label: "Canvas display",
+        type: "select",
+        options: [
+          ["fit", "Fit"],
+          ["stretch", "Stretch"],
+        ],
+        default: "stretch",
+      },
       { key: "grid", label: "Grid overlay", type: "toggle", default: false },
       {
         key: "view",

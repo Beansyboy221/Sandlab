@@ -81,28 +81,38 @@ test("every world aspect fills every viewport, without cropping or blank margins
       }
 });
 test("rotated pointer transforms are invertible with zoom and off-center pan", () => {
-  for (let turn = 0; turn < 4; turn++)
-    for (const zoom of [1, 2, 12]) {
-      const view = canvasView(800, 360, 200, 365, turn, zoom, {
-          x: 87,
-          y: 151,
-        }),
-        v = view.viewport;
-      for (const [x, y] of [
-        [0, 0],
-        [70.5, 151.5],
-        [200, 365],
-      ]) {
-        const pixel = transformPoint(
-            view.matrix,
-            v.x + x * v.scale,
-            v.y + y * v.scale,
+  for (const fill of ["fit", "stretch"])
+    for (let turn = 0; turn < 4; turn++)
+      for (const zoom of [1, 2, 12]) {
+        const view = canvasView(
+            800,
+            360,
+            200,
+            365,
+            turn,
+            zoom,
+            {
+              x: 87,
+              y: 151,
+            },
+            fill,
           ),
-          point = inversePoint(view.matrix, pixel.x, pixel.y);
-        close((point.x - v.x) / v.scale, x);
-        close((point.y - v.y) / v.scale, y);
+          v = view.viewport;
+        for (const [x, y] of [
+          [0, 0],
+          [70.5, 151.5],
+          [200, 365],
+        ]) {
+          const pixel = transformPoint(
+              view.matrix,
+              v.x + x * v.scale,
+              v.y + y * v.scale,
+            ),
+            point = inversePoint(view.matrix, pixel.x, pixel.y);
+          close((point.x - v.x) / v.scale, x);
+          close((point.y - v.y) / v.scale, y);
+        }
       }
-    }
 });
 test("orientation gravity always points down on screen, while the world axes stay fixed to the device", () => {
   for (const angle of [0, 90, 180, 270, -90]) {
@@ -233,4 +243,57 @@ test("gravity wakes sleeping chunks and remains current when another saved grid 
   const saved = snapshot(new World(48, 48));
   restore(w, saved);
   assert.deepEqual([w.gravityX, w.gravityY], [-1, 0]);
+});
+
+test("Fit centers the complete canvas at uniform scale under all rotations and aspect ratios", () => {
+  for (const [width, height] of [
+    [390, 694],
+    [836, 328],
+    [1440, 720],
+  ])
+    for (const [ww, wh] of [
+      [200, 365],
+      [320, 200],
+      [8, 512],
+    ])
+      for (let turn = 0; turn < 4; turn++) {
+        const view = canvasView(
+            width,
+            height,
+            ww,
+            wh,
+            turn,
+            1,
+            { x: ww / 2, y: wh / 2 },
+            "fit",
+          ),
+          v = view.viewport;
+        const corners = [
+          [0, 0],
+          [ww, 0],
+          [0, wh],
+          [ww, wh],
+        ].map(([x, y]) =>
+          transformPoint(view.matrix, v.x + x * v.scale, v.y + y * v.scale),
+        );
+        const xs = corners.map((p) => p.x),
+          ys = corners.map((p) => p.y),
+          left = Math.min(...xs),
+          right = Math.max(...xs),
+          top = Math.min(...ys),
+          bottom = Math.max(...ys);
+        assert.ok(
+          left >= -1e-7 &&
+            top >= -1e-7 &&
+            right <= width + 1e-7 &&
+            bottom <= height + 1e-7,
+        );
+        close(left, width - right);
+        close(top, height - bottom);
+        assert.ok(Math.abs(left) < 1e-7 || Math.abs(top) < 1e-7);
+        close(
+          Math.hypot(view.matrix[0], view.matrix[1]),
+          Math.hypot(view.matrix[2], view.matrix[3]),
+        );
+      }
 });

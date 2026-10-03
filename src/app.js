@@ -574,6 +574,12 @@ $("debug-btn").addEventListener("click", () =>
 $("exit-focus-btn").addEventListener("click", () =>
   $("fullscreen-btn").click(),
 );
+$("canvas-fill-btn").addEventListener("click", () =>
+  settings.set(
+    "canvasFill",
+    settings.get("canvasFill") === "fit" ? "stretch" : "fit",
+  ),
+);
 $("fullscreen-btn").addEventListener("click", async () => {
   const focus = () => {
     const active = mobileDock.toggleFocus();
@@ -1095,6 +1101,21 @@ const settingEffects = {
   bloomIntensity: () =>
     (renderer.bloomIntensity = settings.get("bloomIntensity")),
   grid: () => (renderer.grid = settings.get("grid")),
+  canvasFill: () => {
+    renderer.fill = settings.get("canvasFill");
+    renderer.resetView();
+    const fit = renderer.fill === "fit",
+      current = fit ? "Fit" : "Stretch",
+      next = fit ? "Stretch" : "Fit",
+      button = $("canvas-fill-btn");
+    button.innerHTML = icon(renderer.fill);
+    button.setAttribute(
+      "aria-label",
+      `Canvas display: ${current}. Switch to ${next}`,
+    );
+    button.setAttribute("aria-pressed", String(!fit));
+    button.title = `${current} canvas — switch to ${next}`;
+  },
   view: () => {
     renderer.mode = settings.get("view");
     $("view").value = renderer.mode;
