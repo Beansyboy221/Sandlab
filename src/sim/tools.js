@@ -1,30 +1,28 @@
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 export const toolGroups = [
   { name: "Create", tools: ["paint", "fill", "recolor", "erase"] },
-  { name: "Arrange", tools: ["select", "grab", "squeeze"] },
+  { name: "Arrange", tools: ["select", "grab"] },
   {
     name: "Environment",
-    tools: ["warm", "cool", "fan", "wind", "pressure", "vacuum"],
+    tools: ["warm", "cool", "wind", "pressure", "vacuum"],
   },
   { name: "Inspect & Guide", tools: ["inspect", "eyedropper", "guide"] },
 ];
 export const brushTools = [
   ["paint", "Draw", "brush"],
   ["fill", "Fill", "bucket"],
-  ["recolor", "Paint", "palette"],
+  ["recolor", "Color", "palette"],
   ["erase", "Erase", "eraser"],
   ["warm", "Warm", "warm"],
   ["cool", "Cool", "cool"],
-  ["fan", "Fan", "fan"],
   ["wind", "Wind", "wind"],
   ["grab", "Grab", "hand"],
   ["select", "Select", "select"],
   ["inspect", "Inspect", "search"],
   ["guide", "Guide", "target"],
-  ["eyedropper", "Copy", "eyedropper"],
+  ["eyedropper", "Pick", "eyedropper"],
   ["pressure", "Pressure", "pressure"],
   ["vacuum", "Vacuum", "vacuum"],
-  ["squeeze", "Squeeze", "squeeze"],
 ];
 export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
   dx = Math.round(dx);
@@ -88,11 +86,9 @@ export function applyTool(
   power = 1,
 ) {
   if (![x, y, radius, dx, dy].every(Number.isFinite)) return;
+  if (tool === "wind" && w.mechanics.windSimulation === false) return;
   w.missiles.brush(tool, x, y, radius, dx, dy, power, shape);
   w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
-  if (tool === "fan") {
-    moveBrush(w, x, y, radius, shape, Math.sign(dx), Math.sign(dy));
-  }
   if (tool === "erase-mobile") {
     w.elastic.world = w;
     w.elastic.cutBrush(x, y, radius, shape);
@@ -112,7 +108,7 @@ export function applyTool(
       )
         w.fields.heat(nx, ny, (tool === "warm" ? 12 : -12) * power);
       if (
-        (tool === "wind" || tool === "fan") &&
+        tool === "wind" &&
         !w.fields.blocks(w.cells[i]) &&
         ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
       )
@@ -127,8 +123,6 @@ export function applyTool(
       } else if (tool === "pressure" || tool === "vacuum") {
         if ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
           w.fields.add(nx, ny, (tool === "pressure" ? 3 : -3) * power);
-      } else if (tool === "squeeze") {
-        if (w.cells[i] === M.Sponge) w.cooldown[i] = 20 * power;
       } else if (w.cells[i] && !materials[w.cells[i]].heatSource) {
         if (tool === "warm" || tool === "cool")
           w.temp[i] = Math.max(

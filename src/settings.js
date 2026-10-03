@@ -69,6 +69,24 @@ export const settingGroups = [
     name: "Simulation",
     fields: [
       {
+        key: "windSimulation",
+        label: "Wind",
+        type: "toggle",
+        default: defaultMechanics.windSimulation,
+      },
+      {
+        key: "pressureSimulation",
+        label: "Pressure",
+        type: "toggle",
+        default: defaultMechanics.pressureSimulation,
+      },
+      {
+        key: "temperatureSimulation",
+        label: "Temperature",
+        type: "toggle",
+        default: defaultMechanics.temperatureSimulation,
+      },
+      {
         key: "speed",
         label: "Simulation speed",
         type: "select",

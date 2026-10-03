@@ -193,3 +193,53 @@ test("room-temperature oxygen and CO2 are heavier than ambient air, while methan
     );
   }
 });
+
+test("simulation switches stop their own transport and resume independently", () => {
+  const w = new World(24, 24);
+  w.set(at(w, 10, 5), M.Sand, 180);
+  w.set(at(w, 10, 6), M.Sand, 20);
+  const field = w.fields.index(10, 5);
+  w.fields.temperature[field] = 400;
+  w.fields.add(10, 5, 8);
+  applyTool(w, "wind", 10, 5, 2);
+  assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
+  w.mechanics.windSimulation = false;
+  w.mechanics.pressureSimulation = false;
+  w.mechanics.temperatureSimulation = false;
+  w.fields.configure(w.mechanics);
+  applyTool(w, "wind", 10, 5, 2);
+  applyTool(w, "pressure", 10, 5, 2);
+  run(w, 4);
+  assert.ok(w.fields.pressure.every((v) => v === 0));
+  assert.ok(w.fields.airflow.velocityX.every((v) => v === 0));
+  assert.equal(w.fields.temperature[field], 400);
+  const sandHeat = () =>
+    Array.from(w.cells)
+      .flatMap((id, i) => (id === M.Sand ? [w.temp[i]] : []))
+      .sort((a, b) => a - b);
+  assert.deepEqual(sandHeat(), [20, 180]);
+  assert.ok(
+    Array.from(w.cells).some(
+      (id, i) => id === M.Sand && Math.floor(i / w.width) > 6,
+    ),
+    "gravity continues with transport disabled",
+  );
+  w.mechanics.windSimulation = true;
+  w.fields.configure(w.mechanics);
+  applyTool(w, "wind", 10, 5, 2);
+  w.fields.update(w);
+  assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
+  assert.ok(
+    w.fields.pressure.every((v) => v === 0),
+    "wind does not recreate disabled pressure",
+  );
+  assert.equal(w.fields.temperature[field], 400);
+  w.mechanics.pressureSimulation = true;
+  w.fields.configure(w.mechanics);
+  applyTool(w, "pressure", 10, 5, 2);
+  assert.ok(w.fields.pressure.some((v) => v > 0));
+  w.mechanics.temperatureSimulation = true;
+  run(w, 4);
+  assert.ok(w.fields.temperature[field] < 400);
+  assert.ok(sandHeat()[1] < 180);
+});

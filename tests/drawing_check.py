@@ -60,9 +60,8 @@ with sync_playwright() as p:
         box=page.locator('#world').bounding_box()
         page.locator('#controls-toggle').tap();assert page.locator('#shape-btn').is_visible()
         assert page.locator('#world').bounding_box()==box
-        page.locator('#zoom-in-btn').tap();assert page.evaluate('sandlab.renderer.zoom')>1
+        assert page.locator('#zoom-in-btn,#zoom-out-btn').count()==0
         assert page.locator('#zoom-fit-btn').count()==0
-        page.locator('#zoom-out-btn').tap();assert abs(page.evaluate('sandlab.renderer.zoom')-1)<.001
         if width<=700:
             a=page.locator('#clear-btn').bounding_box();b=page.locator('#view').bounding_box()
             assert a['y']+a['height']<=b['y'] or a['x']+a['width']<=b['x']

@@ -16,6 +16,10 @@ export class Airflow {
     this.x = this.y = 0;
   }
   step(f, world) {
+    if (!f.windEnabled) {
+      this.clear();
+      return;
+    }
     const w = this.width,
       h = this.height,
       p = f.pressure,
@@ -147,6 +151,7 @@ export class Airflow {
   }
   impulse(f, x, y, dx, dy, power = 1) {
     if (
+      !f.windEnabled ||
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
       !Number.isFinite(dx) ||

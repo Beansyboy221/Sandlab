@@ -25,9 +25,19 @@ with sync_playwright() as p:
             assert page.locator('#world').bounding_box()['width']>before
             page.locator('#palette-toggle').click();assert page.locator('#palette').is_visible()
             assert page.locator('.play-controls .control-caption').is_visible()
+        assert page.locator('#zoom-in-btn,#zoom-out-btn').count()==0
+        assert page.locator('.draw-controls #brush-control').count()==1
+        assert page.locator('#speed').evaluate("e=>parseFloat(getComputedStyle(e).borderTopWidth)>0")
+        assert page.locator('#categories button').evaluate_all("tabs=>tabs.every(t=>t.querySelector('svg[aria-hidden=true]') && !t.style.getPropertyValue('--color'))")
+        page.locator('#tool-picker-toggle').click()
+        assert page.locator('[data-tool-option=fan],[data-tool-option=squeeze]').count()==0
+        assert page.locator('[data-tool-option=eyedropper]').inner_text()=='Pick'
+        page.locator('[data-tool-option=eyedropper]').click()
+        assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Pick'
+        page.keyboard.press('b')
         page.locator('#tool-picker-toggle').click()
         assert page.locator('.tool-picker-heading').all_text_contents()==['Create','Arrange','Environment','Inspect & Guide']
-        assert page.locator('#tool-picker-menu [role=option]').count()==16
+        assert page.locator('#tool-picker-menu [role=option]').count()==14
         assert page.locator('.tool-picker-group').evaluate_all("groups=>groups.every(g=>parseFloat(getComputedStyle(g).borderTopWidth)>0 && [...g.querySelectorAll('button')].every(b=>{const p=g.getBoundingClientRect(),c=b.getBoundingClientRect();return c.left>=p.left && c.right<=p.right+.5}))")
         page.keyboard.press('Escape')
         if width>1100:
@@ -37,6 +47,21 @@ with sync_playwright() as p:
         assert page.locator('#app-content-count').inner_text().endswith(f'{interaction_count} interactions') and interaction_count>0
         assert page.locator('#changelog-btn').evaluate("e=>getComputedStyle(e).backgroundColor!='rgba(0, 0, 0, 0)' && e.getBoundingClientRect().height>=44")
         page.locator('#about-dialog .dialog-close').click()
+        page.locator('#save-btn').click()
+        assert page.locator('#export-btn').inner_text()=='Export'
+        assert page.locator('#import-btn').inner_text()=='Import'
+        assert not page.locator('#saves-dialog .small-print').count()
+        page.locator('#saves-dialog .dialog-close').click()
+        page.keyboard.press('o');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Color'
+        page.keyboard.press('b')
+        page.locator('#settings-btn').click();page.locator('#settings-tab-keyboard').click()
+        assert not page.locator('#settings-panel-keyboard .settings-note').count()
+        page.locator('#settings-tab-simulation').click()
+        for key in ['windSimulation','pressureSimulation','temperatureSimulation']:
+            toggle=page.locator('#setting-'+key);assert toggle.is_checked();toggle.click()
+            assert page.evaluate('key=>sandlab.world.mechanics[key]===false',key)
+            toggle.click();assert page.evaluate('key=>sandlab.world.mechanics[key]===true',key)
+        page.locator('#settings-dialog .dialog-close').click()
         page.evaluate("sandlab.world.clear();sandlab.controller.navigation=null;sandlab.controller.position={x:.5,y:.5};sandlab.controller.input.canvas.focus();controlFrame();controlFrame([7]);controlFrame([7],[1,0,0,0]);controlFrame();")
         count=page.evaluate('sandlab.world.count');assert count>0
         page.evaluate('controlFrame([6]);controlFrame();');erased=page.evaluate('sandlab.world.count');assert erased<count

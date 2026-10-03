@@ -202,7 +202,7 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.world.cells.some(v=>v===5)')
     page.screenshot(path=str(ARTIFACTS / 'fire-surfaces.png'))
     page.evaluate("() => {sandlab.state.paused=true;const w=sandlab.world;w.clear();w.set(100*w.width+160,2);}")
-    point=page.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(160,100);return {x:b.left+p.x/s,y:b.top+p.y/s};}""")
+    point=page.evaluate("""()=>{const r=sandlab.renderer;r.resize();const b=r.canvas.getBoundingClientRect(),s=r.canvas.width/b.width,p=r.project(160.5,100.5);return {x:b.left+p.x/s,y:b.top+p.y/s};}""")
     choose(page, 'warm')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.temp[100*sandlab.world.width+160]') > 20
@@ -219,9 +219,10 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.world.storedAmount[100*sandlab.world.width+165]') == 10
     page.locator('#undo-btn').click()
     assert page.evaluate('sandlab.world.storedAmount[100*sandlab.world.width+160]') == 10
-    choose(page, 'squeeze')
+    choose(page, 'pressure')
     page.mouse.click(point['x'],point['y'])
-    assert page.evaluate('sandlab.world.cooldown[100*sandlab.world.width+160]') > 0
+    assert page.evaluate('sandlab.world.fields.pressure[sandlab.world.fields.index(160,100)]') > 0
+    page.locator('#undo-btn').click()
     choose(page, 'vacuum')
     page.mouse.click(point['x'],point['y'])
     assert page.evaluate('sandlab.world.fields.pressure.some(v=>v<0)')
@@ -544,7 +545,7 @@ with sync_playwright() as p:
     assert phone.locator('#deselect-selection').is_visible()
     assert phone.locator('#deselect-selection').bounding_box()['height'] >= 44
     phone.set_viewport_size({'width':390,'height':844})
-    choose(phone, 'fan')
+    choose(phone, 'wind')
     assert phone.locator('#fan-direction').is_visible()
     phone.locator('#fan-direction').select_option('up')
     assert phone.evaluate("sandlab.state.fanDirection === 'up'")

@@ -509,7 +509,8 @@ export class World {
     }
   }
   transferHeat(i, j) {
-    if (!this.cells[j]) return;
+    if (this.mechanics.temperatureSimulation === false || !this.cells[j])
+      return;
     const a = materials[this.cells[i]],
       b = materials[this.cells[j]];
     const transfer =
@@ -523,6 +524,7 @@ export class World {
     this.rigid.world = this;
     this.tick++;
     this.sound.tick = this.tick;
+    this.fields.configure(this.mechanics);
     this.environment.world = this;
     this.environment.update(true);
     this.fields.border = this.border;
@@ -547,7 +549,10 @@ export class World {
             i = y * w + x;
           if (!this.cells[i] || this.updated[i] === this.tick) continue;
           this.updated[i] = this.tick;
-          if ((i + this.tick) % 3 === 0) {
+          if (
+            this.mechanics.temperatureSimulation !== false &&
+            (i + this.tick) % 3 === 0
+          ) {
             const right = this.index(x + 1, y),
               below = this.index(x, y + 1);
             if (right >= 0) this.transferHeat(i, right);
@@ -568,7 +573,10 @@ export class World {
             this.fields.exchange(this, i, x, y);
           }
           react(this, i, x, y);
-          if (this.cells[i] === M.Fan) {
+          if (
+            this.cells[i] === M.Fan &&
+            this.mechanics.windSimulation !== false
+          ) {
             for (let d = 2; d < 15; d++) {
               const nx = x + d;
               const j = this.index(nx, y),

@@ -11,14 +11,10 @@ export class ShortcutPanel {
     this.settings = settings;
     this.controls = [];
     this.pending = null;
-    const note = document.createElement("p");
-    note.className = "settings-note";
-    note.textContent =
-      "Choose a binding, then press the new keys. Escape cancels. Use × to remove a binding. On phones, connect a keyboard to rebind keys.";
     this.status = document.createElement("p");
     this.status.className = "binding-status";
     this.status.setAttribute("role", "status");
-    panel.append(note, this.status);
+    panel.append(this.status);
     for (const action of shortcutDefinitions) {
       const row = document.createElement("div"),
         label = document.createElement("span"),

@@ -183,6 +183,7 @@ svg {
   display: flex;
   align-items: center;
   gap: 9px;
+  padding-left: 10px;
 }
 .live-dot,
 .status-dot {
@@ -297,6 +298,11 @@ svg {
 .speed-control select option,
 .view-control select option {
   background: #192227;
+}
+.speed-control select {
+  border: 1px solid #3b515b;
+  border-radius: 6px;
+  background: #10191e;
 }
 .tool-divider {
   height: 25px;
@@ -493,6 +499,10 @@ kbd {
   margin-bottom: 17px;
 }
 .category-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   padding: 6px 9px;
   font-size: 10px;
   border: 1px solid transparent;
@@ -500,6 +510,11 @@ kbd {
   color: #92a4ac;
   min-height: 29px;
   text-transform: capitalize;
+}
+.category-tabs button svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .category-tabs button:hover {
   color: #d6e4e1;

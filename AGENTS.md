@@ -35,6 +35,6 @@ Original browser sandbox; vanilla ES modules and Canvas, no runtime dependencies
 
 ## Finish efficiently
 
-Use `git diff --check`; review changed responsibilities and update the changelog for user-visible game changes. Keep worthwhile future work in `BACKLOG.md`. Development-only changes do not need an app version bump or a Sites deployment.
+Use `git diff --check`; review changed responsibilities and update the changelog for user-visible game changes. Keep worthwhile future work in `BACKLOG.md`. Development-only changes do not need an app version bump or a deployment.
 
-Publish game changes to the existing GitHub repo and Site using the established native tools and Sites skill. Synchronize all tracked game-source files into the opened Sites checkout, since development-only GitHub commits may be absent there. Reuse matching successful checks and archives, verify source provenance, and poll the actual deployment. Do not create replacement sites/repos, persist credentials, or resend full source in user messages. GitHub CI skips docs-only runs and skips Pages publication when static game inputs are unchanged; manual dispatch forces publication. Superseded workflow runs are cancelled.
+Publish game changes only to the existing GitHub repository and GitHub Pages site. The ChatGPT Site is retired at the user’s request: do not mirror source to `/workspace/sandlab-site`, save Site versions, or deploy through Sites. Verify the pushed source and the actual GitHub Pages deployment. Do not create replacement sites/repos or persist credentials. GitHub CI skips docs-only runs and skips Pages publication when static game inputs are unchanged; manual dispatch forces publication. Superseded workflow runs are cancelled.

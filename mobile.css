@@ -434,6 +434,8 @@
 }
 .mobile-layout .toolbox.expanded .brush-control {
   padding: 0 2px;
+  flex-basis: 100%;
+  max-width: none;
 }
 .mobile-layout .toolbox.expanded .material-controls {
   display: flex;

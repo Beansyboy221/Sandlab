@@ -119,7 +119,7 @@ export class Stickmen {
           a.px[n] += dx;
           a.py[n] += dy;
         }
-        if (tool === "fan") {
+        if (tool === "wind") {
           a.px[n] -= dx * 0.4 * power;
           a.py[n] -= dy * 0.4 * power;
         }

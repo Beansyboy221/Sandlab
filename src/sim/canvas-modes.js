@@ -44,7 +44,11 @@ export class CanvasEnvironment {
     this.light =
       w.ambientLight *
       (mode === "solar" ? 0.04 + 0.96 * Math.max(0, Math.sin(phase)) : 1);
-    if (mode === "solar" && advance) {
+    if (
+      mode === "solar" &&
+      advance &&
+      w.mechanics.temperatureSimulation !== false
+    ) {
       const target = 5 + 45 * Math.max(0, Math.sin(phase)) * strength;
       w.fields.ambientTemperature = target;
       for (let i = 0; i < w.fields.temperature.length; i++)

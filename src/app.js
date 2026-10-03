@@ -228,12 +228,10 @@ function updateToolProperties() {
     "cool",
     "pressure",
     "vacuum",
-    "squeeze",
     "wind",
-    "fan",
   ].includes(tool);
   $("solids-property").hidden = !["grab", "erase"].includes(tool);
-  $("direction-property").hidden = tool !== "fan" && tool !== "wind";
+  $("direction-property").hidden = tool !== "wind";
   const shape = tool === "select" ? state.selectionShape : state.shape;
   $("brush-control").hidden =
     reading || tool === "fill" || (tool === "select" && shape === "square");
@@ -269,13 +267,7 @@ function updateToolProperties() {
   $("paste-selection").classList.toggle("active", selection.placing);
   $("paste-selection").setAttribute("aria-pressed", String(selection.placing));
   $("power-label").textContent =
-    tool === "warm"
-      ? "Heat"
-      : tool === "cool"
-        ? "Cooling"
-        : tool === "squeeze"
-          ? "Duration"
-          : "Force";
+    tool === "warm" ? "Heat" : tool === "cool" ? "Cooling" : "Force";
 }
 function setTool(value) {
   const tool = typeof value === "boolean" ? (value ? "erase" : "paint") : value;
@@ -477,9 +469,17 @@ function renderCategories() {
     ...materialGroups.groups.map((group) => group.id),
   ]) {
     const b = document.createElement("button");
-    b.textContent =
+    const label = document.createElement("span");
+    label.textContent =
       materialGroups.get(cat)?.name ||
       (catalogKind === "entities" ? entityLabels : categoryLabels)[cat];
+    b.innerHTML =
+      cat === "all"
+        ? icon("grid")
+        : materialGroups.get(cat)
+          ? icon("layers")
+          : materialIcon(cat);
+    b.append(label);
     b.dataset.group = cat;
     b.classList.toggle("selected", cat === category);
     b.setAttribute("aria-pressed", String(cat === category));
@@ -526,6 +526,7 @@ $("play-btn").addEventListener("click", () => setPaused(!state.paused));
 const mechanicKeys = Object.keys(defaultMechanics);
 function syncMechanics() {
   for (const key of mechanicKeys) world.mechanics[key] = settings.get(key);
+  world.fields.configure(world.mechanics);
 }
 function stepSimulation() {
   syncMechanics();
@@ -570,12 +571,6 @@ $("debug-btn").addEventListener("click", () =>
 $("exit-focus-btn").addEventListener("click", () =>
   $("fullscreen-btn").click(),
 );
-$("zoom-in-btn").addEventListener("click", () => zoomCenter(1.3));
-$("zoom-out-btn").addEventListener("click", () => zoomCenter(1 / 1.3));
-function zoomCenter(factor) {
-  const box = $("world").getBoundingClientRect();
-  renderer.zoomAt(factor, box.left + box.width / 2, box.top + box.height / 2);
-}
 $("fullscreen-btn").addEventListener("click", async () => {
   const focus = () => {
     const active = mobileDock.toggleFocus();

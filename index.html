@@ -196,19 +196,19 @@
             >
               <span data-icon="circle"></span>
             </button>
-          </div>
-          <div class="brush-control" id="brush-control">
-            <label for="brush"
-              ><span id="brush-label">Size</span>
-              <output id="brush-value">6</output></label
-            ><input
-              id="brush"
-              type="range"
-              min="1"
-              max="30"
-              value="6"
-              aria-label="Brush radius"
-            />
+            <div class="brush-control" id="brush-control">
+              <label for="brush"
+                ><span id="brush-label">Size</span>
+                <output id="brush-value">6</output></label
+              ><input
+                id="brush"
+                type="range"
+                min="1"
+                max="30"
+                value="6"
+                aria-label="Brush radius"
+              />
+            </div>
           </div>
           <div class="tool-divider second-divider"></div>
           <div class="material-controls" role="group" aria-label="Material">
@@ -275,7 +275,7 @@
                 >
                   <i></i>
                 </button>
-                <select id="paint-layer" aria-label="Paint layer">
+                <select id="paint-layer" aria-label="Color layer">
                   <option value="foreground">Foreground</option>
                   <option value="background">Background</option>
                 </select>
@@ -371,20 +371,6 @@
             </div>
             <button id="exit-focus-btn" class="property-button">
               Exit focus
-            </button>
-            <button
-              id="zoom-out-btn"
-              class="property-button"
-              aria-label="Zoom out"
-            >
-              −
-            </button>
-            <button
-              id="zoom-in-btn"
-              class="property-button"
-              aria-label="Zoom in"
-            >
-              +
             </button>
           </div>
         </div>
@@ -540,7 +526,7 @@
       aria-labelledby="color-title"
     >
       <div class="dialog-heading">
-        <h2 id="color-title">Paint color</h2>
+        <h2 id="color-title">Color</h2>
         <button
           type="button"
           class="icon-button dialog-close"
@@ -829,9 +815,9 @@
       <div id="save-list" class="save-list"></div>
       <div class="save-actions">
         <button id="export-btn" class="quiet-button">
-          <span data-icon="download"></span> Export file</button
+          <span data-icon="download"></span> Export</button
         ><button id="import-btn" class="quiet-button">
-          <span data-icon="upload"></span> Import file</button
+          <span data-icon="upload"></span> Import</button
         ><input
           type="file"
           accept=".sandlab,.json,application/json"
@@ -839,10 +825,6 @@
           hidden
         />
       </div>
-      <p class="small-print">
-        Stored on this device. Autosaved every 30 seconds. Export your favorites
-        to keep a backup.
-      </p>
     </dialog>
     <dialog
       id="about-dialog"

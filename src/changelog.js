@@ -1,5 +1,18 @@
 export const changelog = [
   {
+    version: "1.14.4",
+    date: "2026-10-03",
+    title: "Simpler tools and clearer brush controls",
+    changes: [
+      "Removed clickable zoom buttons, Fan and Squeeze tools. Pinch, Ctrl/Command-wheel and controller zoom remain available. Wind, powered fans and pressure-driven sponge absorption and release retain their physics.",
+      "The paint tool is now Color. Brush size now sits inside Tool & brush. Playback speed has its own visible border, and category tabs show monochrome versions of their material icons.",
+      "The sampling tool is now Pick, with a recognizable eyedropper icon. Its shortcut and existing custom bindings are preserved; selection Copy/Paste is unchanged.",
+      "Import and Export labels are shorter, the storage note and keyboard introduction have been removed, and the world name has more space beside the screen edge.",
+      "Simulation settings can independently toggle wind, pressure and temperature transport. Disabled pressure and wind clear their fields; stored heat remains available for direct tools and reactions.",
+      "GitHub Pages is now the sole publishing destination. ChatGPT Site updates have stopped.",
+    ],
+  },
+  {
     version: "1.14.3",
     date: "2026-10-03",
     title: "Grouped controls and controller support",

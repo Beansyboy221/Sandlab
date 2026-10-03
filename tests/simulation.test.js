@@ -512,7 +512,7 @@ test("warm and cool brushes trigger normal phase changes without painting over c
   applyTool(w, "warm", 0, 0, 10);
   assert.equal(w.cells[0], 0);
 });
-test("fan moves mobile particles, grab carries solids and contents, and walls prevent overwrites", () => {
+test("wind applies air momentum, grab carries solids and contents, and walls prevent overwrites", () => {
   const w = new World(40, 24),
     i = index(w, 14, 12);
   w.set(i, M.Sponge);
@@ -520,9 +520,10 @@ test("fan moves mobile particles, grab carries solids and contents, and walls pr
   w.storedAmount[i] = 17;
   w.set(index(w, 15, 12), M.Wood);
   w.set(index(w, 15, 11), M.Sand);
-  applyTool(w, "fan", 14, 12, 3, "square", 1, 0);
+  applyTool(w, "wind", 14, 12, 3, "square", 1, 0);
   assert.equal(w.cells[i], M.Sponge);
-  assert.equal(w.cells[index(w, 16, 11)], M.Sand);
+  assert.equal(w.cells[index(w, 15, 11)], M.Sand);
+  assert.ok(w.fields.airflow.velocityX.some((value) => value > 0));
   dragBrush(w, { x: 14, y: 12 }, { x: 19, y: 12 }, 3, "square");
   assert.equal(w.cells[index(w, 19, 12)], M.Sponge);
   assert.equal(w.storedAmount[index(w, 19, 12)], 17);
@@ -538,7 +539,7 @@ test("fan moves mobile particles, grab carries solids and contents, and walls pr
   const blocked = new World(12, 12);
   blocked.set(index(blocked, 5, 5), M.Water);
   blocked.set(index(blocked, 6, 5), M.Stone);
-  applyTool(blocked, "fan", 5, 5, 0, "circle", 1, 0);
+  applyTool(blocked, "wind", 5, 5, 0, "circle", 1, 0);
   assert.equal(blocked.cells[index(blocked, 5, 5)], M.Water);
   assert.equal(blocked.count, 2);
 });
@@ -576,8 +577,8 @@ test("sponge absorbs several liquid types up to capacity and cannot mix oil with
     assert.equal(w.cells[j], liquid === M.Oil ? M.Water : M.Oil);
   }
 });
-test("sponge releases liquid under squeeze or pressure and heat produces steam instead of dry burning", () => {
-  for (const method of ["squeeze", "pressure", "warm"]) {
+test("sponge releases liquid under pressure and heat produces steam instead of dry burning", () => {
+  for (const method of ["pressure", "warm"]) {
     const w = new World(20, 20),
       i = index(w, 10, 10);
     w.set(i, M.Sponge);

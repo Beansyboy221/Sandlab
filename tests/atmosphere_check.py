@@ -19,7 +19,7 @@ with sync_playwright() as p:
         def target():return page.evaluate('''()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(50.5,80.5),d=r.canvas.width/b.width;return {x:b.x+p.x/d,y:b.y+p.y/d}}''')
         page.mouse.click(**target());assert page.evaluate('sandlab.world.cells[80*sandlab.world.width+50]')==3
         page.locator('#replace-property').click();assert page.locator('#replace').is_checked();page.mouse.click(**target());assert page.evaluate('sandlab.world.cells[80*sandlab.world.width+50]')==1
-        page.locator('#replace-property').click();page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option="fan"]').click();assert page.locator('#replace-property').is_hidden()
+        page.locator('#replace-property').click();page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option="wind"]').click();assert page.locator('#replace-property').is_hidden()
         page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option="paint"]').click()
         if touch and page.locator('#controls-toggle').get_attribute('aria-expanded')=='true':page.locator('#controls-toggle').click()
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')

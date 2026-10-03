@@ -27,17 +27,17 @@ with sync_playwright() as p:
     assert page.locator('.material').count()==62
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
-    assert page.locator('#tool-picker-menu [role=option]').count()==16
-    assert page.locator('#tool-picker-menu [role=option] > svg').count()==16
-    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==16
+    assert page.locator('#tool-picker-menu [role=option]').count()==14
+    assert page.locator('#tool-picker-menu [role=option] > svg').count()==14
+    assert page.locator('#tool-picker-menu svg[stroke-width="1.65"]').count()==14
     assert page.locator('#tool-picker-toggle').get_attribute('aria-expanded')=='true'
     page.screenshot(path=str(ARTIFACTS/'tool-icons-desktop.png'))
-    page.keyboard.press('End');assert page.locator('[data-tool-option=squeeze]').evaluate('e=>e===document.activeElement')
-    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowRight');page.keyboard.press('ArrowLeft');page.keyboard.press('Enter')
+    page.keyboard.press('End');assert page.locator('[data-tool-option=eyedropper]').evaluate('e=>e===document.activeElement')
+    page.keyboard.press('Home');page.keyboard.press('ArrowDown');page.keyboard.press('ArrowDown');assert page.locator('[data-tool-option=grab]').evaluate('e=>e===document.activeElement');page.keyboard.press('Home');page.keyboard.press('w');page.keyboard.press('ArrowRight');page.keyboard.press('ArrowLeft');page.keyboard.press('Enter')
     assert page.evaluate('sandlab.state.tool')=='warm'
     assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Warm'
     page.keyboard.press('b');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Draw'
-    page.locator('#tool-picker-toggle').click();page.keyboard.press('f');page.keyboard.press('f');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='fan'
+    page.locator('#tool-picker-toggle').click();page.keyboard.press('w');page.keyboard.press('w');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='wind'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#entities-tab').click()
@@ -104,7 +104,7 @@ with sync_playwright() as p:
     assert page.locator('#tool-picker-menu').evaluate('e=>{const b=e.getBoundingClientRect();return b.x>=0&&b.y>=0&&b.right<=innerWidth&&b.bottom<=innerHeight;}')
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.screenshot(path=str(ARTIFACTS/'tool-icons-landscape.png'))
-    page.locator('[data-tool-option=fan]').tap();assert page.evaluate('sandlab.state.tool')=='fan'
+    page.locator('[data-tool-option=wind]').tap();assert page.evaluate('sandlab.state.tool')=='wind'
     assert not errors,errors
     browser.close()
     print(json.dumps({'tool_icons':'pass','keyboard':'pass','touch':'pass','material_group_filter':'pass','energy_rendering':'pass','energy_benchmark':benchmark,'lightning_strikes':strike_counts,'runtime_errors':errors}))

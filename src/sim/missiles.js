@@ -262,7 +262,7 @@ export class Missiles {
       else if (tool === "grab") {
         a.x += dx;
         a.y += dy;
-      } else if (tool === "fan") {
+      } else if (tool === "wind") {
         a.vx += dx * 0.05 * power;
         a.vy += dy * 0.05 * power;
       } else if (tool === "warm" || tool === "cool")

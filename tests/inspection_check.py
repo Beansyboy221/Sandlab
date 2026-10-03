@@ -95,23 +95,23 @@ with sync_playwright() as p:
     page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
     page.locator('#binding-pause-1').click(); page.keyboard.press('b')
     assert 'Already assigned to Draw' in page.locator('.binding-status').inner_text()
-    page.keyboard.press('k')
-    assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'k'")
+    page.keyboard.press('j')
+    assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'j'")
     page.locator('#binding-undo-0').click(); page.keyboard.press('Control+u')
     page.screenshot(path=str(ARTIFACTS/'keyboard-desktop.png'))
     # Closing and pressing a binding in the same task must not race the queued close event.
-    page.evaluate("""()=>{document.querySelector('#settings-dialog .dialog-close').click();document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'k',bubbles:true}));}""")
+    page.evaluate("""()=>{document.querySelector('#settings-dialog .dialog-close').click();document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'j',bubbles:true}));}""")
     assert not page.evaluate('sandlab.state.paused')
-    page.keyboard.press('k'); assert page.evaluate('sandlab.state.paused')
+    page.keyboard.press('j'); assert page.evaluate('sandlab.state.paused')
     page.keyboard.press('p'); assert page.evaluate('sandlab.state.paused')
-    page.keyboard.press('k'); assert not page.evaluate('sandlab.state.paused')
-    page.keyboard.press('k'); assert page.evaluate('sandlab.state.paused')
+    page.keyboard.press('j'); assert not page.evaluate('sandlab.state.paused')
+    page.keyboard.press('j'); assert page.evaluate('sandlab.state.paused')
     page.keyboard.press('m'); assert page.locator('#brush-tool').input_value() == 'inspect'
     page.keyboard.press('i'); assert page.locator('#brush-tool').input_value() == 'eyedropper'
     page.locator('#about-btn').click()
     assert page.locator('#about-dialog').is_visible()
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
-    assert page.locator('#play-btn').get_attribute('title') == 'Pause / play (Space / K)'
+    assert page.locator('#play-btn').get_attribute('title') == 'Pause / play (Space / J)'
     page.locator('#about-dialog .dialog-close').click()
     page.keyboard.press('b')
     page.mouse.click(**point(page, 130, 130))
@@ -119,9 +119,9 @@ with sync_playwright() as p:
     page.keyboard.press('Control+z'); assert page.evaluate('sandlab.world.count > 1')
     page.keyboard.press('Control+u'); assert page.evaluate('sandlab.world.count === 1')
     # Text entry preserves literal rebound keys.
-    page.locator('#search').fill('k'); assert page.evaluate('sandlab.state.paused')
+    page.locator('#search').fill('j'); assert page.evaluate('sandlab.state.paused')
     page.reload(); page.wait_for_function('() => !!window.sandlab')
-    assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'k'")
+    assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'j'")
     page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
     page.locator('#binding-inspect-0').click(); page.keyboard.press('Escape')
     assert not page.locator('#binding-inspect-0').get_attribute('class').endswith('capturing')
@@ -154,8 +154,8 @@ with sync_playwright() as p:
         assert page.locator('#undo-btn').is_disabled()
         page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
         assert page.evaluate("document.querySelector('.settings-panels').scrollWidth <= document.querySelector('.settings-panels').clientWidth")
-        page.locator('#binding-pause-1').click(); page.keyboard.press('k')
-        assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'k'")
+        page.locator('#binding-pause-1').click(); page.keyboard.press('j')
+        assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'j'")
         page.screenshot(path=str(ARTIFACTS/f'keyboard-{width}.png'))
         assert not errors, errors
         context.close()

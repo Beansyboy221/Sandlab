@@ -184,7 +184,7 @@ export class ColorPicker {
     swatch.style.setProperty("--paint-color", this.state.color);
     swatch.setAttribute(
       "aria-label",
-      `Paint color ${this.state.color}, ${values.opacity}% opacity`,
+      `Color ${this.state.color}, ${values.opacity}% opacity`,
     );
     document.getElementById("color-preview").style.background =
       this.state.color;

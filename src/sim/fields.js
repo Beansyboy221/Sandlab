@@ -33,6 +33,18 @@ export class Fields {
     this.gradientStamp = new Uint32Array(length);
     this.gradientEpoch = 0;
     this.airflow = new Airflow(this.width, this.height);
+    this.windEnabled = this.pressureEnabled = this.temperatureEnabled = true;
+  }
+  configure(mechanics) {
+    this.windEnabled = mechanics?.windSimulation !== false;
+    this.pressureEnabled = mechanics?.pressureSimulation !== false;
+    this.temperatureEnabled = mechanics?.temperatureSimulation !== false;
+    if (!this.windEnabled) this.airflow.clear();
+    if (!this.pressureEnabled) {
+      this.pressure.fill(0);
+      this.next.fill(0);
+      this.beginForceSample();
+    }
   }
   index(x, y) {
     return (y >> 2) * this.width + (x >> 2);
@@ -82,6 +94,7 @@ export class Fields {
   }
   add(x, y, value) {
     if (
+      !this.pressureEnabled ||
       !value ||
       !Number.isFinite(value) ||
       x < 0 ||
@@ -97,6 +110,7 @@ export class Fields {
   }
   heat(x, y, amount) {
     if (
+      !this.temperatureEnabled ||
       !Number.isFinite(amount) ||
       x < 0 ||
       y < 0 ||
@@ -139,6 +153,7 @@ export class Fields {
     return total * 0.25;
   }
   exchange(world, i, x, y) {
+    if (!this.temperatureEnabled) return;
     const fi = this.index(x, y),
       m = materials[world.cells[i]],
       heat =
@@ -154,6 +169,7 @@ export class Fields {
     this.add(x, y, heat * 0.0005);
   }
   update(world) {
+    if (world) this.configure(world.mechanics);
     if (this.lastBorder !== this.border) {
       this.obstaclesDirty = true;
       this.lastBorder = this.border;
@@ -226,22 +242,26 @@ export class Fields {
           heatFlux +=
             ((j < 0 ? this.ambientTemperature : t[j]) - t[i]) * permeability;
         }
-        n[i] = Math.max(
-          -80,
-          Math.min(
-            80,
-            (p[i] + pressureFlux * 0.025 - divergence * 0.55) * 0.999,
-          ),
-        );
-        nt[i] = Math.max(
-          -273,
-          Math.min(
-            6000,
-            t[i] +
-              heatFlux * 0.03 +
-              heatAdvection * Math.min(0.5, 0.75 / (incoming || 1)),
-          ),
-        );
+        n[i] = this.pressureEnabled
+          ? Math.max(
+              -80,
+              Math.min(
+                80,
+                (p[i] + pressureFlux * 0.025 - divergence * 0.55) * 0.999,
+              ),
+            )
+          : 0;
+        nt[i] = this.temperatureEnabled
+          ? Math.max(
+              -273,
+              Math.min(
+                6000,
+                t[i] +
+                  heatFlux * 0.03 +
+                  heatAdvection * Math.min(0.5, 0.75 / (incoming || 1)),
+              ),
+            )
+          : t[i];
       }
     this.pressure = n;
     this.next = p;

@@ -200,7 +200,7 @@ test("idle grip does not cancel airborne momentum, fan impulses or detached-limb
     );
     run(w, 100);
     const before = a.x[2];
-    w.stickmen.brush("fan", a.x[2], a.y[2], 20, direction * 4, 0, 1);
+    w.stickmen.brush("wind", a.x[2], a.y[2], 20, direction * 4, 0, 1);
     run(w, 4);
     assert.ok(
       direction * (a.x[2] - before) > 0.3,
