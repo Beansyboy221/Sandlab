@@ -26,8 +26,12 @@ test("catalogs are separate, complete, and preserve IDs for old creatures and de
   assert.ok(paletteMaterials.every((m) => !isEntity(m)));
   assert.ok(paletteEntities.every(isEntity));
   assert.equal(M["Heat-Seeking Missile"], 105);
+  assert.equal(M["Seeking Missile"], 105);
+  assert.equal(materials[105].name, "Seeking Missile");
   assert.equal(M.Drone, 117);
   assert.equal(M["Laser-Guided Missile"], 119);
+  assert.equal(M["Guided Missile"], 119);
+  assert.equal(materials[119].name, "Guided Missile");
   for (const name of [
     "Cat",
     "Player",

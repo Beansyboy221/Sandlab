@@ -13,7 +13,7 @@ const gate = (name, rule, color) => [
   2,
   { ...electronics, circuit: rule, directed: true },
   [
-    "Laser-Guided Missile",
+    "Guided Missile",
     "special",
     "#8de1b5",
     2,
@@ -90,7 +90,7 @@ export const deviceMaterials = [
     },
   ],
   [
-    "Laser-Guided Missile",
+    "Guided Missile",
     "special",
     "#8de1b5",
     2,

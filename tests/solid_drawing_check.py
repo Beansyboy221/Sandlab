@@ -126,6 +126,7 @@ with sync_playwright() as p:
             assert page.evaluate('!sandlab.state.paused && sandlab.world.count===0')
             # Playback shortcuts cannot move a shape mid-stroke or resume over an explicit pause.
             pos=setup(page);down(pos);page.keyboard.press('Space');frozen(page);up();frozen(page)
+            page.evaluate("sandlab.settings.set('shortcuts',{step:['.']})")
             pos=setup(page);down(pos);page.keyboard.press('.');frozen(page);up();frozen(page)
             # A real pen pointer shares the same drawing lifecycle as a mouse.
             pos=setup(page);pen=context.new_cdp_session(page)

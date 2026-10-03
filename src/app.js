@@ -984,6 +984,9 @@ const shortcutHandlers = {
   fill: () => setTool("fill"),
   erase: () => setTool(true),
   select: () => setTool("select"),
+  grab: () => setTool("grab"),
+  pressure: () => setTool("pressure"),
+  vacuum: () => setTool("vacuum"),
   warm: () => setTool("warm"),
   cool: () => setTool("cool"),
   wind: () => setTool("wind"),
@@ -1048,8 +1051,10 @@ window.addEventListener("keydown", (e) => {
   if (!action || (e.repeat && !["smaller", "larger"].includes(action))) return;
   if (action === "delete" && (state.tool !== "select" || !selection.box))
     return;
+  const handler = shortcutHandlers[action];
+  if (!handler) return;
   e.preventDefault();
-  shortcutHandlers[action]();
+  handler();
 });
 function syncShortcutTitles() {
   const overrides = settings.get("shortcuts");

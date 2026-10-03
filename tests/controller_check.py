@@ -38,7 +38,7 @@ with sync_playwright() as p:
             page.locator('#tool-picker-toggle').click();page.locator(f'[data-tool-option="{tool}"]').click()
             if mobile:assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='true'
             assert page.locator('.draw-controls').evaluate("group=>[...group.querySelectorAll('button,input,select,label')].filter(e=>e.getClientRects().length).every(e=>{const g=group.getBoundingClientRect(),b=e.getBoundingClientRect();return b.left>=g.left-1&&b.right<=g.right+1&&b.top>=g.top-1&&b.bottom<=g.bottom+1})"),tool
-        page.keyboard.press('b')
+        page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click()
         if mobile:page.locator('#controls-toggle').click()
 
         assert page.locator('.draw-controls #brush-control').count()==1
@@ -49,7 +49,7 @@ with sync_playwright() as p:
         assert page.locator('[data-tool-option=eyedropper]').inner_text()=='Pick'
         page.locator('[data-tool-option=eyedropper]').click()
         assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Pick'
-        page.keyboard.press('b')
+        page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click()
         page.locator('#tool-picker-toggle').click()
         assert page.locator('.tool-picker-heading').all_text_contents()==['Create','Arrange','Environment','Inspect & Guide']
         assert page.locator('#tool-picker-menu [role=option]').count()==14
@@ -75,8 +75,8 @@ with sync_playwright() as p:
         assert page.locator('#import-btn').inner_text()=='Import'
         assert not page.locator('#saves-dialog .small-print').count()
         page.locator('#saves-dialog .dialog-close').click()
-        page.keyboard.press('o');assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Color'
-        page.keyboard.press('b')
+        page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=recolor]').click();assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Color'
+        page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click()
         page.locator('#settings-btn').click();page.locator('#settings-tab-keyboard').click()
         assert not page.locator('#settings-panel-keyboard .settings-note').count()
         page.locator('#settings-tab-simulation').click()

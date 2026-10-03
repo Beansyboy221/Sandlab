@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.15.2",
+    date: "2026-10-03",
+    title: "Keyboard bindings and missile names",
+    changes: [
+      "Laser-Guided Missile is now Guided Missile; Heat-Seeking Missile is now Seeking Missile. Their guidance, saved IDs and existing worlds are unchanged.",
+      "Keyboard settings show only active bindings. Add a binding with the plus in the top-right, choose an action and press its keys. Each row has a trash icon; clicking its key edits the binding.",
+      "Exactly seven shortcuts are bound by default: Space for Pause, Ctrl/Command+Z for Undo, Ctrl/Command+Shift+Z for Redo, and Ctrl/Command+X/C/V/S for Cut, Copy, Paste and Save. Every default has one chord. All other actions are optional bindings.",
+      "Player keyboard movement, crouch and jump use the same optional binding catalogue. Space pauses an active Player and is not a default jump key. Joystick and controller controls are unchanged. Saved and newly entered bindings reject duplicate or conflicting keys, including Ctrl/Command equivalents; rebinding resets held movement safely.",
+    ],
+  },
+  {
     version: "1.15.1",
     date: "2026-10-03",
     title: "Canvas dimensions and unified tool controls",

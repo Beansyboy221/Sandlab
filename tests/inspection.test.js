@@ -10,6 +10,8 @@ import {
   normalizeBindings,
   normalizeChord,
   bindingConflict,
+  bindingsFor,
+  shortcutDefinitions,
 } from "../src/shortcuts.js";
 
 test("inspection reads exact cell state without changing world or accepting letterbox coordinates", () => {
@@ -77,6 +79,7 @@ test("custom bindings replace defaults, preserve modifier distinctions, and expo
     undo: ["Mod+u"],
     inspect: ["Alt+m"],
     paint: [],
+    larger: ["Plus"],
   };
   assert.equal(shortcutAction({ key: "p" }, bindings), null);
   assert.equal(shortcutAction({ key: "k" }, bindings), "pause");
@@ -89,7 +92,10 @@ test("custom bindings replace defaults, preserve modifier distinctions, and expo
   );
   assert.equal(shortcutAction({ key: "m", altKey: true }, bindings), "inspect");
   assert.equal(shortcutAction({ key: "b" }, bindings), null);
-  assert.equal(shortcutAction({ key: "+", shiftKey: true }), "larger");
+  assert.equal(
+    shortcutAction({ key: "+", shiftKey: true }, bindings),
+    "larger",
+  );
   assert.equal(bindingConflict("k", "step", bindings).id, "pause");
   assert.equal(
     bindingConflict("k", "pause", { ...bindings, fill: [] }),
@@ -124,8 +130,43 @@ test("binding validation drops corrupt or unknown entries and preferences surviv
   );
   reloaded.reset();
   assert.deepEqual(reloaded.get("shortcuts"), {});
-  assert.equal(
-    shortcutAction({ key: "p" }, reloaded.get("shortcuts")),
-    "pause",
+  assert.equal(shortcutAction({ key: "p" }, reloaded.get("shortcuts")), null);
+});
+
+test("only seven single-chord defaults exist, including Space pause and no player keys", () => {
+  const defaults = shortcutDefinitions.filter((a) => a.defaults.length);
+  assert.deepEqual(
+    defaults.map((a) => a.id).sort(),
+    ["pause", "undo", "redo", "cut", "copy", "paste", "save"].sort(),
   );
+  assert.ok(defaults.every((a) => a.defaults.length === 1));
+  const keys = defaults.flatMap((a) => a.defaults);
+  assert.equal(new Set(keys).size, 7);
+  assert.equal(shortcutAction({ key: " " }), "pause");
+  for (const key of ["a", "d", "w", "s", "p", "b", "i", "m", "n"])
+    assert.equal(shortcutAction({ key }), null, key);
+  for (const id of ["playerLeft", "playerRight", "playerJump", "playerCrouch"])
+    assert.deepEqual(bindingsFor(id), []);
+});
+test("loaded and programmatic preferences remove conflicts with defaults, other actions and aliases", () => {
+  const value = normalizeBindings({
+    pause: ["Mod+Z"],
+    step: ["j"],
+    inspect: ["J", "j"],
+    playerJump: ["Space"],
+  });
+  assert.deepEqual(value, {
+    pause: [],
+    step: ["j"],
+    inspect: [],
+    playerJump: ["Space"],
+  });
+  assert.equal(shortcutAction({ key: " " }, value), "playerJump");
+  assert.deepEqual(normalizeBindings({ playerJump: ["Space"] }), {
+    playerJump: [],
+  });
+  const freed = normalizeBindings({ undo: [], step: ["Mod+z"] });
+  assert.equal(shortcutAction({ key: "z", ctrlKey: true }, freed), "step");
+  assert.equal(shortcutAction({ key: "z", metaKey: true }, freed), "step");
+  assert.equal(bindingConflict("Shift+Mod+Z", "pause", {}).id, "redo");
 });

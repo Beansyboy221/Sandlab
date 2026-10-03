@@ -1,3 +1,5 @@
+import { shortcutAction, bindingsFor, formatChord } from "./shortcuts.js";
+
 export class PlayerControls {
   constructor(container, world, state, settings) {
     this.settings = settings;
@@ -5,6 +7,7 @@ export class PlayerControls {
     this.world = world;
     this.state = state;
     this.keys = new Set();
+    this.heldKeys = new Map();
     this.enabled = true;
     this.touchMove = 0;
     this.gamepadMove = 0;
@@ -75,23 +78,39 @@ export class PlayerControls {
         if (
           !this.world.stickmen.player ||
           !this.enabled ||
-          e.ctrlKey ||
-          e.metaKey ||
-          e.altKey ||
           document.querySelector("dialog[open]") ||
-          (e.code === "Space" && e.target.closest("button")) ||
+          (e.target.closest("button") &&
+            [" ", "Enter"].includes(e.key) &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !e.altKey &&
+            !e.shiftKey) ||
           e.target.closest("input,textarea,select,[contenteditable]")
         )
           return;
-        if (!["KeyW", "KeyA", "KeyS", "KeyD", "Space"].includes(e.code)) return;
+        const action = shortcutAction(e, this.settings?.get("shortcuts"));
+        if (
+          !["playerLeft", "playerRight", "playerJump", "playerCrouch"].includes(
+            action,
+          )
+        )
+          return;
         e.preventDefault();
         e.stopImmediatePropagation();
-        if (!e.repeat && ["KeyW", "Space"].includes(e.code)) this.jump = true;
-        this.keys.add(e.code);
+        if (e.repeat || this.heldKeys.has(e.code)) return;
+        if (action === "playerJump") this.jump = true;
+        this.heldKeys.set(e.code, action);
+        this.keys.add(action);
       },
       true,
     );
-    window.addEventListener("keyup", (e) => this.keys.delete(e.code));
+    window.addEventListener("keyup", (e) => {
+      const action = this.heldKeys.get(e.code);
+      if (!action) return;
+      this.heldKeys.delete(e.code);
+      if (![...this.heldKeys.values()].includes(action))
+        this.keys.delete(action);
+    });
     window.addEventListener("blur", () => this.reset());
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.reset();
@@ -101,7 +120,10 @@ export class PlayerControls {
     this.dock = document.querySelector(".toolbox");
     if (this.dock) this.layoutObserver.observe(this.dock);
     settings?.subscribe((keys) => {
-      if (keys.some((key) => key.startsWith("joystick"))) {
+      if (
+        keys.includes("shortcuts") ||
+        keys.some((key) => key.startsWith("joystick"))
+      ) {
         this.reset();
         this.layout();
       }
@@ -154,6 +176,7 @@ export class PlayerControls {
   reset() {
     this.cancelJoystick?.();
     this.keys.clear();
+    this.heldKeys.clear();
     this.gamepadMove = 0;
     this.gamepadCrouch = false;
     this.touchMove = 0;
@@ -180,8 +203,19 @@ export class PlayerControls {
       ? "Release controls"
       : "Take control";
     this.toggle.setAttribute("aria-pressed", String(this.enabled));
-    this.toggle.title =
-      "WASD to move/crouch, Space or W to jump. P pauses the simulation.";
+    const bindings = this.settings?.get("shortcuts");
+    if (this.hintBindings !== bindings || !this.toggle.title) {
+      this.hintBindings = bindings;
+      const hints = [
+        "playerLeft",
+        "playerRight",
+        "playerJump",
+        "playerCrouch",
+      ].flatMap((id) => bindingsFor(id, bindings).map(formatChord));
+      this.toggle.title = hints.length
+        ? `Player keys: ${hints.join(", ")}`
+        : "Add player keyboard bindings in Settings → Keyboard.";
+    }
   }
   update() {
     this.sync();
@@ -189,11 +223,12 @@ export class PlayerControls {
     control.move = this.enabled
       ? this.touchMove ||
         this.gamepadMove ||
-        Number(this.keys.has("KeyD")) - Number(this.keys.has("KeyA"))
+        Number(this.keys.has("playerRight")) -
+          Number(this.keys.has("playerLeft"))
       : 0;
     control.crouch =
       this.enabled &&
-      (this.touchCrouch || this.gamepadCrouch || this.keys.has("KeyS"));
+      (this.touchCrouch || this.gamepadCrouch || this.keys.has("playerCrouch"));
     if (
       this.enabled &&
       this.jump &&

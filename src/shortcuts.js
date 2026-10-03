@@ -1,41 +1,48 @@
 // One catalogue drives dispatch, preferences, and toolbar key hints.
 export const shortcutDefinitions = [
-  ["pause", "Pause / play", ["Space", "p"]],
-  ["step", "Single step", [".", "n"]],
-  ["paint", "Draw", ["b"]],
-  ["fill", "Fill", ["k"]],
-  ["recolor", "Color", ["o"]],
-  ["erase", "Erase", ["e"]],
-  ["select", "Select", ["v"]],
+  ["pause", "Pause / play", ["Space"]],
+  ["step", "Single step", []],
+  ["paint", "Draw", []],
+  ["fill", "Fill", []],
+  ["recolor", "Color", []],
+  ["erase", "Erase", []],
+  ["select", "Select", []],
+  ["grab", "Grab", []],
   ["guide", "Guide", []],
-  ["inspect", "Inspect", ["m"]],
-  ["eyedropper", "Pick", ["i"]],
-  ["warm", "Warm", ["h"]],
-  ["cool", "Cool", ["c"]],
+  ["inspect", "Inspect", []],
+  ["eyedropper", "Pick", []],
+  ["warm", "Warm", []],
+  ["cool", "Cool", []],
   ["wind", "Wind", []],
-  ["smaller", "Smaller brush", ["[", "-"]],
-  ["larger", "Larger brush", ["]", "Plus"]],
-  ["shape", "Brush shape", ["r"]],
+  ["pressure", "Pressure", []],
+  ["vacuum", "Vacuum", []],
+  ["smaller", "Smaller brush", []],
+  ["larger", "Larger brush", []],
+  ["shape", "Brush shape", []],
   ["undo", "Undo", ["Mod+z"]],
-  ["redo", "Redo", ["Mod+Shift+z", "Mod+y"]],
+  ["redo", "Redo", ["Mod+Shift+z"]],
   ["copy", "Copy selection", ["Mod+c"]],
   ["cut", "Cut selection", ["Mod+x"]],
   ["paste", "Paste selection", ["Mod+v"]],
-  ["selectAll", "Select all", ["Mod+a"]],
-  ["deselect", "Deselect", ["Mod+d"]],
-  ["delete", "Delete selection", ["Delete", "Backspace"]],
-  ["escape", "Cancel / deselect", ["Escape"]],
+  ["selectAll", "Select all", []],
+  ["deselect", "Deselect", []],
+  ["delete", "Delete selection", []],
+  ["escape", "Cancel / deselect", []],
   ["save", "Save world", ["Mod+s"]],
-  ["import", "Import world", ["Mod+o"]],
-  ["export", "Export world", ["Mod+Shift+s"]],
-  ["search", "Find material", ["/"]],
-  ["sand", "Select Sand", ["1"]],
-  ["water", "Select Water", ["2"]],
-  ["fire", "Select Fire", ["3"]],
-  ["grid", "Grid overlay", ["g"]],
-  ["view", "Visualization", ["t"]],
-  ["fullscreen", "Fullscreen", ["f"]],
-  ["help", "About Sandlab", ["?"]],
+  ["import", "Import world", []],
+  ["export", "Export world", []],
+  ["search", "Find material", []],
+  ["sand", "Select Sand", []],
+  ["water", "Select Water", []],
+  ["fire", "Select Fire", []],
+  ["grid", "Grid overlay", []],
+  ["view", "Visualization", []],
+  ["fullscreen", "Fullscreen", []],
+  ["help", "About Sandlab", []],
+  ["playerLeft", "Player: move left", []],
+  ["playerRight", "Player: move right", []],
+  ["playerJump", "Player: jump", []],
+  ["playerCrouch", "Player: crouch", []],
 ].map(([id, label, defaults]) => ({ id, label, defaults }));
 
 const namedKey =
@@ -97,6 +104,19 @@ export function normalizeBindings(value) {
     if (chords.some((chord) => !chord)) continue;
     result[id] = [...new Set(chords)];
   }
+  // Unchanged defaults keep their keys. Explicit overrides can free those keys;
+  // corrupt saved duplicates are then resolved in catalogue order.
+  const used = new Set();
+  for (const action of shortcutDefinitions)
+    if (!Object.hasOwn(result, action.id))
+      for (const chord of action.defaults) used.add(chord);
+  for (const { id } of shortcutDefinitions)
+    if (Object.hasOwn(result, id))
+      result[id] = result[id].filter((chord) => {
+        if (used.has(chord)) return false;
+        used.add(chord);
+        return true;
+      });
   return result;
 }
 export function shortcutAction(event, overrides = {}) {
@@ -109,6 +129,7 @@ export function shortcutAction(event, overrides = {}) {
   );
 }
 export function bindingConflict(chord, id, overrides = {}) {
+  chord = normalizeChord(chord);
   return shortcutDefinitions.find(
     (action) =>
       action.id !== id && bindingsFor(action.id, overrides).includes(chord),

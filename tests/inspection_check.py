@@ -93,10 +93,22 @@ with sync_playwright() as p:
     assert page.locator('#undo-btn').is_disabled()
     # Rebinding, conflict handling, modifier dispatch, toolbar hints, persistence, reset.
     page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
-    page.locator('#binding-pause-1').click(); page.keyboard.press('b')
-    assert 'Already assigned to Draw' in page.locator('.binding-status').inner_text()
+    assert page.locator('.binding-row').count()==7
+    assert page.locator('.binding-clear svg').count()==7
+    assert page.locator('#binding-playerJump-0,#binding-inspect-0,#binding-pause-1').count()==0
+    heading=page.locator('.bindings-heading').bounding_box();plus=page.locator('#add-keyboard-binding').bounding_box()
+    assert abs(plus['x']+plus['width']-heading['x']-heading['width'])<1
+    def add_binding(action,key):
+        page.locator('#add-keyboard-binding').click();page.locator('#binding-action').select_option(action)
+        page.locator('#new-binding-key').click();page.keyboard.press(key)
+    add_binding('pause','Control+z')
+    assert 'Already assigned to Undo' in page.locator('.binding-status').inner_text()
+    assert page.locator('.binding-row').count()==7
+    page.keyboard.press('Space');assert 'already uses' in page.locator('.binding-status').inner_text()
     page.keyboard.press('j')
     assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'j'")
+    assert page.locator('.binding-row').count()==8
+    add_binding('inspect','m');add_binding('eyedropper','i')
     page.locator('#binding-undo-0').click(); page.keyboard.press('Control+u')
     page.screenshot(path=str(ARTIFACTS/'keyboard-desktop.png'))
     # Closing and pressing a binding in the same task must not race the queued close event.
@@ -113,7 +125,7 @@ with sync_playwright() as p:
     assert page.locator('#about-dialog kbd, #shortcut-list').count() == 0
     assert page.locator('#play-btn').get_attribute('title') == 'Pause / play (Space / J)'
     page.locator('#about-dialog .dialog-close').click()
-    page.keyboard.press('b')
+    choose(page,'paint')
     page.mouse.click(**point(page, 130, 130))
     assert page.evaluate('sandlab.world.count > 1')
     page.keyboard.press('Control+z'); assert page.evaluate('sandlab.world.count > 1')
@@ -125,7 +137,11 @@ with sync_playwright() as p:
     page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
     page.locator('#binding-inspect-0').click(); page.keyboard.press('Escape')
     assert not page.locator('#binding-inspect-0').get_attribute('class').endswith('capturing')
+    page.locator('.binding-row').filter(has=page.locator('#binding-inspect-0')).locator('.binding-clear').click()
+    assert page.locator('#binding-inspect-0').count()==0
+    assert page.evaluate("sandlab.settings.get('shortcuts').inspect.length===0")
     page.locator('#reset-shortcuts').click()
+    assert page.locator('.binding-row').count()==7
     assert page.evaluate("JSON.stringify(sandlab.settings.get('shortcuts')) === '{}'")
     page.locator('#settings-dialog .dialog-close').click()
     assert not errors, errors
@@ -154,7 +170,9 @@ with sync_playwright() as p:
         assert page.locator('#undo-btn').is_disabled()
         page.locator('#settings-btn').click(); page.locator('#settings-tab-keyboard').click()
         assert page.evaluate("document.querySelector('.settings-panels').scrollWidth <= document.querySelector('.settings-panels').clientWidth")
-        page.locator('#binding-pause-1').click(); page.keyboard.press('j')
+        assert page.locator('.binding-row').count()==7
+        page.locator('#add-keyboard-binding').click();page.locator('#binding-action').select_option('pause')
+        page.locator('#new-binding-key').click();page.keyboard.press('j')
         assert page.evaluate("sandlab.settings.get('shortcuts').pause[1] === 'j'")
         page.screenshot(path=str(ARTIFACTS/f'keyboard-{width}.png'))
         assert not errors, errors

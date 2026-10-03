@@ -35,10 +35,10 @@ with sync_playwright() as p:
         assert page.locator('#materials .material').count()==32
         assert not set(page.locator('.material-name').all_text_contents()) & {'Sand','Water','Wood','Rope'}
         page.locator('[data-group=missiles]').click()
-        assert set(page.locator('.material-name').all_text_contents())=={'Heat-Seeking Missile','Laser-Guided Missile','Rocket'}
-        page.locator('#search').fill('guided');assert page.locator('.material-name').all_text_contents()==['Laser-Guided Missile']
-        page.locator('#materials').get_by_role('button',name='Laser-Guided Missile',exact=True).click()
-        assert page.evaluate('sandlab.state.material===M["Laser-Guided Missile"]&&sandlab.state.tool==="paint"')
+        assert set(page.locator('.material-name').all_text_contents())=={'Seeking Missile','Guided Missile','Rocket'}
+        page.locator('#search').fill('guided');assert page.locator('.material-name').all_text_contents()==['Guided Missile']
+        page.locator('#materials').get_by_role('button',name='Guided Missile',exact=True).click()
+        assert page.evaluate('sandlab.state.material===M["Guided Missile"]&&sandlab.state.tool==="paint"')
         if mobile:assert not page.locator('#palette').evaluate("e=>e.classList.contains('open')")
         target=point(page,35,35)
         if mobile:page.touchscreen.tap(**target)

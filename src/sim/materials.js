@@ -840,7 +840,7 @@ definitions.push(
   ["Wolf", "life", "#a7b4c2", 0.8, { actor: "wolf", movable: false }],
   ["Shark", "life", "#7fa7bf", 0.5, { actor: "shark", movable: false }],
   [
-    "Heat-Seeking Missile",
+    "Seeking Missile",
     "special",
     "#e5b985",
     3,
@@ -898,6 +898,9 @@ export const materials = definitions.map(
     };
   },
 );
+// Legacy names remain aliases for saved integrations; particle IDs do not change.
+M["Heat-Seeking Missile"] = M["Seeking Missile"];
+M["Laser-Guided Missile"] = M["Guided Missile"];
 for (const m of materials)
   for (const field of [
     "meltTo",

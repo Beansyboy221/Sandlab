@@ -58,7 +58,7 @@ with sync_playwright() as p:
     page.evaluate('''async()=>{const{pack,unpack}=await import('./src/persistence.js');const saved=sandlab.snapshot();sandlab.world.clear();sandlab.restore(unpack(pack(saved)));window.paintSaved=saved;}''')
     assert page.evaluate('JSON.stringify(sandlab.snapshot())===JSON.stringify(paintSaved)')
     assert page.evaluate("()=>{const c=sandlab.renderer.worldImage().getContext('2d');sandlab.renderer.draw();return c.getImageData(100,70,1,1).data[1]===255}")
-    page.keyboard.press('b');assert page.evaluate('sandlab.state.tool')=='paint';page.keyboard.press('o');assert page.evaluate('sandlab.state.tool')=='recolor'
+    page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click();assert page.evaluate('sandlab.state.tool')=='paint';page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=recolor]').click();assert page.evaluate('sandlab.state.tool')=='recolor'
     assert not errors,errors;c.close()
     for width,height in [(390,844),(844,390),(320,640)]:
         c=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=3);c.route('http://sandlab.test/**',serve)

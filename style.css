@@ -1937,8 +1937,60 @@ dialog::backdrop {
   color: #a4b6bb;
   font-size: 11px;
 }
+.bindings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bindings-heading h3 {
+  margin: 0;
+}
+.bindings-heading .icon-button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #223239;
+}
+.binding-status:empty {
+  display: none;
+}
+.binding-adder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(100px, 0.8fr) 44px;
+  gap: 8px;
+  align-items: end;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.binding-adder label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.binding-adder select {
+  min-width: 0;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #3b5056;
+  border-radius: 6px;
+  padding: 6px;
+  color: var(--text);
+  background: #223239;
+}
+.binding-adder .binding-button {
+  border-radius: 6px;
+}
+.binding-adder .icon-button {
+  min-width: 44px;
+  min-height: 44px;
+}
 .binding-status {
-  min-height: 32px;
+  min-height: 20px;
   font-size: 12px;
   color: #c4d9ae;
 }
@@ -1950,11 +2002,6 @@ dialog::backdrop {
   padding: 10px 0;
   border-bottom: 1px solid #314047;
   font-size: 12px;
-}
-.binding-keys {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
 }
 .binding-pair {
   display: flex;
@@ -1981,13 +2028,14 @@ dialog::backdrop {
   border-color: #b6cd9c;
 }
 .binding-clear {
-  flex: 0 0 36px;
+  flex: 0 0 44px;
   border-left: 0;
   border-radius: 0 6px 6px 0;
   font-size: 18px;
 }
-.binding-clear:disabled {
-  opacity: 0.35;
+.binding-clear svg {
+  width: 17px;
+  height: 17px;
 }
 #reset-shortcuts {
   margin-top: 20px;

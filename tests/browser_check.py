@@ -118,7 +118,7 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.state.material') == 22
     page.locator('#search').fill('')
     page.locator('#world').focus()
-    page.keyboard.press('1')
+    page.locator('#materials').get_by_role('button',name='Sand',exact=True).click()
     before = page.evaluate('sandlab.world.count')
     box = page.locator('#world').bounding_box()
     page.mouse.move(box['x']+box['width']*.48, box['y']+box['height']*.28)
@@ -138,7 +138,7 @@ with sync_playwright() as p:
     page.keyboard.press('Control+Shift+z')
     assert page.evaluate('sandlab.world.count') == painted
     page.keyboard.press('Control+z')
-    page.keyboard.press('Control+y')
+    page.keyboard.press('Control+Shift+z')
     assert page.evaluate('sandlab.world.count') == painted
     page.keyboard.press('Control+z')
     assert page.evaluate('sandlab.world.count') == before
@@ -229,6 +229,7 @@ with sync_playwright() as p:
     choose(page, 'paint')
     assert page.locator('#palette #brush-tool').count() == 0
     assert page.locator('.toolbox #tool-picker-toggle').is_visible()
+    page.evaluate("sandlab.settings.set('shortcuts',{selectAll:['Mod+a'],deselect:['Mod+d'],escape:['Escape']})")
     choose(page, 'select')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#selection-properties').is_visible()
@@ -347,7 +348,7 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.selection.clipboard.arrays.cells.filter(Boolean).length') == 3
     page.keyboard.press('Control+z')
     assert page.evaluate('sandlab.world.count') == 3
-    page.keyboard.press('Control+y')
+    page.keyboard.press('Control+Shift+z')
     assert page.evaluate('sandlab.world.count') == 0
     page.keyboard.press('Control+z')
     assert page.evaluate('sandlab.world.count') == 3

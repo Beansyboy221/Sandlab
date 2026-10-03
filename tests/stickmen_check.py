@@ -15,6 +15,8 @@ with sync_playwright() as p:
         page.on('pageerror',lambda error:errors.append(str(error)))
         page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
         page.evaluate('sandlab.settings.set("autosave",false);sandlab.state.paused=true')
+        assert page.evaluate("(async()=>{const{bindingsFor}=await import('./src/shortcuts.js');return bindingsFor('playerJump',sandlab.settings.get('shortcuts')).length===0})()")
+        if not touch:page.evaluate("sandlab.settings.set('shortcuts',{playerLeft:['a'],playerRight:['d'],playerJump:['w'],playerCrouch:['s']})")
         if touch:page.locator('#palette-toggle').click()
         page.locator('#entities-tab').click()
         page.get_by_role('button',name='Player',exact=True).click()
@@ -61,7 +63,12 @@ with sync_playwright() as p:
             page.wait_for_timeout(80);assert page.evaluate('sandlab.world.stickmen.controls.move')==0
             page.wait_for_timeout(450);stopped=position();page.wait_for_timeout(900)
             assert abs(position()['across']-stopped['across'])<.08,(width,stopped,position())
-        # Jump is independent from movement and must not toggle sandbox pause.
+        # Space pauses an active Player and never jumps.
+        if not touch:
+            page.locator('#world').focus();page.keyboard.press('Space')
+            assert page.evaluate('sandlab.state.paused && !sandlab.world.stickmen.controls.jump')
+            page.keyboard.press('Space');assert not page.evaluate('sandlab.state.paused')
+        # The custom jump key remains independent from movement and pause.
         before=position()
         if touch:
             assert page.locator('.player-jump').count()==0
@@ -70,12 +77,12 @@ with sync_playwright() as p:
             page.wait_for_timeout(30)
             assert page.evaluate('sandlab.world.stickmen.controls.move')>.5
             session.send('Input.dispatchTouchEvent',dict(type='touchEnd',touchPoints=[]))
-        else:page.keyboard.press('Space')
+        else:page.keyboard.press('w')
         page.wait_for_timeout(150);after=position()
         assert not page.evaluate('sandlab.state.paused')
         assert after['down']<before['down']-4,(width,before,after)
         page.wait_for_timeout(900)
-        # Releasing the joystick re-arms jump; desktop W also retains its binding.
+        # Releasing the joystick re-arms jump; the custom desktop jump binding works again.
         before=position()
         if touch:
             session.send('Input.dispatchTouchEvent',dict(type='touchStart',touchPoints=[dict(x=x,y=y-24,id=1)]))
