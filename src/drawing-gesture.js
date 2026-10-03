@@ -1,3 +1,4 @@
+import { brushFootprint } from "./brush-geometry.js";
 // Geometry is shared by the preview and the committed stroke.
 export function gesturePath(context, gesture) {
   const { start: a, end: b, kind } = gesture;
@@ -57,9 +58,11 @@ export function drawGesturePreview(context, viewport, world, gesture) {
   context.clip();
   context.translate(viewport.x, viewport.y);
   context.scale(viewport.scale, viewport.scale);
+  const footprint = brushFootprint(gesture.radius);
+  context.translate(footprint.center, footprint.center);
   gesturePath(context, gesture);
   context.strokeStyle = gesture.erase ? "#ef929288" : "#f6e3bd88";
-  context.lineWidth = gesture.radius * 2 + 1;
+  context.lineWidth = footprint.diameter;
   context.lineCap = "round";
   context.lineJoin = "round";
   context.stroke();

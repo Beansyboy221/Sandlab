@@ -1,3 +1,4 @@
+import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 // Colors are packed RGBA overlays. Foreground overlays travel with particles;
 // background overlays belong to fixed canvas coordinates.
 export const paintFields = ["pigment", "backgroundPaint"];
@@ -48,6 +49,7 @@ export function paintBrush(
     !["foreground", "background"].includes(layer)
   )
     return;
+  if (radius < 0) return;
   const background = layer === "background",
     field = background ? w.backgroundPaint : w.pigment,
     marks = background ? w.backgroundMark : w.paintMark,
@@ -55,9 +57,10 @@ export function paintBrush(
     cx = Math.round(x),
     cy = Math.round(y);
   if (!erase && !overlay) return;
-  for (let oy = -radius; oy <= radius; oy++)
-    for (let ox = -radius; ox <= radius; ox++) {
-      if (shape === "circle" && ox * ox + oy * oy > radius * radius) continue;
+  const footprint = brushFootprint(radius);
+  for (let oy = footprint.low; oy <= footprint.high; oy++)
+    for (let ox = footprint.low; ox <= footprint.high; ox++) {
+      if (shape === "circle" && !inBrushCircle(footprint, ox, oy)) continue;
       const nx = cx + ox,
         ny = cy + oy;
       if (nx < 0 || nx >= w.width || ny < 0 || ny >= w.height) continue;

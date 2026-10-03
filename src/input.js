@@ -343,7 +343,7 @@ export class Input {
             e.clientY,
           );
         else if (e.deltaY)
-          state.setRadius(state.radius + (e.deltaY < 0 ? 1 : -1));
+          state.setRadius(state.radius + (e.deltaY < 0 ? 0.5 : -0.5));
         this.hover(renderer.point(e.clientX, e.clientY));
       },
       { passive: false },

@@ -1,6 +1,7 @@
 import { circuitDirection, circuitOutput } from "./sim/circuits.js";
 import { actorProfile } from "./sim/creature-profiles.js";
 import { materials, M } from "./sim/materials.js";
+import { cellMass } from "./sim/mechanical-mass.js";
 
 export function cellAt(world, point) {
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))
@@ -225,17 +226,20 @@ export function cellProperties(world, point) {
       ["Stretch", `${Math.round(stretch * 100)}%`],
       ["Tension", `${tension.toFixed(2)} units`],
       ["Anchored", world.elasticAnchor[i] ? "Yes" : "No"],
+      ["Cell mass", `${cellMass(world, i).toFixed(2)} units`],
     );
   }
   if (m.rigid) {
-    rows.push(["Cell mass", `${m.density.toFixed(2)} units`]);
+    rows.push(["Cell mass", `${cellMass(world, i).toFixed(2)} units`]);
     const body =
       !world.rigid.dirty && world.rigid.bodyOf.get(world.elasticId[i]);
-    if (body)
+    if (body) {
+      world.rigid.pose(body);
       rows.push(
         ["Body mass", `${body.mass.toFixed(1)} units`],
         ["Body size", `${body.ids.length} cells`],
       );
+    }
     rows.push(
       [
         "Speed",

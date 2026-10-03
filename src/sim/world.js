@@ -1,3 +1,4 @@
+import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 import {
   PerformanceCounters,
   simulationStages,
@@ -742,6 +743,7 @@ export class World {
     temperature = materials[id].temperature,
   ) {
     if (![x, y, radius, directionX, directionY].every(Number.isFinite)) return;
+    if (radius < 0) return;
     if (!Number.isFinite(temperature)) return;
     temperature = Math.max(-250, Math.min(6000, temperature));
     id = drawingPhase(id, temperature);
@@ -756,17 +758,39 @@ export class World {
       return;
     }
     if (!id) {
-      this.stickmen.brush("erase", x + 0.5, y + 0.5, radius, 0, 0, 1, shape);
-      this.missiles.brush("erase", x + 0.5, y + 0.5, radius, 0, 0, 1, shape);
+      const footprint = brushFootprint(radius),
+        cx = Math.round(x) + 0.5 + footprint.center,
+        cy = Math.round(y) + 0.5 + footprint.center;
+      this.stickmen.brush(
+        "erase",
+        cx,
+        cy,
+        footprint.diameter / 2,
+        0,
+        0,
+        1,
+        shape,
+      );
+      this.missiles.brush(
+        "erase",
+        cx,
+        cy,
+        footprint.diameter / 2,
+        0,
+        0,
+        1,
+        shape,
+      );
     }
     if (!id && this.elastic.locations.size) {
       this.elastic.world = this;
       this.elastic.cutBrush(x, y, radius, shape);
     }
     if (id === M.Lightning || materials[id].directed) radius = 0;
-    for (let dy = -radius; dy <= radius; dy++)
-      for (let dx = -radius; dx <= radius; dx++) {
-        if (shape === "circle" && dx * dx + dy * dy > radius * radius) continue;
+    const footprint = brushFootprint(radius);
+    for (let dy = footprint.low; dy <= footprint.high; dy++)
+      for (let dx = footprint.low; dx <= footprint.high; dx++) {
+        if (shape === "circle" && !inBrushCircle(footprint, dx, dy)) continue;
         const nx = Math.round(x) + dx,
           ny = Math.round(y) + dy;
         if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;

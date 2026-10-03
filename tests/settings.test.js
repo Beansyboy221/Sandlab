@@ -27,7 +27,7 @@ test("preferences survive reload and ignore unrecognized or invalid saved values
   assert.equal(prefs.get("bloom"), false);
   assert.equal(prefs.get("view"), "normal");
   assert.equal(prefs.get("speed"), 1);
-  assert.equal(prefs.get("brushSize"), 30);
+  assert.equal(prefs.get("brushSize"), 61);
   assert.equal(prefs.get("startPaused"), false);
   assert.equal(prefs.get("unknown"), undefined);
   assert.equal(prefs.get("solidDrawRelease"), "resume");
@@ -40,6 +40,16 @@ test("preferences survive reload and ignore unrecognized or invalid saved values
   assert.equal(loaded.get("bloomIntensity"), 0.5);
   assert.equal(loaded.get("brushSize"), 9);
   assert.equal(loaded.get("solidDrawRelease"), "hold");
+});
+test("legacy radius preferences migrate once to pixel diameters", () => {
+  const store = storage({ [settingsKey]: JSON.stringify({ brushSize: 6 }) });
+  const prefs = new Settings(store);
+  assert.equal(prefs.get("brushSize"), 13);
+  prefs.set("brushSize", 4);
+  assert.equal(JSON.parse(store.map.get(settingsKey)).brushUnit, "diameter");
+  assert.equal(new Settings(store).get("brushSize"), 4);
+  prefs.reset();
+  assert.equal(new Settings(store).get("brushSize"), 13);
 });
 test("settings handle corrupt or unavailable storage without blocking live updates", () => {
   const corrupt = new Settings(storage({ [settingsKey]: "{broken" }));

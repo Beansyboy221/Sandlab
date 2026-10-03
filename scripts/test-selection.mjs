@@ -9,6 +9,7 @@ export const groups = {
   ],
   quick: ["settings", "frame-clock", "editor", "materials", "security"],
   collisions: [
+    "mechanical-mass",
     "rigid-physics",
     "collision-bounds",
     "bodies-fill",
@@ -17,6 +18,7 @@ export const groups = {
     "simulation",
   ],
   elastics: [
+    "mechanical-mass",
     "elasticity",
     "rigid-physics",
     "fragments",
@@ -42,6 +44,7 @@ export const groups = {
     "security",
   ],
   input: [
+    "brush-geometry",
     "gamepad",
     "editor",
     "selection",

@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.19.0",
+    date: "2026-10-03",
+    title: "Pixel-exact brushes and contained-fluid mass",
+    changes: [
+      "Brush Size is the exact diameter in canvas pixels, from 1 to 61. Odd and even sizes share one footprint across Draw, Color, Erase, Select, Grab and environmental tools. Square and circular outlines, shape previews, wheel increments and controller increments match. Existing radius preferences migrate once to equivalent diameters.",
+      "Porous solids and elastics include stored liquid in their mechanical mass. Wet solids refresh their center of mass, rotational inertia and enclosing radius only when fluid distribution changes, using existing pose scans without rebuilding topology or textures. Pressure response and buoyancy use loaded mass; gravity in empty space remains mass independent.",
+      "Elastic spring forces include liquid inertia while retaining calibrated dry stiffness. Inspect shows loaded cell/body mass. Wet bodies retain deterministic save/load behavior; particle and save schemas are unchanged.",
+    ],
+  },
+  {
     version: "1.18.0",
     date: "2026-10-03",
     title: "Composable materials and faster solid rendering",

@@ -71,7 +71,7 @@ with sync_playwright() as p:
     page.locator('#setting-startPaused').check()
     page.locator('#settings-tab-brush').click()
     page.locator('#setting-brushSize').evaluate("e=>{e.value=9;e.dispatchEvent(new Event('input',{bubbles:true}));}")
-    assert page.evaluate('sandlab.state.radius') == 9
+    assert page.evaluate('sandlab.state.radius') == 4
     page.locator('#setting-brushShape').select_option('square')
     assert page.evaluate("sandlab.state.shape === 'square'")
     page.locator('#setting-brushOutline').uncheck()
@@ -94,7 +94,7 @@ with sync_playwright() as p:
     assert not page.evaluate('sandlab.state.paused')
     assert page.locator('#debug-panel').is_visible()
     page.reload();page.wait_for_function('() => (window.sandlab !== undefined)')
-    assert page.evaluate('sandlab.state.paused && !sandlab.renderer.brushOutline && sandlab.state.radius === 9')
+    assert page.evaluate('sandlab.state.paused && !sandlab.renderer.brushOutline && sandlab.state.radius === 4')
     assert page.evaluate('sandlab.renderer.bloomIntensity === .5 && sandlab.renderer.grid && sandlab.renderer.displayQuality === 1')
     page.locator('#settings-btn').click()
     page.locator('#settings-tab-rendering').focus()
@@ -157,7 +157,7 @@ with sync_playwright() as p:
     radius=page.evaluate('sandlab.state.radius')
     page.mouse.move(box['x']+box['width']*.5,box['y']+box['height']*.3)
     page.mouse.wheel(0,-120)
-    page.wait_for_function('(r) => sandlab.state.radius === r', arg=radius+1)
+    page.wait_for_function('(r) => sandlab.state.radius === r', arg=radius+0.5)
     page.locator('#view').select_option('heat')
     assert page.locator('#view-legend').is_visible()
     page.locator('#view').select_option('normal')
@@ -277,7 +277,7 @@ with sync_playwright() as p:
     assert page.evaluate("sandlab.state.selectionShape === 'circle'")
     assert page.locator('#brush-control').is_visible()
     assert page.locator('#selection-erase').is_visible()
-    page.locator('#brush').evaluate("e=>{e.value=2;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    page.locator('#brush').evaluate("e=>{e.value=5;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     center=cell(page,150,100)
     page.mouse.click(center['x'],center['y'],button='right')
     assert page.evaluate('sandlab.selection.mask.count') == 108
@@ -293,7 +293,7 @@ with sync_playwright() as p:
     page.locator('#undo-btn').click()
     assert page.evaluate('sandlab.world.count') == 121
     # Circle is a continuous brush and the wheel still adjusts its radius.
-    page.locator('#brush').evaluate("e=>{e.value=1;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    page.locator('#brush').evaluate("e=>{e.value=3;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     start,end=cell(page,145,100),cell(page,155,100)
     page.keyboard.down('Shift')
     page.mouse.move(start['x'],start['y']);page.mouse.down();page.mouse.move(end['x'],end['y']);page.mouse.up()
@@ -301,7 +301,7 @@ with sync_playwright() as p:
     for x in range(145,156):
         assert page.evaluate('(x)=>sandlab.selection.mask.data[100*sandlab.world.width+x]',x) == 1
     page.mouse.wheel(0,-120)
-    page.wait_for_function('() => (sandlab.state.radius === 2)')
+    page.wait_for_function('() => (sandlab.state.radius === 1.5)')
     page.locator('#selection-erase').click()
     page.mouse.click(center['x'],center['y'])
     assert page.evaluate('sandlab.selection.mask.data[100*sandlab.world.width+150]') == 0
@@ -314,7 +314,7 @@ with sync_playwright() as p:
     page.mouse.move(start['x'],start['y']);page.mouse.down();page.mouse.move(end['x'],end['y']);page.mouse.up()
     page.locator('#shape-btn').click()  # refine the rectangle using a circle
     hole=cell(page,151,100)
-    page.locator('#brush').evaluate("e=>{e.value=1;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    page.locator('#brush').evaluate("e=>{e.value=3;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     page.mouse.click(hole['x'],hole['y'],button='right')
     start,end=cell(page,148,98),cell(page,178,118)
     page.mouse.move(start['x'],start['y'])
@@ -495,14 +495,14 @@ with sync_playwright() as p:
     # The circle can paint and erase selection with a touch-friendly toggle.
     phone.locator('#shape-btn').tap()
     assert phone.locator('#brush-control').is_visible()
-    phone.locator('#brush').evaluate("e=>{e.value=3;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    phone.locator('#brush').evaluate("e=>{e.value=7;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     point=cell(phone,90,130)
     phone.touchscreen.tap(point['x'],point['y'])
     assert phone.evaluate('sandlab.selection.mask.count') == 29
     assert phone.evaluate('sandlab.world.count') == 5
     phone.locator('#selection-erase').tap()
     assert phone.locator('#selection-erase').get_attribute('aria-pressed') == 'true'
-    phone.locator('#brush').evaluate("e=>{e.value=1;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    phone.locator('#brush').evaluate("e=>{e.value=3;e.dispatchEvent(new Event('input',{bubbles:true}));}")
     phone.touchscreen.tap(point['x'],point['y'])
     assert phone.evaluate('sandlab.selection.mask.count') == 24
     assert phone.evaluate('sandlab.world.count') == 5

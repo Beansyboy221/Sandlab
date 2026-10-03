@@ -1,3 +1,4 @@
+import { brushFootprint } from "../brush-geometry.js";
 import {
   elasticX,
   elasticY,
@@ -6,6 +7,7 @@ import {
   pointInTriangle,
 } from "./elastic-geometry.js";
 import { materials, M } from "./materials.js";
+import { cellMass } from "./mechanical-mass.js";
 import { transportElastics } from "./portal-elastics.js";
 
 export const elasticFields = [
@@ -117,8 +119,8 @@ export class Elasticity {
     this.topologyDirty = true;
     const w = this.world,
       reach = Math.ceil(radius + 12),
-      cx = Math.round(x) + 0.5,
-      cy = Math.round(y) + 0.5;
+      cx = Math.round(x) + 0.5 + brushFootprint(radius).center,
+      cy = Math.round(y) + 0.5 + brushFootprint(radius).center;
     // Links tear around nine cells; include delayed raster-placement offsets.
     // Query nearby endpoints,
     // keeping small erasers independent of the size of the rest of the world.
@@ -286,10 +288,14 @@ export class Elasticity {
           ((distance - rest) * m.elasticity * 12 +
             relativeSpeed * (1 - m.damping) * 3) /
           distance;
-        fx[i] += dx * tension;
-        fy[i] += dy * tension;
-        fx[j] -= dx * tension;
-        fy[j] -= dy * tension;
+        // Elastic coefficients were calibrated as dry-node acceleration.
+        // Convert to paired forces; stored fluid adds inertia, not stiffness.
+        const forceX = dx * tension * m.density,
+          forceY = dy * tension * m.density;
+        fx[i] += forceX;
+        fy[i] += forceY;
+        fx[j] -= forceX;
+        fy[j] -= forceY;
       }
     }
     if (this.topologyDirty) {
@@ -339,19 +345,29 @@ export class Elasticity {
           liquidNeighbors++;
         }
       }
+      const mass = cellMass(w, i),
+        inverseMass = 1 / mass;
       const gravity =
         0.12 *
-        (liquidNeighbors ? 1 - liquidDensity / liquidNeighbors / m.density : 1);
+        (liquidNeighbors ? 1 - liquidDensity / liquidNeighbors / mass : 1);
       w.environment.sample(x, y);
       const localX = w.environment.x,
         localY = w.environment.y;
       w.velocityX[i] = limit(
-        (w.velocityX[i] + (fx[i] + gravity * localX + pressureX * 0.015) * dt) *
+        (w.velocityX[i] +
+          (fx[i] * inverseMass +
+            gravity * localX +
+            pressureX * 0.015 * m.density * inverseMass) *
+            dt) *
           0.999,
         0.95,
       );
       w.velocityY[i] = limit(
-        (w.velocityY[i] + (fy[i] + gravity * localY + pressureY * 0.015) * dt) *
+        (w.velocityY[i] +
+          (fy[i] * inverseMass +
+            gravity * localY +
+            pressureY * 0.015 * m.density * inverseMass) *
+            dt) *
           0.999,
         0.95,
       );

@@ -1,6 +1,6 @@
 # Sandlab backlog
 
-- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. Next, calibrate units/thermal behavior and contained-fluid mass, then expand reaction authoring before an editor or new modes.
+- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. v1.19.0 adds contained-fluid mass without topology rebuilds. Next, calibrate thermal capacity/conductivity and phase accounting, then expand reaction authoring before an editor or new modes.
 
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
 - Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.
@@ -22,4 +22,4 @@
 
 - Extend gravity-relative character navigation and contact support around Planet cores; keep orbital forces shared and bounded.
 
-- Calibrate pore transport with more experimental beds; consider absorbed-fluid weight in rigid-body mass and interfacial wetting without increasing dry-world work. Shared integer reservoirs, permeability and retention now cover powders, solids, elastics and plant roots.
+- Calibrate pore transport with more experimental beds; calibrate intake/outflow momentum and interfacial wetting; contained-fluid weight is now included without topology rebuilds. Shared integer reservoirs, permeability and retention now cover powders, solids, elastics and plant roots.

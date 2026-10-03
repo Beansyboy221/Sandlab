@@ -1,5 +1,6 @@
 import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
+import { containedFluidMass, cellMass } from "./mechanical-mass.js";
 import { BodyConnections } from "./body-connections.js";
 import { BodyRaster } from "./body-raster.js";
 import { stepBodies } from "./body-motion.js";
@@ -33,6 +34,7 @@ export class RigidBodies {
       posePixels: 0,
       syncPixels: 0,
       contacts: 0,
+      massUpdates: 0,
       limitedPlans: 0,
       limitedContacts: 0,
     };
@@ -125,9 +127,11 @@ export class RigidBodies {
       const first = this.locations.get(ids[0]),
         fx = (first % w.width) + w.offsetX[first] + 0.5,
         fy = Math.floor(first / w.width) + w.offsetY[first] + 0.5;
+      let hasFluid = false;
       for (const node of ids) {
         const i = this.locations.get(node),
           mass = materials[w.cells[i]].density;
+        if (w.storedAmount[i]) hasFluid = true;
         if (rebase) {
           let x = (i % w.width) + w.offsetX[i] + 0.5,
             y = Math.floor(i / w.width) + w.offsetY[i] + 0.5;
@@ -158,6 +162,13 @@ export class RigidBodies {
       body.edges = Uint32Array.from(
         ids.filter((node) => this.edgeCounts[this.locations.get(node)] < 4),
       );
+      body.dryMass = body.mass;
+      body.dryX = body.lx;
+      body.dryY = body.ly;
+      body.dryInertia = body.inertia;
+      body.dryRadius = body.radius;
+      body.fluidMass = body.fluidX = body.fluidY = body.fluidMoment = 0;
+      if (hasFluid) this.pose(body);
       this.bodies.push(body);
     }
     this.fresh.clear();
@@ -182,6 +193,10 @@ export class RigidBodies {
       omega = 0,
       cross = 0,
       dot = 0;
+    let fluidMass = 0,
+      fluidX = 0,
+      fluidY = 0,
+      fluidMoment = 0;
     const first = this.locations.get(body.ids[0]);
     if (first === undefined) return null;
     const fx = (first % w.width) + 0.5 + w.offsetX[first],
@@ -189,7 +204,16 @@ export class RigidBodies {
     for (const id of body.ids) {
       const i = this.locations.get(id);
       if (i === undefined) return null;
-      const m = materials[w.cells[i]].density;
+      const fluid = containedFluidMass(w, i),
+        m = materials[w.cells[i]].density + fluid;
+      if (fluid) {
+        const rx = w.restX[i] - body.dryX,
+          ry = w.restY[i] - body.dryY;
+        fluidMass += fluid;
+        fluidX += rx * fluid;
+        fluidY += ry * fluid;
+        fluidMoment += (rx * rx + ry * ry) * fluid;
+      }
       let px = (i % w.width) + 0.5 + w.offsetX[i],
         py = Math.floor(i / w.width) + 0.5 + w.offsetY[i];
       if (w.border === "looping") {
@@ -202,11 +226,30 @@ export class RigidBodies {
       vy += w.velocityY[i] * m;
       omega += (w.angularVelocity[i] * m) / 6;
     }
+    // Reuse the existing pose scan. Only changed fluid moments refresh mass
+    // properties; unchanged wet bodies never rebuild connectivity or geometry.
+    const massChanged =
+      fluidMass !== body.fluidMass ||
+      fluidX !== body.fluidX ||
+      fluidY !== body.fluidY ||
+      fluidMoment !== body.fluidMoment;
+    if (massChanged) {
+      this.work.massUpdates++;
+      body.mass = body.dryMass + fluidMass;
+      body.lx = body.dryX + fluidX / body.mass;
+      body.ly = body.dryY + fluidY / body.mass;
+      body.fluidMass = fluidMass;
+      body.fluidX = fluidX;
+      body.fluidY = fluidY;
+      body.fluidMoment = fluidMoment;
+    }
+    let inertia = 0,
+      radiusSquared = 0;
     x /= body.mass;
     y /= body.mass;
     for (const id of body.ids) {
       const i = this.locations.get(id),
-        m = materials[w.cells[i]].density;
+        m = cellMass(w, i);
       let px = (i % w.width) + 0.5 + w.offsetX[i] - x,
         py = Math.floor(i / w.width) + 0.5 + w.offsetY[i] - y;
       if (w.border === "looping") {
@@ -215,9 +258,18 @@ export class RigidBodies {
       }
       const lx = w.restX[i] - body.lx,
         ly = w.restY[i] - body.ly;
+      if (massChanged && fluidMass) {
+        const r2 = lx * lx + ly * ly;
+        inertia += m * (r2 + 1 / 6);
+        radiusSquared = Math.max(radiusSquared, r2);
+      }
       omega += m * (px * w.velocityY[i] - py * w.velocityX[i]);
       cross += m * (lx * py - ly * px);
       dot += m * (lx * px + ly * py);
+    }
+    if (massChanged) {
+      body.inertia = fluidMass ? inertia : body.dryInertia;
+      body.radius = fluidMass ? Math.sqrt(radiusSquared) : body.dryRadius;
     }
     return {
       x,

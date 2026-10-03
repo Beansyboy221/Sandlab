@@ -153,12 +153,13 @@ export const settingGroups = [
       },
       {
         key: "brushSize",
-        label: "Brush size",
+        label: "Brush diameter",
         type: "range",
         min: 1,
-        max: 30,
+        max: 61,
         step: 1,
-        default: 6,
+        default: 13,
+        suffix: " px",
       },
       {
         key: "brushShape",
@@ -489,6 +490,12 @@ export class Settings {
     try {
       const loaded = JSON.parse(raw);
       if (loaded && typeof loaded === "object" && !Array.isArray(loaded)) {
+        if (
+          loaded.brushUnit !== "diameter" &&
+          Number.isFinite(loaded.brushSize)
+        )
+          loaded.brushSize =
+            Math.max(1, Math.min(30, Math.round(loaded.brushSize))) * 2 + 1;
         // Both former switches now control a single compressible air system.
         if (loaded.windSimulation === false) loaded.pressureSimulation = false;
         for (const key of Object.keys(definitions)) {
@@ -520,7 +527,10 @@ export class Settings {
   }
   persist() {
     try {
-      this.storage.setItem(settingsKey, JSON.stringify(this.values));
+      this.storage.setItem(
+        settingsKey,
+        JSON.stringify({ ...this.values, brushUnit: "diameter" }),
+      );
       this.saved = true;
     } catch {
       this.saved = false;

@@ -1,3 +1,4 @@
+import { brushFootprint, inBrushCircle } from "./brush-geometry.js";
 // One byte of selection per cell; independent of particle state and undo history.
 export class SelectionMask {
   constructor(world) {
@@ -30,6 +31,7 @@ export class SelectionMask {
     this.box = box;
   }
   stroke(a, b, radius, erase = false) {
+    const footprint = brushFootprint(radius);
     const distance = Math.hypot(b.x - a.x, b.y - a.y);
     const steps = Math.max(1, Math.ceil(distance / Math.max(1, radius * 0.5)));
     let changed = false;
@@ -37,16 +39,16 @@ export class SelectionMask {
       const cx = Math.floor(a.x + ((b.x - a.x) * step) / steps);
       const cy = Math.floor(a.y + ((b.y - a.y) * step) / steps);
       for (
-        let y = Math.max(0, cy - radius);
-        y <= Math.min(this.height - 1, cy + radius);
+        let y = Math.max(0, cy + footprint.low);
+        y <= Math.min(this.height - 1, cy + footprint.high);
         y++
       )
         for (
-          let x = Math.max(0, cx - radius);
-          x <= Math.min(this.width - 1, cx + radius);
+          let x = Math.max(0, cx + footprint.low);
+          x <= Math.min(this.width - 1, cx + footprint.high);
           x++
         ) {
-          if ((x - cx) ** 2 + (y - cy) ** 2 > radius * radius) continue;
+          if (!inBrushCircle(footprint, x - cx, y - cy)) continue;
           const i = y * this.width + x,
             value = erase ? 0 : 1;
           if (this.data[i] === value) continue;

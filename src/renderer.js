@@ -1,3 +1,4 @@
+import { brushFootprint } from "./brush-geometry.js";
 import {
   PerformanceCounters,
   renderingStages,
@@ -438,22 +439,26 @@ export class Renderer {
     drawGesturePreview(c, v, this.world, this.gesture);
     if (this.cursor && this.brushOutline) {
       const { x, y, radius, shape, erase, selection } = this.cursor;
+      const footprint = brushFootprint(radius),
+        cx = Math.floor(x) + 0.5 + footprint.center,
+        cy = Math.floor(y) + 0.5 + footprint.center,
+        extent = footprint.diameter / 2;
       c.strokeStyle = erase ? "#ef9292" : selection ? "#98d8ef" : "#f6e3bd";
       c.fillStyle = erase ? "#ef929211" : selection ? "#98d8ef12" : "#f6e3bd09";
       c.lineWidth = 1.3 * (window.devicePixelRatio || 1);
       c.beginPath();
       if (shape === "square")
         c.rect(
-          v.x + (x - radius) * v.scale,
-          v.y + (y - radius) * v.scale,
-          2 * radius * v.scale,
-          2 * radius * v.scale,
+          v.x + (cx - extent) * v.scale,
+          v.y + (cy - extent) * v.scale,
+          footprint.diameter * v.scale,
+          footprint.diameter * v.scale,
         );
       else
         c.arc(
-          v.x + x * v.scale,
-          v.y + y * v.scale,
-          (radius + 0.5) * v.scale,
+          v.x + cx * v.scale,
+          v.y + cy * v.scale,
+          extent * v.scale,
           0,
           Math.PI * 2,
         );

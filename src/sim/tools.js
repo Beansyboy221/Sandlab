@@ -1,4 +1,5 @@
 import { materials } from "./materials.js";
+import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 export const toolGroups = [
   { name: "Create", tools: ["paint", "fill", "recolor", "erase"] },
   { name: "Arrange", tools: ["select", "grab"] },
@@ -33,11 +34,12 @@ export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
   const cx = Math.round(x),
     cy = Math.round(y);
   // Traverse leading edges first so each particle moves once and packed shapes stay intact.
-  for (let ay = 0; ay <= radius * 2; ay++)
-    for (let ax = 0; ax <= radius * 2; ax++) {
-      const ox = dx > 0 ? radius - ax : ax - radius,
-        oy = dy > 0 ? radius - ay : ay - radius;
-      if (shape === "circle" && ox * ox + oy * oy > radius * radius) continue;
+  const footprint = brushFootprint(radius);
+  for (let ay = 0; ay < footprint.diameter; ay++)
+    for (let ax = 0; ax < footprint.diameter; ax++) {
+      const ox = dx > 0 ? footprint.high - ax : footprint.low + ax,
+        oy = dy > 0 ? footprint.high - ay : footprint.low + ay;
+      if (shape === "circle" && !inBrushCircle(footprint, ox, oy)) continue;
       const sx = cx + ox,
         sy = cy + oy,
         tx = sx + dx,
@@ -86,6 +88,10 @@ export function applyTool(
   power = 1,
 ) {
   if (![x, y, radius, dx, dy].every(Number.isFinite)) return;
+  if (radius < 0) return;
+  const footprint = brushFootprint(radius),
+    centerX = Math.round(x) + 0.5 + footprint.center,
+    centerY = Math.round(y) + 0.5 + footprint.center;
   if (["wind", "pressure", "vacuum"].includes(tool)) {
     w.fields.configure(w.mechanics);
     if (!w.fields.pressureEnabled) return;
@@ -95,8 +101,26 @@ export function applyTool(
   // Blow/Pressure/Vacuum write the shared field; entities feel its forces during
   // their normal integration instead of receiving a second brush-only impulse.
   if (!["wind", "pressure", "vacuum"].includes(tool)) {
-    w.missiles.brush(tool, x, y, radius, dx, dy, power, shape);
-    w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
+    w.missiles.brush(
+      tool,
+      centerX,
+      centerY,
+      footprint.diameter / 2,
+      dx,
+      dy,
+      power,
+      shape,
+    );
+    w.stickmen.brush(
+      tool,
+      centerX,
+      centerY,
+      footprint.diameter / 2,
+      dx,
+      dy,
+      power,
+      shape,
+    );
   }
   if (tool === "erase-mobile") {
     w.elastic.world = w;
@@ -104,9 +128,9 @@ export function applyTool(
   }
   const cx = Math.round(x),
     cy = Math.round(y);
-  for (let oy = -radius; oy <= radius; oy++)
-    for (let ox = -radius; ox <= radius; ox++) {
-      if (shape === "circle" && ox * ox + oy * oy > radius * radius) continue;
+  for (let oy = footprint.low; oy <= footprint.high; oy++)
+    for (let ox = footprint.low; ox <= footprint.high; ox++) {
+      if (shape === "circle" && !inBrushCircle(footprint, ox, oy)) continue;
       const nx = cx + ox,
         ny = cy + oy;
       if (nx < 0 || nx >= w.width || ny < 0 || ny >= w.height) continue;
@@ -142,11 +166,12 @@ export function applyTool(
     }
 }
 export function dragBrush(w, a, b, radius, shape, solids = true) {
+  const footprint = brushFootprint(radius);
   w.missiles.brush(
     "grab",
-    a.x + 0.5,
-    a.y + 0.5,
-    radius,
+    Math.round(a.x) + 0.5 + footprint.center,
+    Math.round(a.y) + 0.5 + footprint.center,
+    footprint.diameter / 2,
     b.x - a.x,
     b.y - a.y,
     1,
@@ -154,9 +179,9 @@ export function dragBrush(w, a, b, radius, shape, solids = true) {
   );
   w.stickmen.brush(
     "grab",
-    a.x + 0.5,
-    a.y + 0.5,
-    radius,
+    Math.round(a.x) + 0.5 + footprint.center,
+    Math.round(a.y) + 0.5 + footprint.center,
+    footprint.diameter / 2,
     b.x - a.x,
     b.y - a.y,
     1,

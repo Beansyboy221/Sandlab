@@ -94,7 +94,7 @@ with sync_playwright() as p:
         # Holding Start toggles once; menu navigation uses real tool callbacks.
         paused=page.evaluate('sandlab.state.paused');page.evaluate('controlFrame([9]);controlFrame([9]);');assert page.evaluate('sandlab.state.paused')!=paused
         page.evaluate('controlFrame();controlFrame([9]);controlFrame();');assert page.evaluate('sandlab.state.paused')==paused
-        radius=page.evaluate('sandlab.state.radius');page.evaluate('controlFrame([12]);controlFrame();');assert page.evaluate('sandlab.state.radius')==radius+1
+        radius=page.evaluate('sandlab.state.radius');page.evaluate('controlFrame([12]);controlFrame();');assert page.evaluate('sandlab.state.radius')==radius+0.5
         page.evaluate('controlFrame([3]);controlFrame();');assert page.locator('#tool-picker-menu').is_visible()
         page.evaluate('controlFrame([13]);controlFrame();controlFrame([0]);controlFrame();');assert page.evaluate('sandlab.state.tool')=='fill'
         page.evaluate('controlFrame([4,5]);controlFrame();');assert page.locator('#settings-dialog').is_visible()

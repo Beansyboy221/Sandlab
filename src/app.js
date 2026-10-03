@@ -68,7 +68,7 @@ const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
 const inspector = new Inspector($("inspection-card"), world, renderer);
 const state = {
   material: M.Sand,
-  radius: settings.get("brushSize"),
+  radius: (settings.get("brushSize") - 1) / 2,
   shape: settings.get("brushShape"),
   selectionShape: "square",
   selectionErase: false,
@@ -87,8 +87,8 @@ const state = {
   paused: false,
   speed: settings.get("speed"),
   setRadius(radius) {
-    this.radius = Math.max(1, Math.min(30, Math.round(radius)));
-    $("brush").value = this.radius;
+    this.radius = Math.max(0, Math.min(30, Math.round(radius * 2) / 2));
+    $("brush").value = this.radius * 2 + 1;
     syncBrushControl();
     if (renderer.cursor)
       renderer.cursor.radius =
@@ -97,7 +97,7 @@ const state = {
           ? 0
           : this.radius;
     if (selection.brushing) selection.radius = this.radius;
-    settings.set("brushSize", this.radius);
+    settings.set("brushSize", this.radius * 2 + 1);
   },
 };
 const selection = new Selection(world, updateToolProperties, remember, () =>
@@ -180,11 +180,13 @@ function syncBrushControl() {
   $("brush-label").textContent = frequency ? "Rate" : "Size";
   $("brush-value").value = frequency
     ? `${(1000 / lightningInterval(state.radius)).toFixed(1)}/s`
-    : state.radius;
+    : state.radius * 2 + 1;
   $("brush-control").classList.toggle("frequency", frequency);
   $("brush").setAttribute(
     "aria-label",
-    frequency ? "Lightning strike frequency" : "Brush radius",
+    frequency
+      ? "Lightning strike frequency"
+      : "Brush diameter in canvas pixels",
   );
   if (frequency)
     $("brush").setAttribute(
@@ -524,7 +526,9 @@ $("device-facing").addEventListener(
   "change",
   (e) => (state.deviceFacing = +e.target.value),
 );
-$("brush").addEventListener("input", (e) => state.setRadius(+e.target.value));
+$("brush").addEventListener("input", (e) =>
+  state.setRadius((+e.target.value - 1) / 2),
+);
 $("play-btn").addEventListener("click", () => setPaused(!state.paused));
 const mechanicKeys = Object.keys(defaultMechanics);
 function syncMechanics() {
@@ -1013,8 +1017,8 @@ const shortcutHandlers = {
   inspect: () => setTool("inspect"),
   guide: () => setTool("guide"),
   eyedropper: () => setTool("eyedropper"),
-  smaller: () => state.setRadius(state.radius - 1),
-  larger: () => state.setRadius(state.radius + 1),
+  smaller: () => state.setRadius(state.radius - 0.5),
+  larger: () => state.setRadius(state.radius + 0.5),
   grid: () => settings.set("grid", !settings.get("grid")),
   shape: () => $("shape-btn").click(),
   view: () => {
@@ -1126,7 +1130,7 @@ const settingEffects = {
     $("speed").value = state.speed;
     clock.resetSimulation();
   },
-  brushSize: () => state.setRadius(settings.get("brushSize")),
+  brushSize: () => state.setRadius((settings.get("brushSize") - 1) / 2),
   brushShape: () => {
     state.shape = settings.get("brushShape");
     updateToolProperties();

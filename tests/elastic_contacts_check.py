@@ -42,6 +42,6 @@ with sync_playwright() as p:
     assert page.locator('.canvas-resize-handle:visible').count()==0
     page.locator('#palette-toggle').tap();page.locator('#categories').get_by_role('button',name='Powders',exact=True).tap()
     assert page.get_by_role('button',name='Fertilizer',exact=True).is_visible()
-    page.locator('#categories').get_by_role('button',name='Life',exact=True).tap();assert page.get_by_role('button',name='Fertilizer',exact=True).count()==0
+    page.locator('#categories').get_by_role('button',name='Plants',exact=True).tap();assert page.get_by_role('button',name='Fertilizer',exact=True).count()==0
     c.close();browser.close()
 print(json.dumps({'separate_continuous_elastic_rendering':'pass','visible_link_cutting_and_history':'pass','thick_body_continuous_motion':'pass','mobile_palette_category':'pass'}))

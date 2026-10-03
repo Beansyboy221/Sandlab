@@ -38,13 +38,13 @@ with sync_playwright() as p:
     page.keyboard.down('Shift');page.mouse.move(**point(page,20,20));page.mouse.down();page.mouse.move(**point(page,50,50));page.keyboard.press('Escape');page.mouse.up();page.keyboard.up('Shift')
     assert page.evaluate('sandlab.world.count===0 && !sandlab.renderer.gesture')
     anchor=point(page,130,100);anchor={k:round(v) for k,v in anchor.items()};page.mouse.move(**anchor);page.mouse.wheel(0,-100)
-    assert page.evaluate('sandlab.state.radius')==2
+    assert page.evaluate('sandlab.state.radius')==1.5
     before=page.evaluate('p=>sandlab.renderer.point(p.x,p.y)',anchor)
     page.keyboard.down('Control');page.mouse.wheel(0,-100);page.wait_for_timeout(80);page.keyboard.up('Control')
     after=page.evaluate('p=>sandlab.renderer.point(p.x,p.y)',anchor)
     assert page.evaluate('sandlab.renderer.zoom')>1
     assert abs(after['x']-before['x'])<.01 and abs(after['y']-before['y'])<.01
-    assert page.evaluate('sandlab.state.radius')==2
+    assert page.evaluate('sandlab.state.radius')==1.5
     page.mouse.click(**point(page,130,100));assert occupied(page,130,100)
     assert page.locator('#reset-view-btn').count()==0
     page.keyboard.down('Control');page.mouse.wheel(0,100);page.wait_for_timeout(80);page.keyboard.up('Control')

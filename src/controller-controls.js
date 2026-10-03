@@ -238,7 +238,7 @@ export class ControllerControls {
     }
     if (pressed[12] || pressed[13])
       this.input.state.setRadius(
-        this.input.state.radius + (pressed[12] ? 1 : -1),
+        this.input.state.radius + (pressed[12] ? 0.5 : -0.5),
       );
     if (pressed[4] || pressed[5] || pressed[14] || pressed[15]) {
       this.reset();
