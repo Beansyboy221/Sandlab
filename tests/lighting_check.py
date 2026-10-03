@@ -20,6 +20,7 @@ with sync_playwright() as p:
         page.locator('#level-ambientLight').fill('0');assert page.locator('#level-ambientLight-value').inner_text()=='0%'
         page.locator('#level-submit').click();page.evaluate('sandlab.state.paused=true');assert page.evaluate('sandlab.world.ambientLight')==0
         if touch:page.locator('#palette-toggle').click()
+        page.locator('[data-catalog=entities]').click()
         page.get_by_role('button',name='Lamp',exact=True).click()
         point=page.evaluate('''async()=>{window.M=(await import('./src/sim/materials.js')).M;const w=sandlab.world,r=sandlab.renderer;r.resetView();const p=r.project(w.width*.35,w.height*.45),b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width;return {x:b.x+p.x/d,y:b.y+p.y/d};}''')
         if touch:page.touchscreen.tap(**point)
@@ -60,6 +61,17 @@ with sync_playwright() as p:
         page.locator('#setting-lightBounces').fill('0');assert page.evaluate('sandlab.renderer.lightBounces')==0
         page.locator('#setting-lightBounces').fill('0.15');assert abs(page.evaluate('sandlab.renderer.lightBounces')-.15)<1e-9
         page.locator('#settings-dialog .dialog-close').click()
+        # A short obstacle casts a directional wedge, not an opaque square tile.
+        shadows=page.evaluate("""()=>{const w=sandlab.world,r=sandlab.renderer;w.clear();w.ambientLight=0;w.background='#a0a0a0';
+          const x=Math.floor(w.width*.35),y=Math.floor(w.height*.45);w.set(y*w.width+x,M.Lamp);
+          for(let yy=y-8;yy<=y+8;yy++)w.set(yy*w.width+x+18,M.Wall);
+          r.draw();r.draw();r.worldImage();const blocked=pixel(x+32,y),around=pixel(x+32,y+24);
+          w.set(y*w.width+x,0);w.set((y+20)*w.width+x,M.Lamp);
+          r.draw();r.draw();r.worldImage();return {blocked,around,moved:pixel(x+32,y),mask:[r.lighting.mask.width,r.lighting.mask.height],size:[w.width,w.height]};}""")
+        assert max(shadows['blocked'])<=3 and max(shadows['around'])>3,shadows
+        assert max(shadows['moved'])>max(shadows['blocked'])+1,shadows
+        assert shadows['mask']==shadows['size'],shadows
+        page.screenshot(path=str(ARTIFACTS/f'lighting-directional-{width}x{height}.png'))
         # Diagnostic temperature colors stay readable at zero ambient.
         bright=page.evaluate('''()=>{sandlab.world.ambientLight=0;sandlab.renderer.mode='heat';sandlab.renderer.draw();sandlab.renderer.worldImage();return pixel(sandlab.world.width-8,8);}''')
         assert max(bright)>60,bright

@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.14.2",
+    date: "2026-10-03",
+    title: "Smooth lighting and directional shadows",
+    changes: [
+      "Lights now trace individual particle silhouettes instead of treating a single opaque pixel as an entire blocked lighting tile. Narrow openings, angled surfaces and moving obstacles cast directional shadows.",
+      "Smooth, particle-resolution lighting respects walls instead of blurring brightness into their dark back faces. Glass, water, faint reflected light, colored illumination and ambient darkness still work together.",
+      "Reusable angular shadow maps, exact edge rays, adaptive radiance density and unchanged-scene caching keep optical work bounded. Paused drawing, pigment changes and lighting settings invalidate cached lighting immediately on the next lighting refresh.",
+      "Development commands now select focused regressions, keep failure logs compact and optionally reuse identical passing checks. GitHub skips unnecessary site deployments for development-only changes.",
+    ],
+  },
+  {
     version: "1.14.1",
     date: "2026-10-03",
     title: "Bounded solid collisions",

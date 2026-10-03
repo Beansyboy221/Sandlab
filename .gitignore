@@ -5,3 +5,4 @@ tests/*.png
 dist/
 __pycache__/
 .DS_Store
+.sandlab-cache/

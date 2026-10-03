@@ -1,13 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Lighting, emissionStrength } from "../src/lighting.js";
+import { Lighting, emissionStrength, LIGHT_CELL } from "../src/lighting.js";
 import { World } from "../src/sim/world.js";
 import { M, materials } from "../src/sim/materials.js";
 import { createLevel, resizeLevel } from "../src/level.js";
 import { levelProperties } from "../src/level-properties.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 const cell = (l, x, y, c = 0) =>
-  l.light[(Math.floor(y / 4) * l.width + Math.floor(x / 4)) * 3 + c];
+  l.light[
+    (Math.floor(y / l.cellSize) * l.width + Math.floor(x / l.cellSize)) * 3 + c
+  ];
 const put = (w, x, y, id, temp) => w.set(y * w.width + x, M[id], temp);
 test("localized lights fall off radially, remain finite, and have bounded source work", () => {
   const w = new World(160, 120),
@@ -85,7 +87,7 @@ test("lighting honors looping boundaries, resizing and removed lights without st
   tiny.set(0, M.Lamp);
   tiny.border = "looping";
   l.update(tiny);
-  assert.equal(l.length, 4);
+  assert.equal(l.length, 16);
   assert.ok(l.light.every(Number.isFinite));
 });
 test("ambient light persists through creation, saves, history-compatible snapshots, resize and legacy imports", () => {
@@ -142,5 +144,73 @@ test("a filled glass tile remains transmissive instead of being mistaken for an 
     for (let x = 64; x < 68; x++) w.set(y * 160 + x, M.Glass);
   l.update(w, 0);
   assert.ok(cell(l, 80, 50) > 0.005);
-  assert.ok(l.opacity[12 * l.width + 16] < 1);
+  assert.ok(
+    l.opacity[
+      Math.floor(50 / LIGHT_CELL) * l.width + Math.floor(64 / LIGHT_CELL)
+    ] < 1,
+  );
+});
+
+test("particle visibility preserves narrow openings and follows diagonal silhouettes", () => {
+  const w = new World(100, 80),
+    l = new Lighting();
+  for (let y = 0; y < 80; y++) if (y !== 40) w.set(y * 100 + 51, M.Wall);
+  l.update(w, 0);
+  assert.equal(
+    l.trace(20.5, 40.5, 80.5, 40.5),
+    1,
+    "one-pixel opening transmits light",
+  );
+  assert.equal(
+    l.trace(20.5, 39.5, 80.5, 39.5),
+    0,
+    "adjacent wall still blocks light",
+  );
+  w.clear();
+  for (let p = 30; p <= 50; p++) w.set(p * 100 + p, M.Wall);
+  l.update(w, 0);
+  assert.equal(l.trace(20.5, 40.5, 60.5, 40.5), 0);
+  assert.equal(l.trace(20.5, 20.5, 60.5, 20.5), 1);
+  // Exact grid-corner endpoints must terminate in all directions.
+  for (const [x, y] of [
+    [20, 20],
+    [60, 20],
+    [20, 60],
+    [60, 60],
+  ])
+    assert.ok(Number.isFinite(l.trace(40.5, 40.5, x, y)));
+});
+
+test("stationary optical inputs are reused but paused edits, paint and settings invalidate them", () => {
+  const w = new World(100, 80),
+    l = new Lighting();
+  w.set(40 * 100 + 20, M.Lamp);
+  assert.equal(l.update(w), true);
+  assert.equal(l.update(w), false);
+  w.tick++;
+  assert.equal(
+    l.update(w),
+    false,
+    "simulation ticks alone do not change optics",
+  );
+  w.set(40 * 100 + 40, M.Wall);
+  assert.equal(l.update(w), true);
+  w.pigment[40 * 100 + 40] = 0xffff0000;
+  assert.equal(l.update(w), true);
+  assert.equal(l.update(w, 0.2), true);
+  w.border = "looping";
+  assert.equal(l.update(w, 0.2), true);
+  w.clear();
+  assert.equal(l.update(w, 0.2), true);
+  assert.ok(l.light.every((v) => v === 0));
+});
+
+test("shadow depth rays remain finite for emitters on integer grid boundaries", () => {
+  const w = new World(100, 80),
+    l = new Lighting();
+  for (let y = 0; y < 80; y++) w.set(y * 100 + 40, M.Wall);
+  l.update(w, 0);
+  l.shadows.prepare(l, 20, 20, 60);
+  assert.ok(l.shadows.depth.every(Number.isFinite));
+  assert.ok(Math.abs(l.shadows.depth[0] - 20) < 1e-5);
 });

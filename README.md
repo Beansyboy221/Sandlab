@@ -8,7 +8,7 @@ An original, client-side falling-sand sandbox with 62 materials, 32 entities and
 npm start
 ```
 
-Open **http://localhost:3000**. The development server uses Python 3. For deployment, upload `index.html`, `style.css`, and `src/` to any static host. JavaScript modules require HTTP serving rather than opening the HTML as a local file. The interface uses system fonts and needs no external services.
+Open **http://localhost:3000**. The development server uses Python 3. For deployment, upload `index.html`, `style.css`, `mobile.css`, and `src/` to any static host. JavaScript modules require HTTP serving rather than opening the HTML as a local file. The interface uses system fonts and needs no external services.
 
 ## Play
 
@@ -78,6 +78,14 @@ The engine uses structure-of-arrays storage rather than objects per particle. Em
 Rendering and simulation are capped at 60 frames and fixed ticks per second, including on high-refresh displays. Each rendered frame advances at most one physics tick; missed ticks are dropped instead of creating catch-up bursts. Slower hardware slows gracefully, and hidden tabs suspend drawing and physics. The 0.25× and 0.5× speed controls reduce tick frequency; 1× is the maximum. Rendering uses a low-resolution ImageData buffer scaled without smoothing; the display canvas respects device pixel ratio with a 2× cap. Thermal colors are precomputed. Seeded randomness and saved activity timestamps support reproducible continuation.
 
 To add a material, append its definition to the registry. **Never reorder existing definitions**, because saves refer to their numeric IDs. Removed substances reserve their numeric slots and migrate old saves to remaining materials; they have no active palette entry or reaction behavior. Material names automatically capitalize the first letter of each word. Movement, conductivity, combustion, and phase changes follow properties. Add contact chemistry in `reactions.js` only when an existing physical rule cannot express the interaction.
+
+## Faster development
+
+Run `npm run inspect` for a compact status and code map. `npm run check -- collisions` (or `ui`, `input`, `elastics`, `atmosphere`, `actors`, `devices`, `levels`, `lighting`, `quick`) checks the affected system. Add `--browser` to run the group's desktop/mobile checks. `npm run check -- --changed --list` previews conservative selection from Git changes; unknown or shared files select the full suite.
+
+Use `--reuse` to avoid rerunning a successful Node check with identical inputs within ten minutes. CI always runs fresh. Logs and cached results stay local in `.sandlab-cache/checks/`. `npm test` retains the complete regression suite. See [AGENTS.md](AGENTS.md) for code ownership, validation rules and publication workflow.
+
+Documentation-only pushes skip CI. Development-only pushes still validate but skip static builds and Pages deployment. Game source, styles, assets and build-script changes publish normally; manual workflow dispatch forces a fresh publication. New pushes cancel superseded runs.
 
 ## Verify
 
