@@ -16,8 +16,11 @@ export function fracture(solver, i, energy) {
   const id = w.elasticId[i];
   for (const k of solver.locations.values())
     for (let d = 0; d < 4; d++)
-      if (k === i || w["bond" + d][k] === id) w["bond" + d][k] = 0;
-  w.damage[i] = 0;
+      if (k === i || w["bond" + d][k] === id) {
+        w.fragments.mark(k);
+        w["bond" + d][k] = 0;
+      }
+  w.damage[i] = 0.001;
   solver.dirty = true;
 }
 function contactOccupancy(solver, owner, material, i) {

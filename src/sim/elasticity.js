@@ -180,8 +180,11 @@ export class Elasticity {
               radius + 0.5,
               shape,
             )
-          )
+          ) {
+            w.fragments.mark(i);
+            w.fragments.mark(j);
             bonds[i] = 0;
+          }
         }
       }
   }
@@ -251,7 +254,10 @@ export class Elasticity {
         const bonds = this.bonds[d],
           j = locations.get(bonds[i]);
         if (j === undefined) {
-          if (bonds[i]) this.topologyDirty = true;
+          if (bonds[i]) {
+            this.topologyDirty = true;
+            w.fragments.mark(i);
+          }
           bonds[i] = 0;
           continue;
         }
@@ -262,6 +268,8 @@ export class Elasticity {
           rest = d < 2 ? 1 : Math.SQRT2;
         if (distance > rest * m.tearAt) {
           this.topologyDirty = true;
+          w.fragments.mark(i);
+          w.fragments.mark(j);
           bonds[i] = 0;
           continue;
         }
@@ -332,15 +340,16 @@ export class Elasticity {
       const gravity =
         0.12 *
         (liquidNeighbors ? 1 - liquidDensity / liquidNeighbors / m.density : 1);
+      w.environment.sample(x, y);
+      const localX = w.environment.x,
+        localY = w.environment.y;
       w.velocityX[i] = limit(
-        (w.velocityX[i] +
-          (fx[i] + gravity * w.gravityX + pressureX * 0.015) * dt) *
+        (w.velocityX[i] + (fx[i] + gravity * localX + pressureX * 0.015) * dt) *
           0.999,
         0.95,
       );
       w.velocityY[i] = limit(
-        (w.velocityY[i] +
-          (fy[i] + gravity * w.gravityY + pressureY * 0.015) * dt) *
+        (w.velocityY[i] + (fy[i] + gravity * localY + pressureY * 0.015) * dt) *
           0.999,
         0.95,
       );

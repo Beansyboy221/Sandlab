@@ -1,7 +1,7 @@
-import { paletteMaterials } from "./sim/material-families.js";
+import { paletteEntries } from "./sim/material-families.js";
 export const materialGroupsKey = "sandlab.material-groups.v1";
 export const MAX_MATERIAL_GROUPS = 16;
-const allowed = new Set(paletteMaterials.map((m) => m.id));
+const allowed = new Set(paletteEntries.map((m) => m.id));
 function validateGroup(group) {
   if (
     !group ||
@@ -11,7 +11,7 @@ function validateGroup(group) {
     !group.name.trim() ||
     group.name.trim().length > 32 ||
     !Array.isArray(group.materials) ||
-    group.materials.length > paletteMaterials.length
+    group.materials.length > paletteEntries.length
   )
     throw Error("Invalid material group.");
   return {

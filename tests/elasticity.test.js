@@ -1,3 +1,4 @@
+import { isEntity } from "../src/sim/entity-kinds.js";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
@@ -30,7 +31,9 @@ test("only elastics have springs and every material has one meaningful palette g
     materials.filter((m) => m.elasticity).map((m) => m.name),
     ["Rubber", "Rope", "Jelly"],
   );
-  for (const m of materials.filter((m) => m.id && !m.deprecated))
+  for (const m of materials.filter(
+    (m) => m.id && !m.deprecated && !isEntity(m),
+  ))
     assert.ok(categories.includes(m.paletteCategory), m.name);
   assert.equal(materials[M.TNT].category, "solid");
   assert.equal(materials[M.TNT].paletteCategory, "solid");
@@ -185,7 +188,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 92);
+  assert.equal(paletteMaterials.length, 62);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],

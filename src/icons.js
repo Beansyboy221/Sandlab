@@ -1,4 +1,5 @@
 const paths = {
+  target: "M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M12 8v8M8 12h8",
   bucket:
     "M4 3l11 11M5 7l5-5 10 10-10 10L2 14a2 2 0 0 1 0-3l3-4ZM3 13h17M21 16s-2 3-2 4a2 2 0 0 0 4 0c0-1-2-4-2-4Z",
   palette:
@@ -57,6 +58,17 @@ export function icon(name) {
 // Filled, grid-aligned silhouettes stay legible at palette size without changing
 // the outline style used by action and tool icons.
 const materialShapes = {
+  characters:
+    '<path d="M9 1h6v6H9ZM7 9h10v7h-3v7h-4v-7H7ZM2 9h3v8H2ZM19 9h3v8h-3Z"/>',
+  creatures:
+    '<path d="M2 3h4v6H2ZM8 1h4v6H8ZM14 1h4v6h-4ZM20 3h4v6h-4ZM8 10h8v3h4v7h-3v2H7v-2H4v-7h4Z"/>',
+  missiles:
+    '<path d="M10 1h4v4h3v11h4v5h-6v-3H9v3H3v-5h4V5h3ZM10 20h4v4h-4Z"/>',
+  vehicles:
+    '<path d="M7 4h10v3h3v3h3v8h-3v4h-4v-4H8v4H4v-4H1v-8h3V7h3ZM7 8v4h10V8Z"/>',
+  sources:
+    '<path d="M10 1h4v5h-4ZM1 10h5v4H1ZM18 10h5v4h-5ZM10 18h4v5h-4ZM8 8h8v8H8Z"/>',
+
   powder:
     '<rect x="10" y="2" width="5" height="5"/><rect x="2" y="12" width="7" height="7"/><rect x="14" y="13" width="8" height="8"/>',
   liquid:

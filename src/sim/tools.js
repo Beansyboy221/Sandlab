@@ -11,6 +11,7 @@ export const brushTools = [
   ["grab", "Grab", "hand"],
   ["select", "Select", "select"],
   ["inspect", "Inspect", "search"],
+  ["guide", "Guide", "target"],
   ["eyedropper", "Copy", "eyedropper"],
   ["pressure", "Pressure", "pressure"],
   ["vacuum", "Vacuum", "vacuum"],

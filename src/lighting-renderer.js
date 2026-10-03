@@ -40,7 +40,8 @@ export class LightOverlay {
         this.field.height,
       );
     }
-    const ambient = w.ambientLight ?? 1;
+    const ambient =
+      w.canvasMode === "solar" ? w.environment.light : (w.ambientLight ?? 1);
     for (let i = 0; i < this.field.length; i++) {
       for (let c = 0; c < 3; c++) {
         const light = this.field.light[i * 3 + c];

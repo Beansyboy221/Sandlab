@@ -16,3 +16,5 @@
 - Refine optical shadows near thin/diagonal surfaces within four-pixel tiles; benchmark real mobile GPUs before increasing source or bounce budgets.
 
 - Add grouped circuit editing and richer vehicle suspension after measuring large circuits and machine scenes; retain directional signal isolation and bounded moving-device work.
+
+- Extend gravity-relative character navigation and contact support around Planet cores; keep orbital forces shared and bounded.

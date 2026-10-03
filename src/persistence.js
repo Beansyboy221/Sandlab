@@ -41,6 +41,8 @@ export function snapshot(world, typed = false) {
       border: world.border,
       background: world.background,
       ambientLight: world.ambientLight,
+      canvasMode: world.canvasMode,
+      modeStrength: world.modeStrength,
     },
     width: world.width,
     height: world.height,
@@ -304,6 +306,9 @@ export function restore(world, data) {
       for (const key of airflowFields)
         world.fields.airflow[key].set(data.atmosphere.airflow[key]);
   }
+  world.environment.world = world;
+  world.environment.update();
+  world.fragments.dirty = world.damage.some((v) => v > 0);
   world.fields.obstaclesDirty = true;
   if (data.activity) world.motionStamp.set(data.activity);
   else world.motionStamp.fill(world.tick + 1);

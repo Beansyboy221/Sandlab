@@ -113,6 +113,8 @@ export function resizeLevel(world, properties, x, y) {
       ),
     ),
   );
+  resized.environment.update();
+  resized.fragments.dirty = resized.damage.some((v) => v > 0);
   resized.motionStamp.fill(resized.tick + 1);
   return resized;
 }

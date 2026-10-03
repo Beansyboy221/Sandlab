@@ -17,6 +17,7 @@ def palette(page,mobile):
         page.locator('#palette-toggle').click()
 def choose_material(page,mobile,name):
     palette(page,mobile)
+    page.locator('#entities-tab').click()
     page.locator('#categories [data-group="all"]').click()
     page.locator('#search').fill(name)
     page.locator('#materials').get_by_role('button',name=name,exact=True).click()
@@ -34,12 +35,17 @@ with sync_playwright() as p:
         assert page.locator('.palette-heading h1').inner_text().startswith('Materials')
         assert 'Elements' not in page.locator('#palette').inner_text()
         assert not page.locator('[data-group="explosive"], [data-group="fiction"]').count()
+        page.locator('#entities-tab').click()
         page.locator('[data-group="devices"]').click()
         names=page.locator('#materials .material-name').all_text_contents()
-        assert set(['Drone','Rover','Battery','Wire','AND Gate','OR Gate','NOT Gate','XOR Gate','Toggle Gate','Delay Gate','Signal Lamp','Electric Fan','Heat-Seeking Missile'])==set(names)
+        assert set(['Battery','Wire','AND Gate','OR Gate','NOT Gate','XOR Gate','Toggle Gate','Delay Gate','Signal Lamp','Electric Fan','Solar Cell'])==set(names)
         assert 'Heater' not in names and 'Repulsor' not in names
+        page.locator('[data-group="sources"]').click()
+        assert {'Heater','Cooler','Fan','Clone','Void','Repulsor','Black Hole','Lamp'}==set(page.locator('#materials .material-name').all_text_contents())
+        page.locator('#materials-tab').click()
         page.locator('[data-group="static"]').click()
-        assert {'Heater','Cooler','Fan','Clone','Void','Repulsor','Black Hole','Lamp','Wall'}<=set(page.locator('#materials .material-name').all_text_contents())
+        assert 'Wall' in page.locator('#materials .material-name').all_text_contents()
+        assert not {'Heater','Battery','Cat'} & set(page.locator('#materials .material-name').all_text_contents())
         page.locator('#groups-btn').click();page.locator('#group-name').fill('My Lab')
         for name in ['Sand','Water']:page.locator('#group-materials').get_by_role('button',name=name,exact=True).click()
         assert page.locator('#group-count').inner_text()=='2 selected'

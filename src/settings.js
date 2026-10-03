@@ -234,6 +234,12 @@ export const settingGroups = [
         default: defaultMechanics.missileHoming,
       },
       {
+        key: "laserGuidance",
+        label: "Laser and cursor guidance",
+        type: "toggle",
+        default: defaultMechanics.laserGuidance,
+      },
+      {
         key: "missileHeat",
         label: "Minimum target heat",
         type: "range",
@@ -246,13 +252,12 @@ export const settingGroups = [
       },
       {
         key: "missileRange",
-        label: "Seeker range",
+        label: "Beam and heat seeker range",
         type: "range",
         min: 32,
         max: 512,
         step: 32,
         default: defaultMechanics.missileRange,
-        depends: "missileHoming",
         suffix: " cells",
       },
       {
@@ -362,6 +367,12 @@ export const settingGroups = [
     id: "performance",
     name: "Performance",
     fields: [
+      {
+        key: "fragmentParticles",
+        label: "Simplify tiny broken pieces",
+        type: "toggle",
+        default: defaultMechanics.fragmentParticles,
+      },
       {
         key: "displayQuality",
         label: "Display quality",

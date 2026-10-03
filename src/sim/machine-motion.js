@@ -34,8 +34,10 @@ function wreck(w, a) {
 export function stepMachine(w, a) {
   const m = materials[a.material];
   if (!m.vehicle) return false;
-  const gx = w.gravityX,
-    gy = w.gravityY,
+  w.environment.sample(a.x, a.y);
+  const gravityScale = Math.hypot(w.environment.x, w.environment.y);
+  const gx = gravityScale ? w.environment.x / gravityScale : w.gravityX,
+    gy = gravityScale ? w.environment.y / gravityScale : w.gravityY,
     tx = gy,
     ty = -gx;
   let direction = Math.cos(a.angle) * tx + Math.sin(a.angle) * ty >= 0 ? 1 : -1;
@@ -61,7 +63,7 @@ export function stepMachine(w, a) {
   const tangent = a.vx * tx + a.vy * ty;
   let vertical = a.vx * gx + a.vy * gy;
   if (m.vehicle === "drone" && motor) vertical *= 0.7;
-  else vertical = clamp(vertical + 0.075, -3, 2.5);
+  else vertical = clamp(vertical + 0.075 * gravityScale, -3, 2.5);
   const across = tangent * 0.75 + drive * 0.25;
   const f = w.fields.forceGradient(a.x, a.y);
   a.vx =

@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.14.0",
+    date: "2026-10-03",
+    title: "Entities and canvas modes",
+    changes: [
+      "Materials and Entities now have separate tabs, searches and categories. Characters, wildlife, missiles, vehicles, electrical devices and fixed sources live in Entities. Custom groups can include entries from either catalog, and older saves retain their original IDs.",
+      "Added Laser-Guided Missile and unguided Rocket. Guided missiles turn toward the nearest visible live laser beam, or your cursor when there is no visible beam. The Guide tool sets an aim point without placing matter; tap or drag to aim on touch screens. Glass and clear liquids transmit guidance; opaque obstacles block it. Settings → Devices controls laser guidance.",
+      "New canvas and Canvas properties include Sandbox, Planet, Wandering Gravity, Whirlpool, Zero Gravity and Day And Night, with a strength slider. Planet supplies inward gravity and initial orbital motion; wandering gravity moves its center, Whirlpool adds rotating airflow, and Day And Night varies ambient light and air temperature. Modes persist through saves, history and positioned resizing.",
+      "Broken solid and elastic pieces of three pixels or fewer become material-specific fine debris, reducing spring and rigid-body work. Larger pieces, anchored strands and intact small drawings retain their original physics. Debris preserves heat, pigment and velocity. Settings → Performance can disable this optimization.",
+    ],
+  },
+  {
     version: "1.13.0",
     date: "2026-10-03",
     title: "Wind and vented pressure",

@@ -45,9 +45,15 @@ export function cellProperties(world, point) {
             ? world.mechanics.machineMotors
               ? "Cruising"
               : "Motors off"
-            : a.target < 0
-              ? "Searching"
-              : `${materials[world.cells[a.target]].name} · ${world.temp[a.target].toFixed(0)}°C`,
+            : m.guidance === "none"
+              ? "Unguided"
+              : a.targetKind === "cursor"
+                ? `Cursor · ${a.targetX.toFixed(0)}, ${a.targetY.toFixed(0)}`
+                : a.targetKind === "laser"
+                  ? "Nearest visible laser"
+                  : a.target < 0
+                    ? "Searching"
+                    : `${materials[world.cells[a.target]].name} · ${world.temp[a.target].toFixed(0)}°C`,
         ],
       ],
     };

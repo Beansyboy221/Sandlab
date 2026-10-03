@@ -12,6 +12,32 @@ const gate = (name, rule, color) => [
   color,
   2,
   { ...electronics, circuit: rule, directed: true },
+  [
+    "Laser-Guided Missile",
+    "special",
+    "#8de1b5",
+    2,
+    {
+      device: true,
+      projectile: true,
+      guidance: "laser",
+      directed: true,
+      movable: false,
+    },
+  ],
+  [
+    "Rocket",
+    "special",
+    "#edbb86",
+    2,
+    {
+      device: true,
+      projectile: true,
+      guidance: "none",
+      directed: true,
+      movable: false,
+    },
+  ],
 ];
 // Append-only IDs preserve older worlds; circuit state uses existing life/heading arrays.
 export const deviceMaterials = [
@@ -59,6 +85,32 @@ export const deviceMaterials = [
       device: true,
       projectile: true,
       vehicle: "rover",
+      directed: true,
+      movable: false,
+    },
+  ],
+  [
+    "Laser-Guided Missile",
+    "special",
+    "#8de1b5",
+    2,
+    {
+      device: true,
+      projectile: true,
+      guidance: "laser",
+      directed: true,
+      movable: false,
+    },
+  ],
+  [
+    "Rocket",
+    "special",
+    "#edbb86",
+    2,
+    {
+      device: true,
+      projectile: true,
+      guidance: "none",
       directed: true,
       movable: false,
     },

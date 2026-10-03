@@ -2,6 +2,7 @@ import {
   paletteMaterials,
   materialSearchText,
 } from "./sim/material-families.js";
+import { isEntity, entityCategory } from "./sim/entity-kinds.js";
 import { materialIcon } from "./icons.js";
 export class MaterialGroupsPanel {
   constructor(dialog, groups, { open, close, changed }) {
@@ -45,7 +46,17 @@ export class MaterialGroupsPanel {
       }
     });
   }
-  open(id = "") {
+  open(
+    id = "",
+    entries = this.entries || paletteMaterials,
+    kind = this.kind || "materials",
+  ) {
+    this.entries = entries;
+    this.kind = kind;
+    this.dialog.querySelector("#groups-heading").textContent =
+      kind === "entities" ? "Entity groups" : "Material groups";
+    this.search.placeholder =
+      kind === "entities" ? "Find an entity…" : "Find a material…";
     this.selector.replaceChildren(new Option("New group", ""));
     for (const group of this.groups.groups)
       this.selector.append(new Option(group.name, group.id));
@@ -66,7 +77,7 @@ export class MaterialGroupsPanel {
   render() {
     const query = this.search.value.trim().toLowerCase();
     this.grid.replaceChildren();
-    for (const material of paletteMaterials) {
+    for (const material of this.entries || paletteMaterials) {
       if (query && !materialSearchText(material).includes(query)) continue;
       const button = document.createElement("button");
       button.type = "button";
@@ -76,7 +87,11 @@ export class MaterialGroupsPanel {
       const swatch = document.createElement("span"),
         name = document.createElement("span");
       swatch.className = "swatch";
-      swatch.innerHTML = materialIcon(material.paletteCategory);
+      swatch.innerHTML = materialIcon(
+        isEntity(material)
+          ? entityCategory(material)
+          : material.paletteCategory,
+      );
       name.className = "material-name";
       name.textContent = material.name;
       button.append(swatch, name);

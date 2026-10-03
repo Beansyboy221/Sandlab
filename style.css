@@ -2660,3 +2660,43 @@ dialog::backdrop {
     gap: 10px;
   }
 }
+
+.catalog-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 4px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #111b20;
+  flex-shrink: 0;
+}
+.catalog-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+}
+.catalog-tabs button[aria-selected="true"] {
+  color: var(--accent);
+  background: #a6d5bd14;
+}
+.catalog-tabs button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+#catalog-title {
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  letter-spacing: inherit;
+}
+.mobile-layout .catalog-tabs button {
+  min-height: 44px;
+}

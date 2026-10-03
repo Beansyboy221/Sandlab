@@ -1,3 +1,4 @@
+import { canvasModes } from "./sim/canvas-modes.js";
 import {
   fittedCanvasSize,
   canvasResolutionLimit,
@@ -30,15 +31,25 @@ export class LevelEditor {
         option.textContent = preset.name;
         this.starter.append(option);
       }
+    for (const [value, name] of canvasModes)
+      dialog.querySelector("#level-canvasMode").append(new Option(name, value));
     this.inputs = Object.fromEntries(
-      ["name", "border", "background", "ambientLight"].map((key) => [
-        key,
-        dialog.querySelector(`#level-${key}`),
-      ]),
+      [
+        "name",
+        "border",
+        "background",
+        "ambientLight",
+        "canvasMode",
+        "modeStrength",
+      ].map((key) => [key, dialog.querySelector(`#level-${key}`)]),
     );
     this.ambientOutput = dialog.querySelector("#level-ambientLight-value");
     this.inputs.ambientLight.addEventListener("input", () => {
       this.ambientOutput.value = `${this.inputs.ambientLight.value}%`;
+    });
+    this.strengthOutput = dialog.querySelector("#level-modeStrength-value");
+    this.inputs.modeStrength.addEventListener("input", () => {
+      this.strengthOutput.value = `${this.inputs.modeStrength.value}%`;
     });
     this.resolution = dialog.querySelector("#level-resolution");
     this.preview = dialog.querySelector("#resize-preview");
@@ -147,8 +158,11 @@ export class LevelEditor {
     if (!editing) values.name = "Untitled canvas";
     for (const [key, input] of Object.entries(this.inputs))
       input.value =
-        key === "ambientLight" ? Math.round(values[key] * 100) : values[key];
+        key === "ambientLight" || key === "modeStrength"
+          ? Math.round(values[key] * 100)
+          : values[key];
     this.ambientOutput.value = `${this.inputs.ambientLight.value}%`;
+    this.strengthOutput.value = `${this.inputs.modeStrength.value}%`;
     this.dialog.querySelector("h2").textContent = editing
       ? "Canvas properties"
       : "New canvas";
@@ -207,7 +221,9 @@ export class LevelEditor {
       ...Object.fromEntries(
         Object.entries(this.inputs).map(([key, input]) => [
           key,
-          key === "ambientLight" ? Number(input.value) / 100 : input.value,
+          key === "ambientLight" || key === "modeStrength"
+            ? Number(input.value) / 100
+            : input.value,
         ]),
       ),
       ...this.dimensions(),
@@ -243,9 +259,14 @@ export class LevelEditor {
         Object.assign(this.world, created);
       } else {
         if (
-          ["name", "border", "background", "ambientLight"].some(
-            (key) => values[key] !== this.world[key],
-          )
+          [
+            "name",
+            "border",
+            "background",
+            "ambientLight",
+            "canvasMode",
+            "modeStrength",
+          ].some((key) => values[key] !== this.world[key])
         ) {
           this.remember();
           applyLevelMetadata(this.world, values);

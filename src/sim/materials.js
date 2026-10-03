@@ -1,3 +1,4 @@
+import { fragmentMaterials } from "./fragment-materials.js";
 import { deviceMaterials } from "./device-materials.js";
 import { energyMaterials } from "./energy-materials.js";
 const definitions = [
@@ -843,7 +844,13 @@ definitions.push(
     "special",
     "#e5b985",
     3,
-    { device: true, projectile: true, directed: true, movable: false },
+    {
+      device: true,
+      projectile: true,
+      guidance: "heat",
+      directed: true,
+      movable: false,
+    },
   ],
 );
 definitions.push([
@@ -853,7 +860,7 @@ definitions.push([
   2,
   { movable: false, lightEmission: 1.4, glow: 0.65, resistance: 0.7 },
 ]);
-definitions.push(...deviceMaterials);
+definitions.push(...deviceMaterials, ...fragmentMaterials);
 export const M = Object.create(null);
 export const materials = definitions.map(
   ([name, category, color, density, properties], id) => {
@@ -904,7 +911,6 @@ export const categories = [
   "elastic",
   "life",
   "energy",
-  "devices",
 ];
 export const categoryLabels = {
   all: "All",
@@ -914,7 +920,7 @@ export const categoryLabels = {
   solid: "Solids",
   static: "Static",
   elastic: "Elastics",
-  life: "Life",
+  life: "Plants",
   energy: "Energy",
   devices: "Devices",
 };
@@ -1031,4 +1037,25 @@ for (const m of materials)
       retired: true,
       canonicalId,
     });
+  }
+
+for (const [from, to] of Object.entries({
+  Wood: "Wood Chips",
+  Stone: "Stone Gravel",
+  Steel: "Steel Powder",
+  Copper: "Copper Granules",
+  Glass: "Glass Shards",
+  Mirror: "Glass Shards",
+  Ice: "Snow",
+  Rubber: "Rubber Crumbs",
+  Jelly: "Jelly Drops",
+  Rope: "Rope Fibers",
+  Wax: "Wax Shavings",
+  Brick: "Brick Rubble",
+  Ceramic: "Brick Rubble",
+  Concrete: "Brick Rubble",
+}))
+  if (M[from] !== undefined) {
+    materials[M[from]].fragmentTo = M[to];
+    materials[M[to]].fragment = true;
   }

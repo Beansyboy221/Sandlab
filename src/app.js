@@ -1,3 +1,9 @@
+import {
+  isEntity,
+  entityCategory,
+  entityCategories,
+  entityLabels,
+} from "./sim/entity-kinds.js";
 import { MaterialGroups } from "./material-groups.js";
 import { MaterialGroupsPanel } from "./material-groups-panel.js";
 import { FrameClock } from "./frame-clock.js";
@@ -10,6 +16,7 @@ import { fittedCanvasSize } from "./canvas-view.js";
 import {
   paletteBase,
   paletteMaterials,
+  paletteEntities,
   materialSearchText,
 } from "./sim/material-families.js";
 import { MobileDock } from "./mobile-dock.js";
@@ -52,7 +59,7 @@ populateIcons();
 const settings = new Settings();
 const materialGroups = new MaterialGroups();
 let autosaveTimer, toolPicker, mobileDock, drawingPause;
-$("palette").querySelector("h1 span").textContent = paletteMaterials.length;
+$("catalog-total").textContent = paletteMaterials.length;
 const portrait = innerWidth <= 700 && innerHeight > innerWidth;
 const world = new World(portrait ? 200 : 320, portrait ? 300 : 200),
   renderer = new Renderer($("world"), world);
@@ -95,7 +102,8 @@ const selection = new Selection(world, updateToolProperties, remember, () =>
   toast("Move blocked by other particles. Enable Replace to overwrite."),
 );
 renderer.selection = selection;
-let category = "all",
+let catalogKind = "materials",
+  category = "all",
   history = new EditHistory(world),
   hover = null,
   toastTimer,
@@ -193,7 +201,9 @@ function updateToolProperties() {
   document.querySelector(".toolbox").dataset.materialTool =
     String(materialTool);
   $("palette-toggle").hidden = !materialTool;
-  $("replace-property").hidden = !materialTool;
+  $("replace-property").hidden =
+    !materialTool ||
+    !!(materials[state.material].actor || materials[state.material].projectile);
   $("device-facing-property").hidden =
     tool !== "paint" || !materials[state.material].circuit;
   $("tool-properties").hidden = tool === "paint";
@@ -204,7 +214,8 @@ function updateToolProperties() {
   $("paint-properties").hidden = tool !== "recolor" && !colorFill;
   $("paint-layer").hidden = colorFill;
   $("eyedropper-property").hidden = tool !== "eyedropper";
-  const reading = tool === "inspect" || tool === "eyedropper";
+  const reading =
+    tool === "inspect" || tool === "eyedropper" || tool === "guide";
   $("shape-btn").hidden = reading || tool === "fill";
   $("canvas-tip").hidden = reading;
   $("clear-btn").hidden = tool === "select";
@@ -278,7 +289,8 @@ function setTool(value) {
   selection.visible = tool === "select";
   inspector.setActive(tool === "inspect");
   if (tool === "inspect") inspector.follow(hover);
-  if (tool === "inspect" || tool === "eyedropper") renderer.cursor = null;
+  if (tool === "inspect" || tool === "eyedropper" || tool === "guide")
+    renderer.cursor = null;
   syncInspectorControls();
   if (tool === "select") {
     setPaused(true);
@@ -350,25 +362,79 @@ mobileDock = new MobileDock(
 function selectMaterial(id) {
   id = paletteBase[id];
   state.material = id;
-  setTool(state.tool === "fill" ? "fill" : false);
+  const entities = isEntity(materials[id]);
+  if (catalogKind !== (entities ? "entities" : "materials"))
+    setCatalog(entities ? "entities" : "materials");
+  setTool(state.tool === "fill" && !entities ? "fill" : false);
   const m = materials[id];
   renderMaterials();
   const details = $("material-detail");
   details.replaceChildren();
   const title = document.createElement("div");
   title.className = "detail-title";
-  title.innerHTML = `<span class="swatch" style="--color:${m.color}">${materialIcon(m.paletteCategory)}</span><h2>${m.name}</h2><span class="detail-type">${categoryLabels[m.paletteCategory] || m.category}</span>`;
+  title.innerHTML = `<span class="swatch" style="--color:${m.color}">${materialIcon(isEntity(m) ? entityCategory(m) : m.paletteCategory)}</span><h2>${m.name}</h2><span class="detail-type">${isEntity(m) ? entityLabels[entityCategory(m)] : categoryLabels[m.paletteCategory] || m.category}</span>`;
   details.append(title);
   $("palette-toggle").querySelector("i").style.background = m.color;
   $("palette-toggle").querySelector("span:not([data-icon])").textContent =
     m.name;
 }
+function setCatalog(kind) {
+  catalogKind = kind;
+  category = "all";
+  $("search").value = "";
+  $("catalog-title").textContent =
+    kind === "entities" ? "Entities" : "Materials";
+  $("catalog-total").textContent = (
+    kind === "entities" ? paletteEntities : paletteMaterials
+  ).length;
+  $("search").placeholder =
+    kind === "entities" ? "Find an entity…" : "Find a material…";
+  $("search").setAttribute("aria-label", `Search ${kind}`);
+  $("categories").setAttribute(
+    "aria-label",
+    `${kind === "entities" ? "Entity" : "Material"} categories`,
+  );
+  $("palette-close").setAttribute("aria-label", `Close ${kind}`);
+  $("groups-btn").setAttribute(
+    "aria-label",
+    `Create or edit ${kind === "entities" ? "entity" : "material"} groups`,
+  );
+  for (const tab of document.querySelectorAll("[data-catalog]")) {
+    const active = tab.dataset.catalog === kind;
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  }
+  $("materials").setAttribute("aria-labelledby", `${kind}-tab`);
+  renderCategories();
+  renderMaterials();
+}
+for (const tab of document.querySelectorAll("[data-catalog]")) {
+  tab.addEventListener("click", () => setCatalog(tab.dataset.catalog));
+  tab.addEventListener("keydown", (e) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    e.preventDefault();
+    const kind =
+      e.key === "Home"
+        ? "materials"
+        : e.key === "End"
+          ? "entities"
+          : catalogKind === "materials"
+            ? "entities"
+            : "materials";
+    setCatalog(kind);
+    $(`${kind}-tab`).focus();
+  });
+}
 function renderMaterials() {
   const query = $("search").value.trim().toLowerCase(),
-    filtered = paletteMaterials.filter(
+    filtered = (
+      catalogKind === "entities" ? paletteEntities : paletteMaterials
+    ).filter(
       (m) =>
         (category === "all" ||
-          m.paletteCategory === category ||
+          (catalogKind === "entities"
+            ? entityCategory(m)
+            : m.paletteCategory) === category ||
           materialGroups.includes(category, m.id)) &&
         (!query || materialSearchText(m).includes(query)),
     );
@@ -379,7 +445,7 @@ function renderMaterials() {
     b.dataset.category = m.paletteCategory;
     b.style.setProperty("--color", m.color);
     b.setAttribute("aria-pressed", String(state.material === m.id));
-    b.innerHTML = `<span class="swatch">${materialIcon(m.paletteCategory)}</span><span class="material-name">${m.name}</span>`;
+    b.innerHTML = `<span class="swatch">${materialIcon(catalogKind === "entities" ? entityCategory(m) : m.paletteCategory)}</span><span class="material-name">${m.name}</span>`;
     b.addEventListener("click", () => {
       selectMaterial(m.id);
       if (mobileDock?.media.matches) $("palette").classList.remove("open");
@@ -390,24 +456,27 @@ function renderMaterials() {
     const p = document.createElement("p");
     p.style.cssText =
       "grid-column:1/-1;color:#91a6af;font-size:12px;padding:20px 0;line-height:1.7";
-    p.textContent = "No materials found. Try another search or category.";
+    p.textContent = `No ${catalogKind} found. Try another search or category.`;
     $("materials").append(p);
   }
   $("material-count").textContent = filtered.length;
   $("category-title").textContent = query
     ? "Search results"
     : category === "all"
-      ? "All materials"
-      : materialGroups.get(category)?.name || categoryLabels[category];
+      ? `All ${catalogKind}`
+      : materialGroups.get(category)?.name ||
+        (catalogKind === "entities" ? entityLabels : categoryLabels)[category];
 }
 function renderCategories() {
   $("categories").replaceChildren();
   for (const cat of [
-    ...categories,
+    ...(catalogKind === "entities" ? entityCategories : categories),
     ...materialGroups.groups.map((group) => group.id),
   ]) {
     const b = document.createElement("button");
-    b.textContent = materialGroups.get(cat)?.name || categoryLabels[cat];
+    b.textContent =
+      materialGroups.get(cat)?.name ||
+      (catalogKind === "entities" ? entityLabels : categoryLabels)[cat];
     b.dataset.group = cat;
     b.classList.toggle("selected", cat === category);
     b.setAttribute("aria-pressed", String(cat === category));
@@ -438,7 +507,11 @@ const groupsPanel = new MaterialGroupsPanel(
   },
 );
 $("groups-btn").addEventListener("click", () =>
-  groupsPanel.open(materialGroups.get(category)?.id),
+  groupsPanel.open(
+    materialGroups.get(category)?.id,
+    catalogKind === "entities" ? paletteEntities : paletteMaterials,
+    catalogKind,
+  ),
 );
 $("search").addEventListener("input", renderMaterials);
 $("device-facing").addEventListener(
@@ -545,7 +618,7 @@ const input = new Input(
     if (tool === "inspect") {
       inspector.sample(point);
       syncInspectorControls();
-    } else {
+    } else if (tool === "eyedropper") {
       const cell = cellAt(world, point);
       if (!cell) return;
       if (!cell.material.id) return toast("Empty cell—choose a particle.");
@@ -633,7 +706,7 @@ $("settings-btn").addEventListener("click", () =>
 $("about-btn").addEventListener("click", () => openDialog("about-dialog"));
 $("app-version").textContent = `Version ${changelog[0].version}`;
 $("app-content-count").textContent =
-  `${paletteMaterials.length} materials · ${materials.filter((m) => m.id && !m.deprecated).length} simulation forms`;
+  `${paletteMaterials.length} materials · ${paletteEntities.length} entities · ${materials.filter((m) => m.id && !m.deprecated).length} simulation forms`;
 for (const release of changelog) {
   const section = document.createElement("section"),
     heading = document.createElement("h3"),
@@ -878,6 +951,7 @@ const shortcutHandlers = {
   cool: () => setTool("cool"),
   wind: () => setTool("wind"),
   inspect: () => setTool("inspect"),
+  guide: () => setTool("guide"),
   eyedropper: () => setTool("eyedropper"),
   smaller: () => state.setRadius(state.radius - 1),
   larger: () => state.setRadius(state.radius + 1),

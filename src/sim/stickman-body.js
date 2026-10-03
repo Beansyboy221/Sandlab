@@ -59,8 +59,10 @@ export function integrateBody(
 ) {
   const profile = actorProfile(a.material),
     { links, lengths, x: restX, y: restY } = profile;
-  const gx = w.gravityX,
-    gy = w.gravityY,
+  w.environment.sample(a.x[2], a.y[2]);
+  const gravityScale = Math.hypot(w.environment.x, w.environment.y);
+  const gx = gravityScale ? w.environment.x / gravityScale : w.gravityX,
+    gy = gravityScale ? w.environment.y / gravityScale : w.gravityY,
     grounded = a.grounded,
     foot5x = a.x[5],
     foot5y = a.y[5],
@@ -173,8 +175,8 @@ export function integrateBody(
       w,
       a,
       n,
-      a.x[n] + vx + gx * (liquid ? 0.025 : 0.12),
-      a.y[n] + vy + gy * (liquid ? 0.025 : 0.12),
+      a.x[n] + vx + gx * (liquid ? 0.025 : 0.12) * gravityScale,
+      a.y[n] + vy + gy * (liquid ? 0.025 : 0.12) * gravityScale,
     );
     const impact =
       Math.hypot(vx, vy) - Math.hypot(a.x[n] - a.px[n], a.y[n] - a.py[n]);

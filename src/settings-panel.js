@@ -40,7 +40,7 @@ export class SettingsPanel {
         wildlife:
           "Birds and aquatic creatures group with nearby members of their species. Group size includes the creature itself. Hunting and fleeing take priority over grouping.",
         devices:
-          "Drones hover and cruise; rovers drive, climb small ledges and turn at obstacles. Turning motors off lets them fall. Missiles launch along your stroke and seek hot exposed material. With heat seeking off, they fly straight. Obstacles still stop them.",
+          "Drones hover and cruise; rovers drive, climb small ledges and turn at obstacles. Turning motors off lets them fall. Heat-seeking missiles track hot surfaces. Laser-guided missiles track the nearest visible beam, or the cursor when no beam is available. Use Guide to aim by touch. Rockets fly straight. Guidance toggles do not disable collisions.",
         player:
           "Push up to jump and down to crouch. Position follows screen orientation. The joystick hides when expanded controls leave too little canvas; close them to play.",
       };

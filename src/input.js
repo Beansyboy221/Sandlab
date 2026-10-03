@@ -11,7 +11,7 @@ const fanDirections = {
   up: [0, -1],
   down: [0, 1],
 };
-const readTools = new Set(["inspect", "eyedropper"]);
+const readTools = new Set(["inspect", "eyedropper", "guide"]);
 export function lightningInterval(radius) {
   return 1000 / (1 + 0.4 * (Math.max(1, Math.min(30, radius)) - 1));
 }
@@ -257,8 +257,12 @@ export class Input {
       canvas.addEventListener(type, (e) => e.preventDefault(), {
         passive: false,
       });
-    window.addEventListener("blur", () => this.cancel());
-    canvas.addEventListener("pointerleave", () => {
+    window.addEventListener("blur", () => {
+      this.cancel();
+      world.missiles.guidance.setCursor(null);
+    });
+    canvas.addEventListener("pointerleave", (e) => {
+      if (e.pointerType !== "touch") world.missiles.guidance.setCursor(null);
       if (!this.pointers.size) {
         renderer.cursor = null;
         canvas.style.cursor = "crosshair";
@@ -298,6 +302,7 @@ export class Input {
     this.drawingPause?.cancel();
   }
   hover(point, erasing = false, refine = false) {
+    this.world.missiles.guidance.setCursor(point);
     if (this.state.tool === "fill") {
       this.canvas.style.cursor = "crosshair";
       this.renderer.cursor = null;

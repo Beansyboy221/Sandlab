@@ -1,3 +1,4 @@
+import { LaserGuidance, wrappedDelta } from "./missile-guidance.js";
 import { stepMachine, machineFits } from "./machine-motion.js";
 import { materials, M } from "./materials.js";
 import { clearSight } from "./predation.js";
@@ -12,6 +13,7 @@ export class Missiles {
     this.world = world;
     this.items = [];
     this.nextId = 1;
+    this.guidance = new LaserGuidance(world);
     this.targets = new Int32Array(world.length);
     this.targetCount = 0;
     this.scanTick = -100;
@@ -51,6 +53,7 @@ export class Missiles {
   }
   clear() {
     this.items.length = 0;
+    this.guidance.clear();
     this.targetCount = 0;
     this.scanTick = -100;
   }
@@ -121,11 +124,17 @@ export class Missiles {
   step() {
     if (!this.items.length) return;
     const w = this.world;
+    this.guidance.world = w;
     if (
       w.mechanics.missileHoming &&
-      this.items.some((a) => !materials[a.material].vehicle)
+      this.items.some((a) => materials[a.material].guidance === "heat")
     )
       this.scan();
+    if (
+      w.mechanics.laserGuidance &&
+      this.items.some((a) => materials[a.material].guidance === "laser")
+    )
+      this.guidance.capture();
     for (const a of this.items) {
       if (w.border === "looping") {
         a.x = ((a.x % w.width) + w.width) % w.width;
@@ -144,12 +153,33 @@ export class Missiles {
         this.detonate(a);
         continue;
       }
-      a.target = w.mechanics.missileHoming ? this.nearest(a) : -1;
-      if (a.target >= 0) {
-        const desired = Math.atan2(
-          Math.floor(a.target / w.width) + 0.5 - a.y,
-          (a.target % w.width) + 0.5 - a.x,
-        );
+      const mode = materials[a.material].guidance;
+      a.target = -1;
+      a.targetKind = "none";
+      if (mode === "laser" && w.mechanics.laserGuidance)
+        this.guidance.target(a);
+      else if (mode === "heat" && w.mechanics.missileHoming) {
+        a.target = this.nearest(a);
+        if (a.target >= 0) {
+          a.targetKind = "heat";
+          a.targetX =
+            a.x +
+            wrappedDelta(
+              (a.target % w.width) + 0.5 - a.x,
+              w.width,
+              w.border === "looping",
+            );
+          a.targetY =
+            a.y +
+            wrappedDelta(
+              Math.floor(a.target / w.width) + 0.5 - a.y,
+              w.height,
+              w.border === "looping",
+            );
+        }
+      }
+      if (a.targetKind !== "none") {
+        const desired = Math.atan2(a.targetY - a.y, a.targetX - a.x);
         const turn = Math.atan2(
           Math.sin(desired - a.angle),
           Math.cos(desired - a.angle),
@@ -166,6 +196,11 @@ export class Missiles {
         a.vy * 0.8 +
         Math.sin(a.angle) * speed * 0.2 +
         clamp(w.fields.gradientY[f], -3, 3) * 0.015;
+      if (w.environment.kinetic) {
+        w.environment.sample(a.x, a.y);
+        a.vx += w.environment.x * 0.05;
+        a.vy += w.environment.y * 0.05;
+      }
       if (a.temperature < -60) {
         a.vx *= 0.94;
         a.vy *= 0.94;
@@ -256,6 +291,7 @@ export class Missiles {
     );
   }
   restore(data = []) {
+    this.guidance.clear();
     this.items = data.map((a) => ({
       ...Object.fromEntries(
         [

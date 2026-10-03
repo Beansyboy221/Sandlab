@@ -1,8 +1,11 @@
+import { canvasModes } from "./sim/canvas-modes.js";
 export const defaultLevel = Object.freeze({
   name: "Untitled canvas",
   border: "solid",
   background: "#111b20",
   ambientLight: 1,
+  canvasMode: "normal",
+  modeStrength: 1,
 });
 export const borderTypes = ["solid", "looping", "void"];
 export function validateCanvasSize(width, height) {
@@ -41,7 +44,19 @@ export function validateLevelMetadata(value) {
     ambientLight > 1
   )
     throw Error("Choose an ambient light level between 0% and 100%.");
+  const canvasMode =
+      value.canvasMode === undefined ? "normal" : value.canvasMode,
+    modeStrength = value.modeStrength === undefined ? 1 : value.modeStrength;
+  if (
+    !canvasModes.some(([id]) => id === canvasMode) ||
+    !Number.isFinite(modeStrength) ||
+    modeStrength < 0 ||
+    modeStrength > 2
+  )
+    throw Error("Invalid canvas mode or strength.");
   return {
+    canvasMode,
+    modeStrength,
     ambientLight,
     name: value.name.trim(),
     border: value.border,
@@ -56,6 +71,8 @@ export function levelProperties(world) {
     border: world.border,
     background: world.background,
     ambientLight: world.ambientLight,
+    canvasMode: world.canvasMode,
+    modeStrength: world.modeStrength,
   };
 }
 export function validateLevelProperties(value) {
@@ -68,8 +85,20 @@ export function validateLevelProperties(value) {
 }
 export function applyLevelMetadata(world, metadata) {
   const values = validateLevelMetadata(metadata),
-    changed = world.border !== values.border;
+    changed =
+      world.border !== values.border ||
+      world.canvasMode !== values.canvasMode ||
+      world.modeStrength !== values.modeStrength;
+  const oldMode = world.canvasMode;
   Object.assign(world, values);
+  if (oldMode === "solar" && values.canvasMode !== "solar")
+    world.fields.ambientTemperature = 20;
+  if (world.environment) {
+    world.environment.world = world;
+    world.environment.update();
+    if (oldMode !== values.canvasMode && values.canvasMode === "planet")
+      for (let i = 0; i < world.length; i++) world.environment.seed(i);
+  }
   world.fields.border = values.border;
   if (changed) world.motionStamp.fill(world.tick + 1);
 }

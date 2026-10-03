@@ -1,0 +1,45 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { World } from "../src/sim/world.js";
+import { M } from "../src/sim/materials.js";
+import { snapshot, restore } from "../src/persistence.js";
+test("only tiny broken pieces simplify; intact small drawings and large pieces keep their physics", () => {
+  const w = new World(60, 60);
+  for (let x = 10; x < 18; x++) w.set(20 * 60 + x, M.Wood);
+  w.set(30 * 60 + 30, M.Steel);
+  w.set(20 * 60 + 12, 0);
+  w.fragments.step();
+  assert.equal(w.cells[20 * 60 + 10], M["Wood Chips"]);
+  assert.equal(w.cells[20 * 60 + 11], M["Wood Chips"]);
+  assert.equal(w.cells[20 * 60 + 13], M.Wood);
+  assert.equal(w.cells[30 * 60 + 30], M.Steel);
+  assert.equal(w.count, w.cells.filter(Boolean).length);
+});
+test("cut elastic fragments retain heat, color and momentum, while bigger strands remain linked", () => {
+  const w = new World(60, 60);
+  for (let x = 10; x < 18; x++) w.set(20 * 60 + x, M.Rope);
+  w.temp[1210] = 90;
+  w.pigment[1210] = 0xffdd8844;
+  w.velocityX[1210] = 0.4;
+  w.set(1212, 0);
+  w.step();
+  assert.equal(w.cells.includes(M["Rope Fibers"]), true);
+  assert.ok(w.cells.includes(M.Rope));
+  const i = w.cells.indexOf(M["Rope Fibers"]);
+  assert.equal(w.pigment[i], 0xffdd8844);
+  assert.ok(w.temp[i] > 80);
+  assert.ok(w.velocityX[i] > 0);
+  assert.ok(w.elastic.locations.size < 7);
+});
+test("fragment optimization can be disabled and pending cuts survive export", () => {
+  const w = new World(60, 60);
+  for (let x = 10; x < 14; x++) w.set(1210 + x - 10, M.Wood);
+  w.set(1212, 0);
+  w.mechanics.fragmentParticles = false;
+  w.fragments.step();
+  assert.equal(w.cells[1210], M.Wood);
+  const loaded = new World();
+  restore(loaded, snapshot(w));
+  loaded.fragments.step();
+  assert.equal(loaded.cells[1210], M["Wood Chips"]);
+});

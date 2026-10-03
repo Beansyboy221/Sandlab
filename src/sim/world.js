@@ -1,3 +1,6 @@
+import { CanvasEnvironment } from "./canvas-modes.js";
+import { moveKinetic } from "./particle-kinetics.js";
+import { Fragments } from "./fragments.js";
 import { Circuits } from "./circuits.js";
 import { Missiles } from "./missiles.js";
 import { defaultMechanics } from "./mechanics-options.js";
@@ -58,6 +61,7 @@ export class World {
     for (const key of rigidFields) this[key] = new Float32Array(this.length);
     this.elastic = new Elasticity(this);
     this.rigid = new RigidBodies(this);
+    this.fragments = new Fragments(this);
     this.particleFields = particleStateFields
       .filter((name) => ![...elasticFields, ...rigidFields].includes(name))
       .map((name) => this[name]);
@@ -74,6 +78,7 @@ export class World {
     this.energyBirths = 0;
     this.energyReactions = 0;
     this.fields = new Fields(width, height);
+    this.environment = new CanvasEnvironment(this);
     this.stickmen = new Stickmen(this);
     this.sound = new Acoustics(width, height);
     this.missiles = new Missiles(this);
@@ -131,6 +136,7 @@ export class World {
       this.count--;
     }
     if (this.elasticId[i]) {
+      this.fragments.removal(i);
       if (this.elastic.locations.delete(this.elasticId[i]))
         this.elastic.topologyDirty = true;
       if (this.rigid.locations.has(this.elasticId[i]))
@@ -177,6 +183,7 @@ export class World {
     }
     if (materials[id].rigid) this.rigid.add(i, connectElastic);
     this.updated[i] = this.tick;
+    this.environment?.seed(i);
     this.wake(i);
   }
   transform(i, id, ...state) {
@@ -333,7 +340,17 @@ export class World {
       this.circuits.register(i, this.cells[i]);
       this.circuits.register(j, this.cells[j]);
     }
-    if (this.elasticId[i] || this.elasticId[j])
+    // Orbital particles and fine debris also carry subpixel motion, even
+    // without a spring/rigid ID. Move their state with the particle.
+    if (
+      this.elasticId[i] ||
+      this.elasticId[j] ||
+      this.environment.kinetic ||
+      this.velocityX[i] ||
+      this.velocityY[i] ||
+      this.velocityX[j] ||
+      this.velocityY[j]
+    )
       for (let k = 0; k < this.elasticParticleFields.length; k++) {
         const field = this.elasticParticleFields[k];
         const value = field[i];
@@ -384,6 +401,7 @@ export class World {
       moveRay(this, i, x, y, m);
       return;
     }
+    if (moveKinetic(this, i, x, y)) return;
     const gas = m.gas,
       fall = gas ? (m.density > 0 ? 1 : -1) : 1,
       downX = this.gravityX,
@@ -505,6 +523,8 @@ export class World {
     this.rigid.world = this;
     this.tick++;
     this.sound.tick = this.tick;
+    this.environment.world = this;
+    this.environment.update(true);
     this.fields.border = this.border;
     this.fields.update(this);
     this.fields.beginForceSample();
@@ -572,6 +592,7 @@ export class World {
             const chunk = (y >> 4) * this.chunkWidth + cx,
               air = this.fields.index(x, y);
             if (
+              this.environment.kinetic ||
               materials[this.cells[i]].ray ||
               this.tick + 1 - this.motionStamp[chunk] < 30 ||
               this.tick % 8 === 0 ||
@@ -591,6 +612,8 @@ export class World {
     this.stickmen.step();
     this.missiles.world = this;
     this.missiles.step();
+    this.fragments.world = this;
+    this.fragments.step();
     this.sound.step(this);
   }
   explode(x, y, radius, product = 0) {

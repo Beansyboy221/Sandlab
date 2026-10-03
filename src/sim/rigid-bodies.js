@@ -78,6 +78,7 @@ export class RigidBodies {
         if (!id) continue;
         const j = this.locations.get(id);
         if (j === undefined) {
+          w.fragments.mark(i);
           w["bond" + d][i] = 0;
           continue;
         }

@@ -1,0 +1,72 @@
+// Fine debris uses granular movement instead of a separate body or spring graph.
+export const fragmentMaterials = [
+  [
+    "Wood Chips",
+    "powder",
+    "#bd9269",
+    0.65,
+    { burn: 220, ignite: 230, residue: "Ash", fragment: true },
+  ],
+  [
+    "Stone Gravel",
+    "powder",
+    "#a29d92",
+    2.7,
+    { melt: 1300, meltTo: "Lava", fragment: true },
+  ],
+  [
+    "Copper Granules",
+    "powder",
+    "#c78e6e",
+    8.9,
+    {
+      conductive: true,
+      conductivity: 0.4,
+      melt: 1085,
+      meltTo: "Molten Copper",
+      fragment: true,
+    },
+  ],
+  [
+    "Rubber Crumbs",
+    "powder",
+    "#766983",
+    1.1,
+    { burn: 300, ignite: 350, residue: "Ash", fragment: true },
+  ],
+  [
+    "Jelly Drops",
+    "liquid",
+    "#d58daf",
+    1.05,
+    { viscosity: 12, boil: 110, boilTo: "Steam", fragment: true },
+  ],
+  [
+    "Rope Fibers",
+    "powder",
+    "#b79e75",
+    0.8,
+    { burn: 180, ignite: 230, residue: "Ash", fragment: true },
+  ],
+  [
+    "Wax Shavings",
+    "powder",
+    "#dfcb96",
+    0.9,
+    {
+      melt: 60,
+      meltTo: "Liquid Wax",
+      burn: 240,
+      ignite: 250,
+      residue: "Smoke",
+      fragment: true,
+    },
+  ],
+  [
+    "Brick Rubble",
+    "powder",
+    "#be9a86",
+    2.4,
+    { melt: 1500, meltTo: "Lava", fragment: true },
+  ],
+];

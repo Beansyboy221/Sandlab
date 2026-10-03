@@ -7,6 +7,7 @@ export const shortcutDefinitions = [
   ["recolor", "Paint", ["o"]],
   ["erase", "Erase", ["e"]],
   ["select", "Select", ["v"]],
+  ["guide", "Guide", []],
   ["inspect", "Inspect", ["m"]],
   ["eyedropper", "Copy", ["i"]],
   ["warm", "Warm", ["h"]],

@@ -70,9 +70,17 @@ export class Airflow {
           -300,
           300,
         );
+        let buoyancyX = gx,
+          buoyancyY = gy;
+        if (world?.environment.kinetic) {
+          world.environment.sample(x * 4 + 2, y * 4 + 2);
+          buoyancyX = world.environment.x;
+          buoyancyY = world.environment.y;
+        }
         this.nextX[i] = clamp(
           vx[i] * 0.985 +
-            ((p[i] - (right < 0 ? 0 : p[right])) * 0.12 - gx * heatX * 0.0001) *
+            ((p[i] - (right < 0 ? 0 : p[right])) * 0.12 -
+              buoyancyX * heatX * 0.0001) *
               horizontal +
             diffuseX * 0.03 +
             (speed ? (windX - vx[i]) * 0.025 * horizontal : 0),
@@ -81,7 +89,8 @@ export class Airflow {
         );
         this.nextY[i] = clamp(
           vy[i] * 0.985 +
-            ((p[i] - (below < 0 ? 0 : p[below])) * 0.12 - gy * heatY * 0.0001) *
+            ((p[i] - (below < 0 ? 0 : p[below])) * 0.12 -
+              buoyancyY * heatY * 0.0001) *
               vertical +
             diffuseY * 0.03 +
             (speed ? (windY - vy[i]) * 0.025 * vertical : 0),

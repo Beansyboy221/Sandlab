@@ -402,10 +402,13 @@
         </footer>
         <div id="debug-panel" class="debug-panel" hidden></div>
       </section>
-      <aside class="palette" id="palette" aria-label="Material palette">
+      <aside class="palette" id="palette" aria-label="Materials and entities">
         <div class="palette-heading">
           <div>
-            <h1>Materials <span>92</span></h1>
+            <h1>
+              <span id="catalog-title">Materials</span>
+              <span id="catalog-total">62</span>
+            </h1>
           </div>
           <div class="palette-heading-actions">
             <button
@@ -424,6 +427,29 @@
               <span data-icon="close"></span>
             </button>
           </div>
+        </div>
+        <div class="catalog-tabs" role="tablist" aria-label="Browse">
+          <button
+            id="materials-tab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="materials"
+            data-catalog="materials"
+          >
+            Materials
+          </button>
+          <button
+            id="entities-tab"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="materials"
+            tabindex="-1"
+            data-catalog="entities"
+          >
+            Entities
+          </button>
         </div>
         <div class="search-box">
           <span data-icon="search"></span
@@ -444,7 +470,12 @@
           <span id="category-title">All materials</span
           ><span id="material-count">44</span>
         </div>
-        <div class="material-grid" id="materials"></div>
+        <div
+          class="material-grid"
+          id="materials"
+          role="tabpanel"
+          aria-labelledby="materials-tab"
+        ></div>
         <div class="material-detail" id="material-detail"></div>
       </aside>
     </main>
@@ -681,6 +712,18 @@
               <option value="blank">Empty canvas</option>
             </select></label
           >
+          <label>Canvas mode<select id="level-canvasMode"></select></label>
+          <label
+            >Mode strength <output id="level-modeStrength-value">100%</output
+            ><input
+              id="level-modeStrength"
+              type="range"
+              min="0"
+              max="200"
+              step="10"
+              value="100"
+              aria-label="Mode strength"
+          /></label>
           <label
             >Border type<select id="level-border">
               <option value="solid">Solid</option>

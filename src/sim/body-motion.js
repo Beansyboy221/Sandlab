@@ -29,12 +29,13 @@ function rollAtContact(solver, body, p, dt, gravity) {
     const correction = hit.depth + 2e-6;
     if (hit.axis === 0) next.x -= hit.sign * correction;
     else next.y -= hit.sign * correction;
+    w.environment.sample(p.x, p.y);
     const potential = Math.max(
       0,
       -body.mass *
         gravity *
-        ((next.x - p.x - p.vx * dt) * w.gravityX +
-          (next.y - p.y - p.vy * dt) * w.gravityY),
+        ((next.x - p.x - p.vx * dt) * w.environment.x +
+          (next.y - p.y - p.vy * dt) * w.environment.y),
     );
     const kinetic =
       0.5 *
@@ -113,12 +114,15 @@ export function stepBodies(solver) {
         : 0,
       gravity = 0.16 * (1 - buoyancy),
       drag = liquid ? 0.96 : 0.999;
+    w.environment.sample(p.x, p.y);
+    const localX = w.environment.x,
+      localY = w.environment.y;
     p.vx = clamp(
-      (p.vx + gravity * w.gravityX + (pressureX * 0.012) / body.mass) * drag,
+      (p.vx + gravity * localX + (pressureX * 0.012) / body.mass) * drag,
       2.5,
     );
     p.vy = clamp(
-      (p.vy + gravity * w.gravityY + (pressureY * 0.012) / body.mass) * drag,
+      (p.vy + gravity * localY + (pressureY * 0.012) / body.mass) * drag,
       2.5,
     );
     p.omega = clamp(
@@ -191,12 +195,13 @@ function stabilizeSupports(solver) {
     if (!solver.collidedBodies.has(body.ids[0])) continue;
     const p = solver.pose(body);
     if (!p) continue;
+    w.environment.sample(p.x, p.y);
     const hit = solver.plan(
       body,
       {
         ...p,
-        x: p.x + w.gravityX * 0.05 + p.vx * 0.01,
-        y: p.y + w.gravityY * 0.05 + p.vy * 0.01,
+        x: p.x + w.environment.x * 0.05 + p.vx * 0.01,
+        y: p.y + w.environment.y * 0.05 + p.vy * 0.01,
       },
       true,
     );
