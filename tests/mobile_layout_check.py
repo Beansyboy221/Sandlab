@@ -30,9 +30,16 @@ with sync_playwright() as p:
         c=browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,device_scale_factor=3);c.route('http://sandlab.test/**',serve)
         page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.locator('#play-btn').tap()
         page.evaluate("sandlab.settings.set('autosave',false);sandlab.world.clear();sandlab.world.background='#223344';sandlab.renderer.bloom=false;sandlab.renderer.cursor=null")
-        assert page.locator('#level-width,#level-height,.canvas-resize-handle').count()==0
+        assert page.locator('#level-resolution,.canvas-resize-handle').count()==0
         assert page.locator('#controls-toggle').inner_text()==''
         fit(page)
+        page.locator('#level-properties-btn').tap()
+        assert page.locator('#level-width').is_visible() and page.locator('#level-height').is_visible()
+        actual=page.evaluate('[sandlab.world.width,sandlab.world.height]')
+        assert [int(page.locator('#level-width').input_value()),int(page.locator('#level-height').input_value())]==actual
+        assert page.locator('.level-dimensions input:disabled').count()==1
+        assert int(page.locator('.level-dimensions input:disabled').input_value())==max(actual)
+        page.keyboard.press('Escape')
         # A world with a different aspect still fills, without cropping its grid.
         page.evaluate('''async()=>{const{World}=await import('./src/sim/world.js');const{snapshot}=await import('./src/persistence.js');const w=new World(120,240);w.background='#223344';w.set(50*120+30,3);sandlab.restore(snapshot(w));window.rotationBefore=JSON.stringify(sandlab.snapshot().arrays);window.rotationDimensions=[w.width,w.height];}''')
         for angle,ww,hh in [(90,844,390),(-90,844,390),(180,width,height),(0,width,height)]:
@@ -74,10 +81,10 @@ with sync_playwright() as p:
         page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'fitted-rotation-{width}.png'))
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors
         c.close()
-    # Desktop has neither resolution inputs nor resizing handles; metadata remains editable.
+    # Desktop displays both editable dimensions; metadata remains editable.
     c=browser.new_context(viewport={'width':1440,'height':900});c.route('http://sandlab.test/**',serve);page=c.new_page();page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
-    page.locator('#new-canvas-btn').click();assert page.locator('#level-resolution').is_hidden();assert page.locator('#level-width,#level-height,.canvas-resize-handle').count()==0
+    page.locator('#new-canvas-btn').click();assert page.locator('#level-width').is_visible() and page.locator('#level-height').is_visible();assert page.locator('#level-resolution,.canvas-resize-handle').count()==0
     page.locator('#level-name').fill('Screen-sized canvas');page.locator('#level-submit').click();assert page.evaluate('sandlab.world.name')=='Screen-sized canvas'
-    page.locator('#level-properties-btn').click();assert page.locator('#level-resolution').is_hidden();page.keyboard.press('Escape')
+    page.locator('#level-properties-btn').click();assert page.locator('#level-width').is_visible() and page.locator('#level-height').is_visible();page.keyboard.press('Escape')
     c.close();browser.close()
-print(json.dumps({'no_letterboxing_any_aspect':'pass','rotation_preserves_particle_grid':'pass','gravity_screen_down':'pass','rotated_touch_paint_copy_inspect_zoom_pan':'pass','bottom_controls_phone_tablet':'pass','removed_size_fields_and_handles':'pass'}))
+print(json.dumps({'no_letterboxing_any_aspect':'pass','rotation_preserves_particle_grid':'pass','gravity_screen_down':'pass','rotated_touch_paint_copy_inspect_zoom_pan':'pass','bottom_controls_phone_tablet':'pass','visible_dimensions_and_no_resize_handles':'pass'}))

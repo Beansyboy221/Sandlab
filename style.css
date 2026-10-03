@@ -1492,7 +1492,10 @@ dialog::backdrop {
 .tool-properties {
   display: flex;
   align-items: center;
-  margin-left: auto;
+  margin: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
 }
 .property-group {
   display: flex;
@@ -2519,11 +2522,6 @@ dialog::backdrop {
   min-height: 44px;
 }
 
-.canvas-resolution input {
-  min-height: 44px;
-  font-size: 16px;
-}
-
 /* Draw properties stay beside the material picker and never cover the world. */
 .material-controls {
   display: flex;
@@ -2847,4 +2845,42 @@ dialog::backdrop {
   body:not(.mobile-layout) .toolbox > .tool-divider {
     display: none;
   }
+}
+
+/* Tool properties wrap inside the same bounded group as the tool and brush. */
+.draw-controls {
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 6px;
+}
+.topline-right .view-control {
+  position: static;
+  display: flex;
+  margin: 0;
+  padding: 0;
+  gap: 4px;
+  min-width: 0;
+}
+.topline-right .view-control select {
+  max-width: 160px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+.level-dimensions input {
+  font-size: 16px;
+}
+.level-dimensions .derived-dimension {
+  color: #71818b;
+}
+.level-dimensions input:disabled {
+  opacity: 1;
+  color: #71818b;
+  background: #1b242a;
+  border-color: #293941;
+  cursor: not-allowed;
+  -webkit-text-fill-color: #71818b;
 }

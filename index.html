@@ -82,7 +82,19 @@
             ><span class="world-type"> / SANDBOX</span>
           </div>
           <div class="topline-right">
-            <span id="world-resolution">320 × 200</span>
+            <div class="view-control">
+              <span data-icon="layers"></span
+              ><select id="view" aria-label="Visualization mode">
+                <option value="normal">Natural view</option>
+                <option value="heat">Temperature</option>
+                <option value="pressure">Pressure</option>
+                <option value="wind">Airflow</option>
+                <option value="echo">Echolocation</option>
+              </select>
+            </div>
+            <button id="exit-focus-btn" class="property-button">
+              Exit focus
+            </button>
             <button
               id="level-properties-btn"
               class="icon-button small"
@@ -188,10 +200,8 @@
             </button>
           </div>
           <div class="tool-divider"></div>
-          <div class="draw-controls" role="group" aria-label="Tool and brush">
-            <span class="control-caption" aria-hidden="true"
-              >Tool &amp; brush</span
-            >
+          <div class="draw-controls" role="group" aria-label="Tool">
+            <span class="control-caption" aria-hidden="true">Tool</span>
             <select
               id="brush-tool"
               class="brush-tool"
@@ -218,17 +228,7 @@
                 aria-label="Brush radius"
               />
             </div>
-          </div>
-          <div class="tool-divider second-divider"></div>
-          <div class="material-controls" role="group" aria-label="Material">
-            <span class="control-caption" aria-hidden="true">Material</span
-            ><button
-              id="palette-toggle"
-              class="mobile-material"
-              aria-label="Open material palette"
-            >
-              <i></i><span>Sand</span><span data-icon="chevron"></span>
-            </button>
+
             <label id="device-facing-property" class="property-check" hidden
               >Facing
               <select id="device-facing" aria-label="Device facing">
@@ -251,8 +251,6 @@
               <span data-icon="layers" aria-hidden="true"></span
               ><span class="replace-label">Replace</span>
             </label>
-          </div>
-          <div class="utility-controls">
             <button
               id="deselect-selection"
               class="property-button"
@@ -366,20 +364,15 @@
               >
             </div>
           </div>
-          <div class="camera-controls" role="group" aria-label="View">
-            <span class="control-caption" aria-hidden="true">View</span>
-            <div class="view-control">
-              <span data-icon="layers"></span
-              ><select id="view" aria-label="Visualization mode">
-                <option value="normal">Natural view</option>
-                <option value="heat">Temperature</option>
-                <option value="pressure">Pressure</option>
-                <option value="wind">Airflow</option>
-                <option value="echo">Echolocation</option>
-              </select>
-            </div>
-            <button id="exit-focus-btn" class="property-button">
-              Exit focus
+          <div class="tool-divider second-divider"></div>
+          <div class="material-controls" role="group" aria-label="Material">
+            <span class="control-caption" aria-hidden="true">Material</span
+            ><button
+              id="palette-toggle"
+              class="mobile-material"
+              aria-label="Open material palette"
+            >
+              <i></i><span>Sand</span><span data-icon="chevron"></span>
             </button>
           </div>
         </div>
@@ -691,17 +684,28 @@
               autocomplete="off"
               required
           /></label>
-          <label class="canvas-resolution" hidden
-            >Short side · pixels<input
-              id="level-resolution"
-              type="number"
-              min="8"
-              max="512"
-              step="1"
-              inputmode="numeric"
-              value="200"
-              required
-          /></label>
+          <div class="level-dimensions">
+            <label
+              >Width · pixels<input
+                id="level-width"
+                type="number"
+                min="8"
+                max="512"
+                step="1"
+                inputmode="numeric"
+                required
+            /></label>
+            <label
+              >Height · pixels<input
+                id="level-height"
+                type="number"
+                min="8"
+                max="512"
+                step="1"
+                inputmode="numeric"
+                required
+            /></label>
+          </div>
           <label id="level-starter-row"
             >Starting world<select id="level-starter">
               <option value="blank">Empty canvas</option>

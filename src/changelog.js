@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.15.1",
+    date: "2026-10-03",
+    title: "Canvas dimensions and unified tool controls",
+    changes: [
+      "Canvas properties and New canvas always show Width and Height in pixels. Both are editable on desktop. Mobile grays out the longer dimension and calculates it from the shorter dimension and the drawing area. Resizing retains the positioned crop/placement preview and Undo.",
+      "The canvas resolution label is removed from the main screen. View is beside Canvas properties and Fullscreen, with compact controls available in mobile fullscreen.",
+      "The Tool group contains brush controls, Replace, device facing and every tool-specific property, including selection Copy, Paste and Deselect. Tool properties no longer have their own separate section.",
+    ],
+  },
+  {
     version: "1.15.0",
     date: "2026-10-03",
     title: "Porous flow and steadier mobile controls",

@@ -25,7 +25,22 @@ with sync_playwright() as p:
             assert page.locator('#world').bounding_box()['width']>before
             page.locator('#palette-toggle').click();assert page.locator('#palette').is_visible()
             assert page.locator('.play-controls .control-caption').is_visible()
-        assert page.locator('#zoom-in-btn,#zoom-out-btn').count()==0
+        assert page.locator('#zoom-in-btn,#zoom-out-btn,#world-resolution').count()==0
+        assert page.locator('.draw-controls').get_attribute('aria-label')=='Tool'
+        assert page.locator('.draw-controls > .control-caption').inner_text()=='Tool'
+        assert page.locator('.draw-controls #tool-properties,.draw-controls #deselect-selection,.draw-controls #replace-property,.draw-controls #device-facing-property').count()==4
+        assert page.locator('.topline-right #view').count()==1
+        assert page.locator('.toolbox #view,.toolbox > .utility-controls,.toolbox > .camera-controls').count()==0
+        assert page.locator('#view').is_visible()
+        if mobile:page.locator('#controls-toggle').click()
+        # Every tool's visible properties stay inside the Tool border on each layout.
+        for tool in ['paint','fill','recolor','erase','select','grab','warm','cool','wind','pressure','vacuum','inspect','guide','eyedropper']:
+            page.locator('#tool-picker-toggle').click();page.locator(f'[data-tool-option="{tool}"]').click()
+            if mobile:assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='true'
+            assert page.locator('.draw-controls').evaluate("group=>[...group.querySelectorAll('button,input,select,label')].filter(e=>e.getClientRects().length).every(e=>{const g=group.getBoundingClientRect(),b=e.getBoundingClientRect();return b.left>=g.left-1&&b.right<=g.right+1&&b.top>=g.top-1&&b.bottom<=g.bottom+1})"),tool
+        page.keyboard.press('b')
+        if mobile:page.locator('#controls-toggle').click()
+
         assert page.locator('.draw-controls #brush-control').count()==1
         assert page.locator('#speed').evaluate("e=>parseFloat(getComputedStyle(e).borderTopWidth)>0")
         assert page.locator('#categories button').evaluate_all("tabs=>tabs.every(t=>t.querySelector('svg[aria-hidden=true]') && !t.style.getPropertyValue('--color'))")

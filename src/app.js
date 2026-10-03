@@ -203,6 +203,7 @@ function updateToolProperties() {
   document.querySelector(".toolbox").dataset.materialTool =
     String(materialTool);
   $("palette-toggle").hidden = !materialTool;
+  document.querySelector(".material-controls").hidden = !materialTool;
   $("replace-property").hidden =
     !materialTool ||
     !!(materials[state.material].actor || materials[state.material].projectile);
@@ -779,7 +780,6 @@ $("confirm-clear").addEventListener("click", () => {
 function syncLevelDisplay() {
   mobileDock?.layout();
   $("world-name").textContent = world.name;
-  $("world-resolution").textContent = `${world.width} × ${world.height}`;
   document.querySelector(".world-type").textContent =
     ` / ${world.border.toUpperCase()}`;
   renderer.draw();
@@ -1192,7 +1192,6 @@ function frame(now) {
     frameCount = tickCount = 0;
     statsTime = now;
     $("fps").textContent = fps;
-    $("world-resolution").textContent = `${world.width} × ${world.height}`;
     $("particle-count").textContent =
       `${world.count.toLocaleString()} particles`;
     if (hover) {

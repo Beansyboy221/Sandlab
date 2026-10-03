@@ -575,3 +575,61 @@
   border-radius: 8px;
   background: #141f25;
 }
+
+/* View stays beside canvas properties, including the compact fullscreen HUD. */
+.mobile-layout .world-topline {
+  height: 44px;
+}
+.mobile-layout .world-topline > div:first-child {
+  min-width: 0;
+  flex: 1;
+  gap: 6px;
+}
+.mobile-layout #world-name {
+  min-width: 0;
+}
+.mobile-layout .topline-right {
+  flex: none;
+  gap: 4px;
+}
+.mobile-layout .topline-right .view-control select {
+  max-width: 110px;
+  min-height: 44px;
+}
+.mobile-layout .topline-right .icon-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.mobile-layout .topline-right .view-control > span {
+  display: none;
+}
+.mobile-layout .toolbox:not(.expanded) .draw-replace,
+.mobile-layout .toolbox:not(.expanded) #device-facing-property {
+  display: none;
+}
+.mobile-layout .toolbox.expanded .draw-controls .tool-properties {
+  flex: 1 1 100%;
+  gap: 8px;
+}
+.mobile-layout .toolbox.expanded .draw-controls .property-group {
+  flex-wrap: wrap;
+}
+.canvas-focus .world-topline {
+  position: absolute;
+  display: flex;
+  z-index: 8;
+  top: max(6px, env(safe-area-inset-top));
+  right: max(6px, env(safe-area-inset-right));
+  height: 44px;
+  margin: 0;
+}
+.canvas-focus .world-topline > div:first-child,
+.canvas-focus #fullscreen-btn {
+  display: none;
+}
+.mobile-layout.canvas-focus .world-topline {
+  right: max(64px, calc(env(safe-area-inset-right) + 58px));
+}
+.mobile-layout.canvas-focus #exit-focus-btn {
+  display: none;
+}

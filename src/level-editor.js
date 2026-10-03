@@ -51,7 +51,12 @@ export class LevelEditor {
     this.inputs.modeStrength.addEventListener("input", () => {
       this.strengthOutput.value = `${this.inputs.modeStrength.value}%`;
     });
-    this.resolution = dialog.querySelector("#level-resolution");
+    this.axes = {
+      width: dialog.querySelector("#level-width"),
+      height: dialog.querySelector("#level-height"),
+    };
+    for (const input of Object.values(this.axes))
+      input.addEventListener("input", () => this.syncDimensions());
     this.preview = dialog.querySelector("#resize-preview");
     this.context = this.preview.getContext("2d", { alpha: false });
     this.particles = document.createElement("canvas");
@@ -168,19 +173,30 @@ export class LevelEditor {
       : "New canvas";
     const mobile = document.body.classList.contains("mobile-layout"),
       box = this.renderer.canvas.getBoundingClientRect();
-    this.resolution.closest("label").hidden = !mobile;
     const limit = canvasResolutionLimit(box.width, box.height);
-    this.resolution.value = editing
-      ? Math.min(this.world.width, this.world.height)
-      : Math.min(limit, this.world.width, this.world.height);
-    this.startResolution = Number(this.resolution.value);
-    this.resolution.max = limit;
-    this.dialog.querySelector("#level-note").textContent =
-      editing && mobile
-        ? "Canvas shape follows the screen. Changing resolution lets you place the kept area before applying it."
-        : editing
-          ? "Canvas shape follows the drawing area."
-          : "The current canvas remains available in Undo.";
+    const size = editing
+      ? values
+      : fittedCanvasSize(
+          Math.min(limit, this.world.width, this.world.height),
+          box.width,
+          box.height,
+          this.renderer.rotation,
+        );
+    this.startSize = { width: size.width, height: size.height };
+    this.shortAxis = size.width <= size.height ? "width" : "height";
+    for (const [axis, input] of Object.entries(this.axes)) {
+      input.value = size[axis];
+      input.disabled = mobile && axis !== this.shortAxis;
+      input.max = mobile && axis === this.shortAxis ? limit : 512;
+      input
+        .closest("label")
+        .classList.toggle("derived-dimension", input.disabled);
+    }
+    this.dialog.querySelector("#level-note").textContent = editing
+      ? mobile
+        ? "The longer dimension follows the drawing area. Place the kept area before applying a resize."
+        : "Place the kept area before applying a resize."
+      : "The current canvas remains available in Undo.";
     this.showFields();
     this.openDialog(this.dialog.id);
   }
@@ -194,26 +210,46 @@ export class LevelEditor {
           ? "Apply changes"
           : "Create canvas";
   }
-  dimensions() {
-    if (this.editing && Number(this.resolution.value) === this.startResolution)
-      return { width: this.world.width, height: this.world.height };
-    const resolution = Number(this.resolution.value);
-    if (!Number.isInteger(resolution) || resolution < 8 || resolution > 512)
-      throw Error("Choose a whole-pixel resolution between 8 and 512.");
-    const box = this.renderer.canvas.getBoundingClientRect(),
-      limit = canvasResolutionLimit(box.width, box.height);
-    if (document.body.classList.contains("mobile-layout") && resolution > limit)
-      throw Error(`Choose 8–${limit} pixels for this screen.`);
-    return fittedCanvasSize(
-      resolution,
+  syncDimensions() {
+    const short = this.axes[this.shortAxis];
+    const longAxis = this.shortAxis === "width" ? "height" : "width";
+    if (!this.axes[longAxis].disabled || !short.value) return;
+    // Reverting the short side cancels the resize, even if the viewport changed.
+    if (
+      this.editing &&
+      Number(short.value) === this.startSize[this.shortAxis]
+    ) {
+      this.axes[longAxis].value = this.startSize[longAxis];
+      return;
+    }
+    const box = this.renderer.canvas.getBoundingClientRect();
+    const size = fittedCanvasSize(
+      Number(short.value),
       box.width,
       box.height,
       this.renderer.rotation,
     );
+    this.axes[longAxis].value = Math.max(size.width, size.height);
+  }
+  dimensions() {
+    if (this.editing && !this.sizeChanged())
+      return { width: this.world.width, height: this.world.height };
+    const width = Number(this.axes.width.value),
+      height = Number(this.axes.height.value);
+    if (this.axes.width.disabled || this.axes.height.disabled) {
+      const box = this.renderer.canvas.getBoundingClientRect();
+      const limit = canvasResolutionLimit(box.width, box.height);
+      if (Number(this.axes[this.shortAxis].value) > limit)
+        throw Error(`Choose 8–${limit} pixels for this screen.`);
+    }
+    return { width, height };
   }
   sizeChanged() {
     return (
-      this.editing && Number(this.resolution.value) !== this.startResolution
+      this.editing &&
+      Object.entries(this.axes).some(
+        ([axis, input]) => Number(input.value) !== this.startSize[axis],
+      )
     );
   }
   values() {
