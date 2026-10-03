@@ -1,3 +1,4 @@
+import { releaseForChange } from "./absorption.js";
 import { CanvasEnvironment } from "./canvas-modes.js";
 import { PorousFlow, poreExchange } from "./porous-flow.js";
 import { moveKinetic } from "./particle-kinetics.js";
@@ -53,6 +54,8 @@ export class World {
     this.growth = new Uint8Array(this.length);
     this.storedLiquid = new Uint8Array(this.length);
     this.storedAmount = new Uint8Array(this.length);
+    // Unsaved scheduler scratch; storage itself travels in particleStateFields.
+    this.poreUpdated = new Uint32Array(this.length);
     for (const key of portalFields)
       this[key] =
         key === "portalCooldown"
@@ -180,8 +183,10 @@ export class World {
     this.moisture[i] = id === M.Mud ? 220 : id === M.Plant ? 80 : 0;
     this.nutrition[i] = materials[id].nutrition || 0;
     this.growth[i] = 0;
-    this.storedLiquid[i] = 0;
-    this.storedAmount[i] = 0;
+    const water = id === M.Mud ? 2 : id === M["Wet Clay"] ? 1 : 0;
+    this.storedLiquid[i] = water ? M.Water : 0;
+    this.storedAmount[i] = water;
+    this.poreUpdated[i] = 0;
     this.chargedAt[i] = 0;
     this.charge[i] = 0;
     this.cooldown[i] = 0;
@@ -201,7 +206,22 @@ export class World {
   }
   transform(i, id, ...state) {
     if (i < 0 || materials[this.cells[i]]?.static) return false;
+    if (!this.storedAmount[i]) {
+      this.set(i, id, ...state);
+      return true;
+    }
+    if (!releaseForChange(this, i, id)) return false;
+    const amount = this.storedAmount[i],
+      type = this.storedLiquid[i],
+      food = this.nutrition[i],
+      moisture = this.moisture[i];
     this.set(i, id, ...state);
+    if (amount) {
+      this.storedAmount[i] = amount;
+      this.storedLiquid[i] = type;
+      this.nutrition[i] = food;
+      this.moisture[i] = moisture;
+    }
     return true;
   }
   wake(i) {
@@ -226,6 +246,7 @@ export class World {
     }
   }
   clear() {
+    this.poreUpdated.fill(0);
     this.portals.clear();
     for (const key of portalFields) this[key].fill(0);
     this.stickmen.world = this;
@@ -614,25 +635,14 @@ export class World {
           react(this, i, x, y);
           if (
             this.cells[i] === M.Fan &&
-            this.mechanics.windSimulation !== false
+            this.mechanics.pressureSimulation !== false
           ) {
             for (let d = 2; d < 15; d++) {
               const nx = x + d;
-              const j = this.index(nx, y),
-                next = this.index(nx + 1, y);
+              const j = this.index(nx, y);
               if (j < 0) break;
               if (this.fields.blocks(this.cells[j])) break;
               this.fields.airflow.impulse(this.fields, nx, y, 1, 0, 0.4);
-              if (j >= 0 && materials[this.cells[j]].rigid)
-                this.velocityX[j] += 0.08;
-              if (
-                this.cells[j] &&
-                materials[this.cells[j]].movable &&
-                !materials[this.cells[j]].rigid
-              ) {
-                if (next < 0 && this.border === "void") this.set(j, 0);
-                else if (next >= 0 && !this.cells[next]) this.swap(j, next);
-              }
             }
           } else if (this.cells[i]) {
             // Only movement sleeps. Heat and chemistry continue in settled chunks.

@@ -66,11 +66,9 @@ export function stepMachine(w, a) {
   if (m.vehicle === "drone" && motor) vertical *= 0.7;
   else vertical = clamp(vertical + 0.075 * gravityScale, -3, 2.5);
   const across = tangent * 0.75 + drive * 0.25;
-  const f = w.fields.forceGradient(a.x, a.y);
-  a.vx =
-    tx * across + gx * vertical + clamp(w.fields.gradientX[f], -3, 3) * 0.01;
-  a.vy =
-    ty * across + gy * vertical + clamp(w.fields.gradientY[f], -3, 3) * 0.01;
+  w.fields.forceAt(a.x, a.y, 0.01, 0.01);
+  a.vx = tx * across + gx * vertical + clamp(w.fields.forceX, -0.05, 0.05);
+  a.vy = ty * across + gy * vertical + clamp(w.fields.forceY, -0.05, 0.05);
   const contact = portalContact(w, a.x, a.y, a.vx, a.vy, 2.2);
   if (contact >= 0 && transportMissile(w, a, contact)) return true;
   let impact = 0;

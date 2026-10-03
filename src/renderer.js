@@ -1,3 +1,4 @@
+import { flowColor, drawStreamlines } from "./airflow-view.js";
 import { drawCircuits } from "./sim/circuit-renderer.js";
 import { portalColor, drawPortalLinks } from "./portal-renderer.js";
 import { LightOverlay } from "./lighting-renderer.js";
@@ -177,36 +178,7 @@ export class Renderer {
     return { x: (point.x - v.x) / v.scale, y: (point.y - v.y) / v.scale };
   }
   drawAirflow(c, v) {
-    const f = this.world.fields;
-    c.strokeStyle = "#b8f0eea0";
-    c.lineWidth = Math.max(1, v.scale * 0.45);
-    c.beginPath();
-    for (let y = 6; y < this.world.height; y += 12)
-      for (let x = 6; x < this.world.width; x += 12) {
-        if (f.blocks(this.world.cells[y * this.world.width + x])) continue;
-        f.airflow.sample(f, x, y);
-        const speed = Math.hypot(f.airflow.x, f.airflow.y);
-        if (speed < 0.04) continue;
-        const dx = f.airflow.x / speed,
-          dy = f.airflow.y / speed;
-        const length = Math.min(7, 2 + speed * 3) * v.scale;
-        const sx = v.x + x * v.scale,
-          sy = v.y + y * v.scale;
-        const ex = sx + dx * length,
-          ey = sy + dy * length;
-        c.moveTo(sx, sy);
-        c.lineTo(ex, ey);
-        c.moveTo(
-          ex - dx * 2 * v.scale - dy * v.scale,
-          ey - dy * 2 * v.scale + dx * v.scale,
-        );
-        c.lineTo(ex, ey);
-        c.lineTo(
-          ex - dx * 2 * v.scale + dy * v.scale,
-          ey - dy * 2 * v.scale - dx * v.scale,
-        );
-      }
-    c.stroke();
+    drawStreamlines(c, v, this.world);
   }
   draw() {
     this.world.portals.ensure();
@@ -301,13 +273,13 @@ export class Renderer {
             g += nutrition * 28;
             r -= nutrition * 12;
           }
-          if (id === M.Sponge) {
-            const amount = this.world.storedAmount[i] / 48,
+          if (this.world.storedAmount[i]) {
+            const amount = this.world.storedAmount[i] / materials[id].porosity,
               liquid = colors[this.world.storedLiquid[i]];
             r = r * (1 - amount * 0.65) + liquid[0] * amount * 0.65;
             g = g * (1 - amount * 0.65) + liquid[1] * amount * 0.65;
             b = b * (1 - amount * 0.65) + liquid[2] * amount * 0.65;
-            if (variant[i] < 60) {
+            if (id === M.Sponge && variant[i] < 60) {
               r *= 0.75;
               g *= 0.75;
               b *= 0.75;
@@ -360,13 +332,23 @@ export class Renderer {
       }
       if (wind) {
         fields.airflow.sample(fields, x, y);
-        const speed = Math.min(
-          1,
-          Math.hypot(fields.airflow.x, fields.airflow.y) / 1.5,
-        );
-        r = r * 0.4 + 48 * speed;
-        g = g * 0.4 + 198 * speed;
-        b = b * 0.4 + 224 * speed;
+        flowColor(fields.airflow.x, fields.airflow.y, this);
+        r = r * 0.35 + this.flowR;
+        g = g * 0.35 + this.flowG;
+        b = b * 0.35 + this.flowB;
+        if (fields.blocks(id) > 0.5) {
+          const fi = fields.forceGradient(x, y);
+          const stress = Math.min(
+            0.95,
+            (Math.abs(fields.gradientX[fi]) + Math.abs(fields.gradientY[fi])) /
+              14,
+          );
+          const suction =
+            (fields.pressure[fi] || fields.gradientPressure[fi]) < 0;
+          r = r * (1 - stress) + (suction ? 140 : 255) * stress;
+          g = g * (1 - stress) + (suction ? 104 : 175) * stress;
+          b = b * (1 - stress) + (suction ? 245 : 75) * stress;
+        }
       }
       if (echo) {
         const wave = this.world.sound.wave[fields.index(x, y)],

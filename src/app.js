@@ -371,12 +371,6 @@ function selectMaterial(id) {
   setTool(state.tool === "fill" && !entities ? "fill" : false);
   const m = materials[id];
   renderMaterials();
-  const details = $("material-detail");
-  details.replaceChildren();
-  const title = document.createElement("div");
-  title.className = "detail-title";
-  title.innerHTML = `<span class="swatch" style="--color:${m.color}">${materialIcon(isEntity(m) ? entityCategory(m) : m.paletteCategory)}</span><h2>${m.name}</h2><span class="detail-type">${isEntity(m) ? entityLabels[entityCategory(m)] : categoryLabels[m.paletteCategory] || m.category}</span>`;
-  details.append(title);
   $("palette-toggle").querySelector("i").style.background = m.color;
   $("palette-toggle").querySelector("span:not([data-icon])").textContent =
     m.name;

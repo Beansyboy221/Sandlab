@@ -30,14 +30,17 @@ export class Fields {
     this.obstaclesDirty = true;
     this.gradientX = new Float64Array(length);
     this.gradientY = new Float64Array(length);
+    this.gradientPressure = new Float32Array(length);
     this.gradientStamp = new Uint32Array(length);
     this.gradientEpoch = 0;
+    this.forceX = this.forceY = this.surfaceStress = 0;
+    this.stressWrites = 0;
     this.airflow = new Airflow(this.width, this.height);
     this.windEnabled = this.pressureEnabled = this.temperatureEnabled = true;
   }
   configure(mechanics) {
-    this.windEnabled = mechanics?.windSimulation !== false;
-    this.pressureEnabled = mechanics?.pressureSimulation !== false;
+    this.windEnabled = this.pressureEnabled =
+      mechanics?.pressureSimulation !== false;
     this.temperatureEnabled = mechanics?.temperatureSimulation !== false;
     if (!this.windEnabled) this.airflow.clear();
     if (!this.pressureEnabled) {
@@ -86,10 +89,47 @@ export class Fields {
     if (this.gradientStamp[i] !== this.gradientEpoch) {
       const fx = x >> 2,
         fy = y >> 2;
-      this.gradientX[i] = this.sample(fx - 1, fy) - this.sample(fx + 1, fy);
-      this.gradientY[i] = this.sample(fx, fy - 1) - this.sample(fx, fy + 1);
+      const left = this.sample(fx - 1, fy),
+        right = this.sample(fx + 1, fy),
+        up = this.sample(fx, fy - 1),
+        down = this.sample(fx, fy + 1);
+      this.gradientX[i] = left - right;
+      this.gradientY[i] = up - down;
+      this.gradientPressure[i] = left + right + up + down;
       this.gradientStamp[i] = this.gradientEpoch;
     }
+    return i;
+  }
+  // Pressure traction is sampled only on exposed faces, with reusable scalar
+  // outputs. Interiors add no duplicate force; uniform ambient load cancels.
+  surfaceForce(world, i) {
+    const x = i % world.width,
+      y = Math.floor(i / world.width);
+    const center = this.pressure[this.index(x, y)];
+    this.forceX = this.forceY = this.surfaceStress = 0;
+    if (!this.pressureEnabled) return;
+    for (let d = 0; d < 4; d++) {
+      const dx = d === 0 ? -1 : d === 1 ? 1 : 0,
+        dy = d === 2 ? -1 : d === 3 ? 1 : 0;
+      const j = world.index(x + dx, y + dy);
+      if (j >= 0 && this.blocks(world.cells[j]) >= 0.95) continue;
+      const p = this.sample(
+        Math.floor((x + dx * 4) / 4),
+        Math.floor((y + dy * 4) / 4),
+      );
+      this.forceX -= dx * p;
+      this.forceY -= dy * p;
+      this.surfaceStress = Math.max(this.surfaceStress, Math.abs(p - center));
+    }
+  }
+  // Moving actors use the same cached local pressure gradient and air velocity.
+  forceAt(x, y, pressure = 0.015, drag = 0.02) {
+    x = Math.max(0, Math.min(this.width * 4 - 1, x));
+    y = Math.max(0, Math.min(this.height * 4 - 1, y));
+    const i = this.forceGradient(x, y);
+    this.airflow.sample(this, x, y);
+    this.forceX = this.gradientX[i] * pressure + this.airflow.x * drag;
+    this.forceY = this.gradientY[i] * pressure + this.airflow.y * drag;
     return i;
   }
   add(x, y, value) {
@@ -169,6 +209,7 @@ export class Fields {
     this.add(x, y, heat * 0.0005);
   }
   update(world) {
+    this.stressWrites = 0;
     if (world) this.configure(world.mechanics);
     if (this.lastBorder !== this.border) {
       this.obstaclesDirty = true;

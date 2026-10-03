@@ -94,7 +94,7 @@ export class Circuits {
     }
   }
   fan(x, y, dx, dy) {
-    if (this.world.mechanics.windSimulation === false) return;
+    if (this.world.mechanics.pressureSimulation === false) return;
     const w = this.world;
     for (let d = 1; d <= 16; d++) {
       const j = w.index(x + dx * d, y + dy * d);

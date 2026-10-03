@@ -15,7 +15,7 @@ export const brushTools = [
   ["erase", "Erase", "eraser"],
   ["warm", "Warm", "warm"],
   ["cool", "Cool", "cool"],
-  ["wind", "Wind", "wind"],
+  ["wind", "Blow", "wind"],
   ["grab", "Grab", "hand"],
   ["select", "Select", "select"],
   ["inspect", "Inspect", "search"],
@@ -86,9 +86,18 @@ export function applyTool(
   power = 1,
 ) {
   if (![x, y, radius, dx, dy].every(Number.isFinite)) return;
-  if (tool === "wind" && w.mechanics.windSimulation === false) return;
-  w.missiles.brush(tool, x, y, radius, dx, dy, power, shape);
-  w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
+  if (["wind", "pressure", "vacuum"].includes(tool)) {
+    w.fields.configure(w.mechanics);
+    if (!w.fields.pressureEnabled) return;
+    w.fields.border = w.border;
+    w.fields.rebuildBarriers(w);
+  }
+  // Blow/Pressure/Vacuum write the shared field; entities feel its forces during
+  // their normal integration instead of receiving a second brush-only impulse.
+  if (!["wind", "pressure", "vacuum"].includes(tool)) {
+    w.missiles.brush(tool, x, y, radius, dx, dy, power, shape);
+    w.stickmen.brush(tool, x + 0.5, y + 0.5, radius, dx, dy, power, shape);
+  }
   if (tool === "erase-mobile") {
     w.elastic.world = w;
     w.elastic.cutBrush(x, y, radius, shape);

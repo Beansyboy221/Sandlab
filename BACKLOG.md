@@ -20,4 +20,4 @@
 
 - Extend gravity-relative character navigation and contact support around Planet cores; keep orbital forces shared and bounded.
 
-- Extend the local packed-grain pore model with calibrated saturation and capillary retention in porous solid bodies; preserve liquid mass and bound outlet routing work. Current pore transport exchanges granular cells rather than resolving subpixel fluid volumes.
+- Calibrate pore transport with more experimental beds; consider absorbed-fluid weight in rigid-body mass and interfacial wetting without increasing dry-world work. Shared integer reservoirs, permeability and retention now cover powders, solids, elastics and plant roots.

@@ -151,26 +151,10 @@ export function integrateBody(
         w.rigid.sync(body, pose);
       }
     }
-    const f = w.fields.index(
-      Math.max(0, Math.min(w.width - 1, a.x[n])),
-      Math.max(0, Math.min(w.height - 1, a.y[n])),
-    );
-    const px = w.fields.pressure[f];
-    if (Math.abs(px) > 2) {
-      vx +=
-        clamp(
-          w.fields.sample(a.x[n] - 2, a.y[n]) -
-            w.fields.sample(a.x[n] + 2, a.y[n]),
-          4,
-        ) * 0.045;
-      vy +=
-        clamp(
-          w.fields.sample(a.x[n], a.y[n] - 2) -
-            w.fields.sample(a.x[n], a.y[n] + 2),
-          4,
-        ) * 0.045;
-      a.health -= Math.max(0, Math.abs(px) - 10) * 0.05;
-    }
+    const f = w.fields.forceAt(a.x[n], a.y[n], 0.045, 0.02);
+    vx += clamp(w.fields.forceX, 0.3);
+    vy += clamp(w.fields.forceY, 0.3);
+    a.health -= Math.max(0, Math.abs(w.fields.pressure[f]) - 10) * 0.05;
     a.px[n] = a.x[n];
     a.py[n] = a.y[n];
     collide(

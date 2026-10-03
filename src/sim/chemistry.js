@@ -1,3 +1,4 @@
+import { releaseForChange } from "./absorption.js";
 import { M, materials } from "./materials.js";
 // Indexed symmetric contact rules run only for participating substances.
 // Each reaction consumes its two reactants once and carries their heat forward.
@@ -9,9 +10,7 @@ function pair(a, b, resultA, resultB, options = {}) {
 }
 pair(M.Water, M.Salt, M.Brine, 0);
 pair(M.Water, M.Cement, 0, M.Concrete);
-pair(M.Water, M.Clay, 0, M["Wet Clay"]);
 pair(M.Water, M.Fertilizer, M.Water, 0, { dissolveNutrition: true });
-pair(M.Water, M.Dirt, 0, M.Mud, { chance: 0.035, hydrateSoil: true });
 for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
   pair(acid.id, M["Baking Soda"], M.Water, M["CO2"], {
     pressure: 4,
@@ -57,6 +56,11 @@ function contact(w, i, j, row, x, y) {
   )
     return false;
   const forward = w.cells[i] === rule.a;
+  if (
+    !releaseForChange(w, i, forward ? rule.resultA : rule.resultB) ||
+    !releaseForChange(w, j, forward ? rule.resultB : rule.resultA)
+  )
+    return false;
   if (rule.dissolveNutrition) {
     const water = forward ? i : j,
       fertilizer = forward ? j : i;
@@ -65,16 +69,6 @@ function contact(w, i, j, row, x, y) {
       w.nutrition[water] + (w.nutrition[fertilizer] || 96),
     );
     w.transform(fertilizer, 0);
-    return true;
-  }
-  if (rule.hydrateSoil) {
-    const water = forward ? i : j,
-      soil = forward ? j : i;
-    const food = Math.min(255, w.nutrition[soil] + w.nutrition[water]);
-    w.moisture[soil] = Math.min(255, w.moisture[soil] + 64);
-    if (w.moisture[soil] > 220) w.transform(soil, M.Mud, w.temp[soil]);
-    w.nutrition[soil] = food;
-    w.transform(water, 0);
     return true;
   }
   const temperature = Math.min(
@@ -132,8 +126,7 @@ export function dissolveOrganic(w, i, x, y) {
   if (w.random() >= 0.06) return;
   w.eachNeighbor(x, y, (j) => {
     if (w.cells[i] === M.Lye && materials[w.cells[j]].organic) {
-      w.transform(j, 0);
-      w.transform(i, M.Water, w.temp[i]);
+      if (w.transform(j, 0)) w.transform(i, M.Water, w.temp[i]);
     }
   });
 }

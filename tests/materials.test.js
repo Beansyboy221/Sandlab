@@ -113,7 +113,6 @@ test("neutralization and gas-generating contacts consume exactly one reactant pa
     ["Sodium", "Water", "Lye", "Hydrogen"],
     ["Liquid Sodium", "Brine", "Lye", "Hydrogen"],
     ["Water", "Fertilizer", "Water", "Empty"],
-    ["Water", "Clay", "Empty", "Wet Clay"],
   ])
     for (const reversed of [false, true]) {
       const w = sample(a, b);
@@ -258,8 +257,10 @@ test("inert gas blankets shorten flame life, while plants consume CO2 and releas
 });
 test("fertilizer has finite transported nutrition and boosts hydrated growth without growing dry plants", () => {
   const w = sample("Dirt", "Water");
+  w.set(230, M.Wall);
   w.nutrition[211] = 96;
   w.random = () => 0;
+  w.tick = 0;
   react(w, 210, 10, 10);
   assert.equal(w.nutrition[210], 96);
   assert.ok(w.moisture[210] > 0);

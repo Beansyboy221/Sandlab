@@ -187,16 +187,16 @@ export class Missiles {
         );
         a.angle += clamp(turn, -0.065, 0.065);
       }
-      const f = w.fields.forceGradient(a.x, a.y),
-        speed = w.mechanics.missileSpeed;
+      w.fields.forceAt(a.x, a.y, 0.015, 0.015);
+      const speed = w.mechanics.missileSpeed;
       a.vx =
         a.vx * 0.8 +
         Math.cos(a.angle) * speed * 0.2 +
-        clamp(w.fields.gradientX[f], -3, 3) * 0.015;
+        clamp(w.fields.forceX, -0.08, 0.08);
       a.vy =
         a.vy * 0.8 +
         Math.sin(a.angle) * speed * 0.2 +
-        clamp(w.fields.gradientY[f], -3, 3) * 0.015;
+        clamp(w.fields.forceY, -0.08, 0.08);
       if (w.environment.kinetic) {
         w.environment.sample(a.x, a.y);
         a.vx += w.environment.x * 0.05;
@@ -260,6 +260,11 @@ export class Missiles {
     return this.items.find((a) => Math.hypot(a.x - x, a.y - y) < radius + 1.3);
   }
   brush(tool, x, y, radius, dx = 0, dy = 0, power = 1, shape = "circle") {
+    if (tool === "wind") {
+      this.world.fields.rebuildBarriers(this.world);
+      this.world.fields.airflow.impulse(this.world.fields, x, y, dx, dy, power);
+      return;
+    }
     for (const a of this.items) {
       const inside =
         shape === "square"
@@ -270,9 +275,6 @@ export class Missiles {
       else if (tool === "grab") {
         a.x += dx;
         a.y += dy;
-      } else if (tool === "wind") {
-        a.vx += dx * 0.05 * power;
-        a.vy += dy * 0.05 * power;
       } else if (tool === "warm" || tool === "cool")
         a.temperature = clamp(
           a.temperature + (tool === "warm" ? 12 : -12) * power,

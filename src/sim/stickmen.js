@@ -104,6 +104,11 @@ export class Stickmen {
     );
   }
   brush(tool, x, y, radius, dx = 0, dy = 0, power = 1, shape = "circle") {
+    if (tool === "wind") {
+      this.world.fields.rebuildBarriers(this.world);
+      this.world.fields.airflow.impulse(this.world.fields, x, y, dx, dy, power);
+      return;
+    }
     if (!this.bodies.length) return;
     for (const a of this.bodies) {
       const { links } = actorProfile(a.material);
@@ -118,10 +123,6 @@ export class Stickmen {
           a.y[n] += dy;
           a.px[n] += dx;
           a.py[n] += dy;
-        }
-        if (tool === "wind") {
-          a.px[n] -= dx * 0.4 * power;
-          a.py[n] -= dy * 0.4 * power;
         }
         if (tool === "warm" || tool === "cool")
           a.heat[n] = Math.max(

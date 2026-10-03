@@ -69,14 +69,8 @@ export const settingGroups = [
     name: "Simulation",
     fields: [
       {
-        key: "windSimulation",
-        label: "Wind",
-        type: "toggle",
-        default: defaultMechanics.windSimulation,
-      },
-      {
         key: "pressureSimulation",
-        label: "Pressure",
+        label: "Air & pressure",
         type: "toggle",
         default: defaultMechanics.pressureSimulation,
       },
@@ -484,11 +478,14 @@ export class Settings {
     }
     try {
       const loaded = JSON.parse(raw);
-      if (loaded && typeof loaded === "object" && !Array.isArray(loaded))
+      if (loaded && typeof loaded === "object" && !Array.isArray(loaded)) {
+        // Both former switches now control a single compressible air system.
+        if (loaded.windSimulation === false) loaded.pressureSimulation = false;
         for (const key of Object.keys(definitions)) {
           const value = validate(key, loaded[key]);
           if (value !== undefined) this.values[key] = value;
         }
+      }
     } catch {
       /* Unavailable or damaged storage must never prevent drawing. */
     }

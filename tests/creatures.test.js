@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M } from "../src/sim/materials.js";
+import { applyTool } from "../src/sim/tools.js";
 import { actorProfile } from "../src/sim/creature-profiles.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 import { loadPreset } from "../src/presets.js";
@@ -200,8 +201,11 @@ test("idle grip does not cancel airborne momentum, fan impulses or detached-limb
     );
     run(w, 100);
     const before = a.x[2];
-    w.stickmen.brush("wind", a.x[2], a.y[2], 20, direction * 4, 0, 1);
-    run(w, 4);
+    // A sustained Blow brush now acts through pressure, not a body-only impulse.
+    for (let n = 0; n < 8; n++) {
+      applyTool(w, "wind", a.x[2], a.y[2], 20, "circle", direction * 4, 0, 1);
+      w.step();
+    }
     assert.ok(
       direction * (a.x[2] - before) > 0.3,
       "strong external forces overcome grip",

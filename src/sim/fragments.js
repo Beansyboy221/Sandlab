@@ -34,7 +34,10 @@ export class Fragments {
       oy = w.offsetY[i],
       vx = w.velocityX[i],
       vy = w.velocityY[i];
-    w.set(i, m.fragmentTo, temp, life);
+    if (!w.transform(i, m.fragmentTo, temp, life)) {
+      this.dirty = true;
+      return;
+    }
     w.pigment[i] = pigment;
     w.variant[i] = variant;
     w.charge[i] = charge;
@@ -73,6 +76,5 @@ export class Fragments {
     for (const i of pending) this.convert(i);
     // Conversion removes topology. Pending large pieces keep their damage marks
     // so another cut can simplify them without losing the original material.
-    this.dirty = false;
   }
 }

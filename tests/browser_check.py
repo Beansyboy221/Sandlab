@@ -404,9 +404,10 @@ with sync_playwright() as p:
     phone.set_viewport_size({'width':844,'height':390})
     phone.wait_for_timeout(150)
     assert phone.locator('#settings-dialog .dialog-close').bounding_box()['y'] >= 0
-    footer=phone.locator('.settings-footer').bounding_box()
-    assert phone.locator('.settings-panels').bounding_box()['y'] + phone.locator('.settings-panels').bounding_box()['height'] <= footer['y']
-    assert phone.locator('.settings-tabs').bounding_box()['y'] + phone.locator('.settings-tabs').bounding_box()['height'] <= footer['y']
+    actions=phone.locator('.settings-actions').bounding_box()
+    assert actions['y'] + actions['height'] <= phone.locator('.settings-tabs').bounding_box()['y']
+    assert phone.locator('.settings-panels').bounding_box()['y'] >= phone.locator('.settings-tabs').bounding_box()['y']
+    assert not phone.locator('#settings-storage-status').is_visible()
     phone.screenshot(path=str(ARTIFACTS / 'settings-mobile-landscape.png'))
     phone.locator('#reset-settings').tap()
     phone.locator('#settings-dialog .dialog-close').tap()

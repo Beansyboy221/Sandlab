@@ -200,8 +200,9 @@ export function cellProperties(world, point) {
   if (m.id)
     rows.push(
       ["Density", `${m.density.toFixed(2)} units`],
-      ["Porosity", `${Math.round(m.porosity * 100)}%`],
+      ["Porosity", `${m.porosity} liquid pixels`],
       ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
+      ["Retention", `${Math.round(m.retention * 100)}%`],
       ["Brittleness", `${Math.round(m.brittleness * 100)}%`],
     );
   if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
@@ -210,12 +211,12 @@ export function cellProperties(world, point) {
   if (world.nutrition[i])
     rows.push(["Nutrients", `${world.nutrition[i]} / 255`]);
   if (m.id === M.Plant) rows.push(["Growth depth", String(world.growth[i])]);
-  if (m.id === M.Sponge)
+  if (m.porosity)
     rows.push([
       "Absorbed",
       world.storedAmount[i]
-        ? `${materials[world.storedLiquid[i]].name} · ${world.storedAmount[i]} / 48`
-        : "Empty · 0 / 48",
+        ? `${materials[world.storedLiquid[i]].name} · ${world.storedAmount[i]} / ${m.porosity}`
+        : `Empty · 0 / ${m.porosity}`,
     ]);
   if (m.elasticity) {
     const { connections, stretch, tension } = world.elastic.measure(i);

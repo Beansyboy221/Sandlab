@@ -26,7 +26,7 @@ const gate = (name, rule, color) => [
     },
   ],
   [
-    "Rocket",
+    "Missile",
     "special",
     "#edbb86",
     2,
@@ -103,7 +103,7 @@ export const deviceMaterials = [
     },
   ],
   [
-    "Rocket",
+    "Missile",
     "special",
     "#edbb86",
     2,

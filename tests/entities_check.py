@@ -35,7 +35,7 @@ with sync_playwright() as p:
         assert page.locator('#materials .material').count()==32
         assert not set(page.locator('.material-name').all_text_contents()) & {'Sand','Water','Wood','Rope'}
         page.locator('[data-group=missiles]').click()
-        assert set(page.locator('.material-name').all_text_contents())=={'Seeking Missile','Guided Missile','Rocket'}
+        assert set(page.locator('.material-name').all_text_contents())=={'Seeking Missile','Guided Missile','Missile'}
         page.locator('#search').fill('guided');assert page.locator('.material-name').all_text_contents()==['Guided Missile']
         page.locator('#materials').get_by_role('button',name='Guided Missile',exact=True).click()
         assert page.evaluate('sandlab.state.material===M["Guided Missile"]&&sandlab.state.tool==="paint"')

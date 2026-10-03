@@ -163,19 +163,40 @@ export class Airflow {
       y >= this.height * 4
     )
       return;
-    const i = f.index(x, y),
-      length = Math.hypot(dx, dy) || 1;
-    this.velocityX[i] = clamp(
-      this.velocityX[i] + (dx / length) * 0.25 * power,
-      -MAX_AIR_SPEED,
-      MAX_AIR_SPEED,
-    );
-    this.velocityY[i] = clamp(
-      this.velocityY[i] + (dy / length) * 0.25 * power,
-      -MAX_AIR_SPEED,
-      MAX_AIR_SPEED,
-    );
+    const length = Math.hypot(dx, dy) || 1,
+      ux = dx / length,
+      uy = dy / length;
+    const fx = x >> 2,
+      fy = y >> 2,
+      i = fy * this.width + fx;
+    // Connected pressure dipoles drive a blower without injecting force through
+    // a wall. Face permeability also preserves one-pixel vent jets.
+    for (let axis = 0; axis < 2; axis++) {
+      const component = axis ? uy : ux;
+      if (!component) continue;
+      const sign = Math.sign(component);
+      for (let side = -1; side <= 1; side += 2) {
+        let tx = fx + (axis ? 0 : sign * side),
+          ty = fy + (axis ? sign * side : 0);
+        const inside =
+          tx >= 0 && ty >= 0 && tx < this.width && ty < this.height;
+        if (!inside && f.border !== "looping") continue;
+        tx = (tx + this.width) % this.width;
+        ty = (ty + this.height) % this.height;
+        const j = ty * this.width + tx;
+        const positive = sign * side > 0;
+        const open = axis
+          ? f.vertical[positive ? i : j]
+          : f.horizontal[positive ? i : j];
+        f.add(
+          tx * 4 + 2,
+          ty * 4 + 2,
+          -side * Math.abs(component) * 1.8 * power * open,
+        );
+      }
+    }
   }
+
   clear() {
     for (const key of airflowFields) this[key].fill(0);
     this.nextX.fill(0);

@@ -25,8 +25,11 @@ export function buildExperiment(w, id) {
       cup(x, ground - 12, size, 12);
       rect(x + 3, ground - 8, size - 6, 8, "Dirt");
       for (let yy = ground - 8; yy < ground; yy++)
-        for (let xx = x + 3; xx < x + size - 3; xx++)
-          w.moisture[yy * W + xx] = 210;
+        for (let xx = x + 3; xx < x + size - 3; xx++) {
+          w.moisture[yy * W + xx] = 160;
+          w.storedLiquid[yy * W + xx] = M.Water;
+          w.storedAmount[yy * W + xx] = 2;
+        }
       // Keep irrigation beside the bed: water underneath loose soil displaces it.
       rect(x + 3, ground - 8, 3, 8, "Water");
       for (let xx = x + 8; xx < x + size - 6; xx += 8)

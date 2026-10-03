@@ -1,6 +1,12 @@
 import { M, materials } from "./materials.js";
 export function changePhase(w, i, x, y, m) {
   const temperature = w.temp[i];
+  // Wet hosts vent through the shared pore model; do not manufacture another
+  // water pixel when the final stored unit has already boiled away.
+  if ((m.id === M.Mud || m.id === M["Wet Clay"]) && temperature > 100) {
+    if (w.storedAmount[i]) return false;
+    return w.transform(i, m.id === M.Mud ? M.Dirt : M.Clay, temperature);
+  }
   const dissolved = m.id === M.Water && w.nutrition[i] && temperature > m.boil;
   if (dissolved || (m.dry !== undefined && temperature > m.dry)) {
     // The dissolved/wet particle separates into vapor and dry material only when
@@ -57,7 +63,7 @@ export function changePhase(w, i, x, y, m) {
   else if (materials[target].category === "liquid" && m.gas)
     w.sound.emit("splash", x, y, 0.08);
   else if (materials[target].gas && !m.gas) w.sound.emit("boil", x, y, 0.2);
-  w.transform(i, target, temperature);
+  if (!w.transform(i, target, temperature)) return false;
   w.nutrition[i] = nutrition;
   if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;
   return true;

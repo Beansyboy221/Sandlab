@@ -13,7 +13,7 @@ export const shortcutDefinitions = [
   ["eyedropper", "Pick", []],
   ["warm", "Warm", []],
   ["cool", "Cool", []],
-  ["wind", "Wind", []],
+  ["wind", "Blow", []],
   ["pressure", "Pressure", []],
   ["vacuum", "Vacuum", []],
   ["smaller", "Smaller brush", []],

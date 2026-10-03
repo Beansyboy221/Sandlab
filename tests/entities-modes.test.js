@@ -39,7 +39,7 @@ test("catalogs are separate, complete, and preserve IDs for old creatures and de
     "Battery",
     "Drone",
     "Solar Cell",
-    "Rocket",
+    "Missile",
   ])
     assert.ok(paletteEntities.includes(materials[M[name]]), name);
 });

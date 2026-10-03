@@ -496,7 +496,6 @@
           role="tabpanel"
           aria-labelledby="materials-tab"
         ></div>
-        <div class="material-detail" id="material-detail"></div>
       </aside>
     </main>
     <div class="toast" id="toast" role="status"></div>
@@ -677,6 +676,17 @@
           <span data-icon="close"></span>
         </button>
       </div>
+      <div class="settings-actions">
+        <button id="reset-settings" class="quiet-button">
+          Reset preferences
+        </button>
+        <p
+          id="settings-storage-status"
+          class="settings-note"
+          role="status"
+          hidden
+        ></p>
+      </div>
       <div class="settings-layout">
         <nav
           class="settings-tabs"
@@ -685,12 +695,6 @@
         ></nav>
         <div class="settings-panels"></div>
       </div>
-      <footer class="settings-footer">
-        <p id="settings-storage-status" class="settings-note" role="status"></p>
-        <button id="reset-settings" class="quiet-button">
-          Reset preferences
-        </button>
-      </footer>
     </dialog>
     <dialog
       id="level-dialog"

@@ -405,12 +405,15 @@
 .mobile-layout .toolbox.expanded .edit-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 8px;
   min-width: 0;
   align-items: center;
+  padding: 10px;
+  border: 1px solid #3b515b;
+  border-radius: 8px;
 }
 .mobile-layout .toolbox.expanded .speed-control select {
-  padding: 8px 1px;
+  padding: 10px 12px;
   min-height: 44px;
 }
 .mobile-layout .toolbox.expanded .draw-controls,
@@ -427,7 +430,10 @@
   display: flex;
   flex-wrap: wrap;
   border-top: 1px solid var(--line);
-  padding-top: 8px;
+  padding: 10px;
+  gap: 10px;
+  border: 1px solid #3b515b;
+  border-radius: 8px;
 }
 .mobile-layout .toolbox.expanded .draw-controls .tool-picker-toggle {
   flex: 1;
@@ -525,17 +531,7 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
-.mobile-layout .material-detail {
-  display: block;
-  padding: 8px 0 0;
-}
-.mobile-layout .material-detail {
-  min-height: 0;
-  flex: none;
-}
-.mobile-layout .material-detail .detail-title {
-  display: none;
-}
+
 .mobile-layout .material-name {
   white-space: normal;
 }
@@ -554,9 +550,6 @@
 }
 .mobile-layout .toolbox:not(.expanded) .draw-replace {
   width: 44px;
-}
-.mobile-layout .material-detail {
-  display: none;
 }
 
 /* Expanded controls use the same visible group boundaries as the desktop. */
@@ -635,4 +628,17 @@
 }
 .mobile-layout.canvas-focus #exit-focus-btn {
   display: none;
+}
+
+.mobile-layout .category-tabs button {
+  min-height: 44px;
+}
+.mobile-layout .toolbox.expanded .brush-control {
+  min-width: 0;
+  margin: 0;
+}
+@media (max-width: 480px) {
+  .mobile-layout .toolbox.expanded {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

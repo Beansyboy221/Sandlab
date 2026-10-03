@@ -1,31 +1,17 @@
+import { consumeWater } from "./absorption.js";
 import { M } from "./materials.js";
-const porous = (id) =>
-  id === M.Plant || id === M.Dirt || id === M.Mud || id === M.Seed;
+const porous = (id) => id === M.Plant || id === M.Seed;
 export function grow(w, i, x, y) {
   const id = w.cells[i],
     moisture = w.moisture,
     nutrition = w.nutrition,
     above = w.relativeIndex(x, y, 0, -1),
     below = w.relativeIndex(x, y, 0, 1);
+  if ((id === M.Plant || id === M.Seed) && moisture[i] < 160)
+    consumeWater(w, i);
   if ((i + w.tick) % 4 === 0)
     w.eachNeighbor(x, y, (j) => {
-      if (w.cells[j] === M.Water && moisture[i] < 160 && w.random() < 0.08) {
-        nutrition[i] = Math.min(255, nutrition[i] + nutrition[j]);
-        moisture[i] = Math.min(255, moisture[i] + 80);
-        w.transform(j, 0);
-      } else if (
-        w.cells[j] === M.Sponge &&
-        (w.storedLiquid[j] === M.Water || w.storedLiquid[j] === M.Brine) &&
-        w.storedAmount[j] &&
-        moisture[i] < 160 &&
-        w.random() < 0.08
-      ) {
-        moisture[i] = Math.min(255, moisture[i] + 64);
-        const food = Math.ceil(nutrition[j] / w.storedAmount[j]);
-        nutrition[j] -= food;
-        nutrition[i] = Math.min(255, nutrition[i] + food);
-        if (--w.storedAmount[j] === 0) w.storedLiquid[j] = 0;
-      } else if (
+      if (
         w.cells[j] === M.Fertilizer &&
         moisture[i] >= 32 &&
         nutrition[i] < 190 &&
@@ -45,16 +31,12 @@ export function grow(w, i, x, y) {
       ) {
         w.transform(j, M.Oxygen, w.temp[j]);
         moisture[i] -= 2;
-      } else if (porous(w.cells[j])) {
+      } else if (porous(id) && porous(w.cells[j])) {
         if (nutrition[i] > nutrition[j] + 4 && moisture[i]) {
           const food = Math.min(6, (nutrition[i] - nutrition[j]) >> 2);
           nutrition[i] -= food;
           nutrition[j] += food;
         }
-        if (moisture[i] <= moisture[j] + 4) return;
-        const transfer = Math.min(12, (moisture[i] - moisture[j]) >> 2);
-        moisture[i] -= transfer;
-        moisture[j] += transfer;
       }
     });
   if ((i + w.tick) % 128 === 0 && moisture[i]) moisture[i]--;
@@ -62,16 +44,16 @@ export function grow(w, i, x, y) {
   if (id === M.Seed && below >= 0) {
     if (
       (w.cells[below] === M.Dirt || w.cells[below] === M.Mud) &&
-      moisture[below] > 24 &&
+      moisture[i] > 24 &&
       w.random() < 0.06 + (nutrition[i] ? 0.04 : 0)
     ) {
       const food = Math.min(16, nutrition[below]),
-        carried = nutrition[i];
+        carried = nutrition[i],
+        hydration = moisture[i];
       nutrition[below] -= food;
       w.transform(i, M.Plant);
       nutrition[i] = Math.min(255, carried + food);
-      moisture[i] = Math.min(80, moisture[below]);
-      moisture[below] -= 24;
+      moisture[i] = hydration - 8;
     }
   } else if (
     id === M.Plant &&

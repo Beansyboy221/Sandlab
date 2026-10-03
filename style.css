@@ -294,7 +294,7 @@ svg {
   background: transparent;
   color: #b6c4c6;
   font-size: 11px;
-  padding: 9px 16px 9px 5px;
+  padding: 10px 12px;
   cursor: pointer;
 }
 .speed-control select option,
@@ -302,6 +302,9 @@ svg {
   background: #192227;
 }
 .speed-control select {
+  min-height: 44px;
+  min-width: 76px;
+  font-variant-numeric: tabular-nums;
   border: 1px solid #3b515b;
   border-radius: 6px;
   background: #10191e;
@@ -333,22 +336,33 @@ svg {
 input[type="range"] {
   appearance: none;
   width: 100%;
-  height: 3px;
+  height: 44px;
   border-radius: 2px;
-  background: #3d4b4e;
+  background: transparent;
   cursor: pointer;
   margin: 0;
 }
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #45585c;
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #45585c;
+}
 input[type="range"]::-webkit-slider-thumb {
   appearance: none;
-  width: 11px;
-  height: 11px;
+  margin-top: -6px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--accent);
 }
 input[type="range"]::-moz-range-thumb {
-  width: 11px;
-  height: 11px;
+  width: 16px;
+  height: 16px;
   border: 0;
   border-radius: 50%;
   background: var(--accent);
@@ -693,35 +707,8 @@ kbd {
 .material.selected .material-name {
   color: #e7d2a3;
 }
-.material-detail {
-  margin-top: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 15px;
-  min-height: 52px;
-}
-.detail-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.detail-title .swatch {
-  width: 24px;
-  height: 24px;
-}
-.detail-title h2 {
-  font:
-    500 15px "Space Grotesk",
-    sans-serif;
-  margin: 0;
-}
-.detail-title .detail-type {
-  margin-left: auto;
-  text-transform: uppercase;
-  font-size: 7px;
-  letter-spacing: 1.1px;
-  color: #8c9da3;
-}
-.mobile-material,
+
+.detail-title .mobile-material,
 .mobile-only {
   display: none;
 }
@@ -1047,9 +1034,6 @@ dialog::backdrop {
   .palette h1 {
     font-size: 20px;
   }
-  .material-detail p {
-    font-size: 9px;
-  }
   .topbar {
     height: 66px;
   }
@@ -1262,12 +1246,7 @@ dialog::backdrop {
   .search-box input {
     font-size: 12px;
   }
-  .material-detail {
-    min-height: 52px;
-  }
-  .material-detail p {
-    font-size: 11px;
-  }
+
   .material-section-title {
     font-size: 9px;
   }
@@ -1362,10 +1341,7 @@ dialog::backdrop {
   .search-box {
     margin-bottom: 7px;
   }
-  .material-detail {
-    min-height: 52px;
-    padding-top: 8px;
-  }
+
   .canvas-tip {
     display: none;
   }
@@ -1421,9 +1397,7 @@ dialog::backdrop {
   .palette-heading {
     margin-bottom: 8px;
   }
-  .material-detail {
-    display: none;
-  }
+
   .palette .search-box {
     margin-bottom: 8px;
   }
@@ -1634,13 +1608,13 @@ dialog::backdrop {
   grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
   gap: 24px;
-  height: 340px;
+  height: 420px;
   max-height: calc(100dvh - 200px);
   min-height: 0;
   margin-top: 20px;
 }
 .settings-dialog .dialog-heading,
-.settings-footer {
+.settings-actions {
   flex-shrink: 0;
 }
 .settings-tabs {
@@ -1678,14 +1652,15 @@ dialog::backdrop {
 .settings-panels h3 {
   font-size: 15px;
   font-weight: 500;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
 }
 .setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 62px;
+  min-height: 72px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
@@ -1693,12 +1668,12 @@ dialog::backdrop {
   line-height: 1.5;
 }
 .setting-row select {
-  width: 145px;
-  max-width: 52%;
-  min-height: 42px;
+  width: 176px;
+  max-width: 55%;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  padding: 8px;
+  padding: 10px 12px;
   color: var(--text);
   background: var(--bg);
   font-size: 12px;
@@ -1741,13 +1716,13 @@ dialog::backdrop {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 155px;
-  max-width: 55%;
+  width: 190px;
+  max-width: 58%;
 }
 .setting-range-control input {
   min-width: 0;
   flex: 1;
-  height: 24px;
+  height: 44px;
   background: transparent;
 }
 .setting-range-control input::-webkit-slider-runnable-track {
@@ -1756,14 +1731,15 @@ dialog::backdrop {
   border-radius: 2px;
 }
 .setting-range-control input::-webkit-slider-thumb {
-  margin-top: -4px;
+  margin-top: -6px;
 }
 .setting-range-control input::-moz-range-track {
   height: 3px;
   background: #45585c;
 }
 .setting-range-control output {
-  min-width: 33px;
+  min-width: 42px;
+  font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--accent);
   font-size: 11px;
@@ -1777,21 +1753,24 @@ dialog::backdrop {
   line-height: 1.65;
   margin: 16px 0 0;
 }
-.settings-footer {
+.settings-actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid var(--line);
-  padding-top: 12px;
-  margin-top: 18px;
-}
-.settings-footer .settings-note {
-  margin: 0;
-}
-.settings-footer button {
+  gap: 16px;
   flex-shrink: 0;
-  font-size: 11px;
+  padding-top: 12px;
+}
+.settings-actions button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #3b515b;
+  border-radius: 7px;
+  background: #162127;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.settings-actions .settings-note {
+  margin: 0;
 }
 @media (max-width: 700px), (max-height: 500px) {
   #settings-btn {
@@ -1830,14 +1809,6 @@ dialog::backdrop {
   .setting-row {
     min-height: 64px;
     gap: 12px;
-  }
-  .settings-footer {
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .settings-footer .quiet-button {
-    padding: 8px 5px;
-    min-height: 44px;
   }
 }
 
@@ -2419,7 +2390,7 @@ dialog::backdrop {
   display: grid;
   grid-template-columns: 105px 1fr;
   align-items: center;
-  gap: 4px 12px;
+  gap: 10px 16px;
 }
 .color-sliders label {
   font-size: 11px;
@@ -2813,7 +2784,8 @@ dialog::backdrop {
     .toolbox
     > :is(.play-controls, .edit-controls, .draw-controls, .material-controls) {
     position: relative;
-    padding: 18px 6px 4px;
+    padding: 22px 10px 8px;
+    gap: 8px;
     border: 1px solid #3b515b;
     border-radius: 8px;
     background: #141f25;
@@ -2899,7 +2871,7 @@ dialog::backdrop {
 .draw-controls {
   flex-wrap: wrap;
   min-width: 0;
-  gap: 6px;
+  gap: 10px;
 }
 .topline-right .view-control {
   position: static;
@@ -2931,4 +2903,53 @@ dialog::backdrop {
   border-color: #293941;
   cursor: not-allowed;
   -webkit-text-fill-color: #71818b;
+}
+
+/* Spacious hit areas stay within the same groups; tracks remain visually thin. */
+.toolbox .brush-control {
+  min-width: 120px;
+  gap: 0;
+  margin: 0 4px;
+}
+.toolbox .property-group {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.toolbox
+  :is(
+    .property-button,
+    .property-check select,
+    .draw-replace,
+    .mobile-material,
+    .tool-picker-toggle
+  ) {
+  min-height: 44px;
+}
+body:not(.mobile-layout) .toolbox :is(.icon-button, .play-button) {
+  min-width: 44px;
+  min-height: 44px;
+}
+.material-grid {
+  gap: 10px;
+}
+.category-tabs {
+  gap: 8px;
+}
+.category-tabs button {
+  min-height: 40px;
+  padding: 10px 12px;
+}
+.setting-row input[type="range"] {
+  touch-action: pan-y;
+}
+@media (max-width: 380px) {
+  .setting-range {
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 12px 0;
+  }
+  .setting-range-control {
+    width: 100%;
+    max-width: none;
+  }
 }

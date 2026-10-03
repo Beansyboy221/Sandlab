@@ -1,99 +1,248 @@
 import { M, materials } from "./materials.js";
-const watery = (id) => materials[id].waterLike;
-export const absorbable = (id) =>
-  !!materials[id]?.absorbable || id === M.Oil || id === M.Kerosene;
-function mixWater(a, b) {
-  if (a === M.Brine || b === M.Brine) return M.Brine;
-  return b;
-}
-export function absorb(w, i, x, y) {
-  let type = w.storedLiquid[i],
-    amount = w.storedAmount[i];
-  const releasing =
-    w.cooldown[i] > 0 || Math.abs(w.fields.pressure[w.fields.index(x, y)]) > 3;
-  if (!releasing && (i + w.tick) % 3 === 0)
-    w.eachNeighbor(x, y, (j) => {
-      const liquid = w.cells[j];
-      if (liquid === M.Sponge) {
-        const other = w.storedAmount[j],
-          otherType = w.storedLiquid[j];
-        if (
-          amount > other + 3 &&
-          (!otherType ||
-            otherType === type ||
-            (watery(type) && watery(otherType)))
-        ) {
-          const transfer = Math.min(4, (amount - other) >> 2, 48 - other);
-          w.temp[j] =
-            (w.temp[j] * (other + 1) + w.temp[i] * transfer) /
-            (other + 1 + transfer);
-          w.storedAmount[j] += transfer;
-          w.storedLiquid[j] =
-            watery(type) && watery(otherType)
-              ? mixWater(type, otherType)
-              : type;
-          const food = Math.round((w.nutrition[i] * transfer) / amount);
-          w.nutrition[i] -= food;
-          w.nutrition[j] = Math.min(255, w.nutrition[j] + food);
-          amount -= transfer;
-        }
-        return;
-      }
-      if (
-        amount >= 48 ||
-        !absorbable(liquid) ||
-        (type && liquid !== type && !(watery(type) && watery(liquid)))
-      )
-        return;
-      const temperature = w.temp[j];
-      type = watery(type) && watery(liquid) ? mixWater(type, liquid) : liquid;
-      w.temp[i] = (w.temp[i] * (amount + 1) + temperature) / (amount + 2);
-      w.nutrition[i] = Math.min(255, w.nutrition[i] + w.nutrition[j]);
-      w.transform(j, 0);
-      amount++;
-    });
-  if (amount) {
-    const boiling = watery(type) && w.temp[i] > 100;
-    const burning =
-      materials[type].ignite && w.temp[i] > materials[type].ignite;
-    if (releasing || boiling || burning) {
-      // Release at most one stored cell per tick, without erasing neighboring particles.
-      for (let side = 0; side < 4; side++) {
-        const order = boiling || burning ? 3 - side : side;
-        const [dx, dy] = releases[order],
-          j = w.relativeIndex(x, y, dx, dy);
-        if ((j < 0 && w.border !== "void") || (j >= 0 && w.cells[j])) continue;
-        if (j >= 0) {
-          const food = Math.ceil(w.nutrition[i] / amount);
-          w.transform(
-            j,
-            boiling
-              ? materials[type].dryTo !== undefined || food
-                ? type
-                : M.Steam
-              : burning
-                ? M.Fire
-                : type,
-            boiling ? 120 : burning ? 680 : w.temp[i],
-          );
-          w.nutrition[i] -= food;
-          w.nutrition[j] = food;
-        } else w.nutrition[i] -= Math.ceil(w.nutrition[i] / amount);
-        amount--;
-        if (boiling || burning) w.fields.add(x, y, 0.8);
-        if (boiling) w.temp[i] = Math.max(90, w.temp[i] - 5);
-        break;
-      }
-      if (boiling && amount) w.temp[i] = Math.min(w.temp[i], 100);
-    }
-  }
-  w.storedLiquid[i] = amount ? type : 0;
-  w.storedAmount[i] = amount;
-}
 
-const releases = [
+export const absorbable = (id) => !!materials[id]?.absorbable;
+export const acceptsLiquid = (host, type) =>
+  !!materials[host]?.porosity &&
+  absorbable(type) &&
+  (!materials[host].waterOnly || !!materials[type].waterLike);
+const compatible = (a, b) =>
+  !a || a === b || (materials[a].waterLike && materials[b].waterLike);
+const mixed = (a, b) => (a === M.Brine || b === M.Brine ? M.Brine : b);
+const offsets = [
   [0, 1],
   [-1, 0],
   [1, 0],
   [0, -1],
 ];
+
+// One bounded four-neighbor pass per three ticks. Integer reservoirs use the
+// existing particle arrays; no particle objects, flood fills or wet-cell lists.
+export function absorb(w, i, x, y) {
+  const host = materials[w.cells[i]],
+    amount = w.storedAmount[i];
+  if (!host.porosity || !host.permeability) return;
+  const type = w.storedLiquid[i],
+    fluid = materials[type];
+  const boiling =
+    amount && fluid.waterLike && w.temp[i] > (fluid.dry ?? fluid.boil ?? 100);
+  const burning = amount && fluid.ignite && w.temp[i] > fluid.ignite;
+  if (amount && fluid.freeze !== undefined && w.temp[i] < fluid.freeze) return;
+  const forced =
+    amount &&
+    (w.cooldown[i] || Math.abs(w.fields.pressure[w.fields.index(x, y)]) > 3);
+  if (boiling || burning || forced) {
+    if (
+      forced &&
+      !boiling &&
+      !burning &&
+      w.random() >=
+        host.permeability *
+          (1 +
+            (w.cooldown[i]
+              ? 10
+              : Math.abs(w.fields.pressure[w.fields.index(x, y)])))
+    )
+      return;
+    release(
+      w,
+      i,
+      x,
+      y,
+      boiling
+        ? fluid.dryTo !== undefined || w.nutrition[i]
+          ? type
+          : M.Steam
+        : burning
+          ? M.Fire
+          : type,
+    );
+    if (boiling && w.storedAmount[i]) w.temp[i] = Math.min(w.temp[i], 100);
+    return;
+  }
+  if ((i + w.tick) % 3 || (w.inParticlePass && w.poreUpdated[i] === w.tick))
+    return;
+  if (w.random() >= host.permeability) return;
+  for (let side = 0; side < 4; side++) {
+    const [dx, dy] = offsets[side],
+      j = w.relativeIndex(x, y, dx, dy);
+    if (j < 0) continue;
+    const neighbor = materials[w.cells[j]],
+      a = w.storedAmount[i],
+      t = w.storedLiquid[i];
+    if (
+      acceptsLiquid(host.id, neighbor.id) &&
+      a < host.porosity &&
+      compatible(t, neighbor.id)
+    ) {
+      takeLiquid(w, i, j);
+    } else if (
+      a &&
+      neighbor.porosity &&
+      neighbor.permeability &&
+      acceptsLiquid(neighbor.id, t) &&
+      compatible(w.storedLiquid[j], t) &&
+      (!w.inParticlePass || w.poreUpdated[j] !== w.tick)
+    ) {
+      const b = w.storedAmount[j];
+      // Equalize saturation rather than raw amounts, so a large sponge can wet
+      // a small soil pore without that soil endlessly pumping liquid back.
+      const gradient = a / host.porosity - b / neighbor.porosity;
+      if (gradient <= 0 || b >= neighbor.porosity) continue;
+      const rate =
+        (Math.min(host.permeability, neighbor.permeability) *
+          (1 - host.retention * 0.5)) /
+        Math.max(1, materials[t].viscosity);
+      if (w.random() >= rate) continue;
+      const nutrientRoom = w.nutrition[i]
+        ? Math.floor(((255 - w.nutrition[j]) * a) / w.nutrition[i])
+        : 255;
+      const units = Math.min(
+        nutrientRoom,
+        4,
+        a,
+        neighbor.porosity - b,
+        Math.ceil(gradient * Math.min(host.porosity, neighbor.porosity) * 0.5),
+      );
+      if (!units) continue;
+      transfer(w, i, j, units);
+      if (w.inParticlePass) w.poreUpdated[j] = w.tick;
+    }
+  }
+  if (
+    w.storedAmount[i] &&
+    w.random() <
+      ((1 - host.retention) * 0.15) /
+        Math.max(1, materials[w.storedLiquid[i]].viscosity)
+  ) {
+    // Gravity drains exposed downward pores; capillary retention opposes it.
+    release(w, i, x, y, w.storedLiquid[i], true);
+  }
+  hydrate(w, i);
+}
+// Dry hosts need no scan: available liquids offer one unit to one neighboring
+// pore. The receiver stamp also prevents fresh water traversing a whole bed in
+// one tick, independent of scan direction. No chunk/source bookkeeping needed.
+export function absorbFromLiquid(w, i, x, y) {
+  if ((i + w.tick) % 3) return false;
+  const type = w.cells[i],
+    fluid = materials[type];
+  const first = (w.variant[i] + w.tick) & 3;
+  for (let side = 0; side < 4; side++) {
+    const [dx, dy] = offsets[(side + first) & 3],
+      j = w.relativeIndex(x, y, dx, dy);
+    if (j < 0) continue;
+    const host = materials[w.cells[j]];
+    if (
+      !host.permeability ||
+      !acceptsLiquid(host.id, type) ||
+      w.storedAmount[j] >= host.porosity ||
+      !compatible(w.storedLiquid[j], type) ||
+      (w.inParticlePass && w.poreUpdated[j] === w.tick) ||
+      (fluid.freeze !== undefined && w.temp[j] < fluid.freeze) ||
+      w.random() >= host.permeability / Math.max(1, fluid.viscosity)
+    )
+      continue;
+    if (takeLiquid(w, j, i)) {
+      if (w.inParticlePass) w.poreUpdated[j] = w.tick;
+      hydrate(w, j);
+      return true;
+    }
+  }
+  return false;
+}
+function takeLiquid(w, i, j) {
+  if (w.nutrition[i] + w.nutrition[j] > 255) return false;
+  const a = w.storedAmount[i],
+    type = w.cells[j],
+    food = w.nutrition[j],
+    heat = w.temp[j];
+  if (!w.transform(j, 0)) return false;
+  w.temp[i] = (w.temp[i] * (a + 1) + heat) / (a + 2);
+  w.storedAmount[i] = a + 1;
+  w.storedLiquid[i] = mixed(w.storedLiquid[i], type);
+  w.nutrition[i] += food;
+  w.wake(i);
+  return true;
+}
+function transfer(w, i, j, units) {
+  const a = w.storedAmount[i],
+    b = w.storedAmount[j],
+    t = w.storedLiquid[i];
+  const food = Math.round((w.nutrition[i] * units) / a);
+  w.temp[j] = (w.temp[j] * (b + 1) + w.temp[i] * units) / (b + 1 + units);
+  w.storedLiquid[j] = mixed(w.storedLiquid[j], t);
+  w.storedAmount[j] += units;
+  w.storedAmount[i] -= units;
+  w.nutrition[i] -= food;
+  w.nutrition[j] = Math.min(255, w.nutrition[j] + food);
+  if (!w.storedAmount[i]) w.storedLiquid[i] = 0;
+  hydrate(w, i);
+  hydrate(w, j);
+  w.wake(i);
+  w.wake(j);
+}
+function hydrate(w, i) {
+  const id = w.cells[i];
+  if (id !== M.Dirt && id !== M.Mud && id !== M.Clay && id !== M["Wet Clay"])
+    return;
+  const amount = materials[w.storedLiquid[i]].waterLike ? w.storedAmount[i] : 0;
+  w.moisture[i] = Math.min(255, amount * 80);
+  if (id === M.Clay && amount) w.transform(i, M["Wet Clay"], w.temp[i]);
+  else if (id === M.Dirt && amount === materials[id].porosity)
+    w.transform(i, M.Mud, w.temp[i]);
+  else if (id === M.Mud && !amount) w.transform(i, M.Dirt, w.temp[i]);
+  else if (id === M["Wet Clay"] && !amount) w.transform(i, M.Clay, w.temp[i]);
+}
+
+export function consumeWater(w, i) {
+  if (!w.storedAmount[i] || !materials[w.storedLiquid[i]].waterLike)
+    return false;
+  w.moisture[i] = Math.min(255, w.moisture[i] + 80);
+  if (!--w.storedAmount[i]) w.storedLiquid[i] = 0;
+  w.wake(i);
+  return true;
+}
+function release(w, i, x, y, output, downwardOnly = false) {
+  const hot = output === M.Steam || output === M.Fire;
+  for (let side = 0; side < (downwardOnly ? 1 : 4); side++) {
+    const [dx, dy] = offsets[hot ? 3 - side : side],
+      j = w.relativeIndex(x, y, dx, dy);
+    if (j < 0 ? w.border !== "void" : w.cells[j]) continue;
+    const amount = w.storedAmount[i],
+      food = Math.ceil(w.nutrition[i] / amount);
+    if (j >= 0) {
+      w.transform(
+        j,
+        output,
+        output === M.Steam ? 120 : output === M.Fire ? 680 : w.temp[i],
+      );
+      w.nutrition[j] = food;
+    }
+    w.nutrition[i] -= food;
+    w.storedAmount[i]--;
+    if (!w.storedAmount[i]) w.storedLiquid[i] = 0;
+    if (hot) {
+      w.fields.add(x, y, 0.8);
+      w.temp[i] = Math.max(90, w.temp[i] - 5);
+    }
+    hydrate(w, i);
+    w.wake(i);
+    return true;
+  }
+  return false;
+}
+
+// Destruction/phase changes drain excess before changing the host. Sealed wet
+// matter waits for space instead of losing its contents. At most four pixels
+// can escape per call, regardless of capacity; editor deletion uses World.set.
+export function releaseForChange(w, i, target) {
+  const capacity = acceptsLiquid(target, w.storedLiquid[i])
+    ? materials[target].porosity
+    : 0;
+  if (w.storedAmount[i] <= capacity) return true;
+  const x = i % w.width,
+    y = Math.floor(i / w.width);
+  for (let n = 0; n < 4 && w.storedAmount[i] > capacity; n++)
+    if (!release(w, i, x, y, w.storedLiquid[i])) break;
+  return w.storedAmount[i] <= capacity;
+}

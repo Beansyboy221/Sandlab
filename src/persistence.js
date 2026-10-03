@@ -12,7 +12,7 @@ import {
 } from "./level-properties.js";
 import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
-import { absorbable } from "./sim/absorption.js";
+import { acceptsLiquid } from "./sim/absorption.js";
 import { materials, M, canonicalMaterial } from "./sim/materials.js";
 const KEY = "sandlab.saves.v1",
   AUTO = "sandlab.autosave.v1";
@@ -23,6 +23,7 @@ export function snapshot(world, typed = false) {
   world.portals.pruneLinks();
   return {
     version: 1,
+    porousModel: 1,
     stickmen: world.stickmen.snapshot(),
     missiles: world.missiles.snapshot(),
     atmosphere: {
@@ -151,7 +152,7 @@ export function validateSnapshot(data) {
                   : key === "life"
                     ? 65535
                     : key === "storedAmount"
-                      ? 48
+                      ? 255
                       : ["cells", "clone", "residue", "storedLiquid"].includes(
                             key,
                           )
@@ -195,10 +196,12 @@ export function validateSnapshot(data) {
     const amount = data.arrays.storedAmount?.[i] || 0,
       type = data.arrays.storedLiquid?.[i] || 0;
     if (
-      (amount && (data.arrays.cells[i] !== M.Sponge || !absorbable(type))) ||
+      (amount &&
+        (amount > materials[data.arrays.cells[i]]?.porosity ||
+          !acceptsLiquid(data.arrays.cells[i], type))) ||
       (!amount && type)
     )
-      throw Error("Invalid sponge contents.");
+      throw Error("Invalid absorbed liquid contents.");
   }
   if (
     data.arrays.cells.some(
@@ -282,6 +285,19 @@ export function restore(world, data) {
       world[key][i] = canonicalMaterial(world[key][i]);
   for (let i = 0; i < world.length; i++) {
     const old = data.arrays.cells[i];
+    // Older soil hydration used an implicit water amount, not pore storage.
+    if (!data.porousModel && !world.storedAmount[i]) {
+      const amount =
+        old === M.Mud
+          ? 2
+          : old === M["Wet Clay"]
+            ? 1
+            : old === M.Dirt
+              ? Math.min(3, Math.floor(world.moisture[i] / 80))
+              : 0;
+      world.storedAmount[i] = amount;
+      world.storedLiquid[i] = amount ? M.Water : 0;
+    }
     if (materials[old].retired) {
       const lifetime = materials[world.cells[i]].lifetime;
       world.life[i] = lifetime ? world.life[i] || lifetime : 0;

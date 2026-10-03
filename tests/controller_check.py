@@ -80,7 +80,7 @@ with sync_playwright() as p:
         page.locator('#settings-btn').click();page.locator('#settings-tab-keyboard').click()
         assert not page.locator('#settings-panel-keyboard .settings-note').count()
         page.locator('#settings-tab-simulation').click()
-        for key in ['windSimulation','pressureSimulation','temperatureSimulation']:
+        for key in ['pressureSimulation','temperatureSimulation']:
             toggle=page.locator('#setting-'+key);assert toggle.is_checked();toggle.click()
             assert page.evaluate('key=>sandlab.world.mechanics[key]===false',key)
             toggle.click();assert page.evaluate('key=>sandlab.world.mechanics[key]===true',key)

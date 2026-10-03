@@ -30,7 +30,7 @@ export function poreExchange(world, i, j) {
     Math.abs(world.fields.pressure[air]) * 0.03,
   );
   const flux =
-    (grain.porosity *
+    ((grain.porosity / (grain.porosity + 1.5)) *
       grain.permeability *
       (0.3 + densityDrive + pressureDrive)) /
     (Math.max(1, liquid.viscosity) * (1 + packed * 2));

@@ -447,7 +447,9 @@ test("seeds germinate in moist soil, grow upward, and stop growing in freezing c
   for (let y = 24; y < 32; y++)
     for (let x = 0; x < 24; x++) {
       w.set(index(w, x, y), M.Dirt);
-      w.moisture[index(w, x, y)] = 210;
+      w.moisture[index(w, x, y)] = 160;
+      w.storedLiquid[index(w, x, y)] = M.Water;
+      w.storedAmount[index(w, x, y)] = 2;
     }
   for (let x = 3; x < 22; x += 4) w.set(index(w, x, 23), M.Seed);
   run(w, 400);
@@ -523,7 +525,7 @@ test("wind applies air momentum, grab carries solids and contents, and walls pre
   applyTool(w, "wind", 14, 12, 3, "square", 1, 0);
   assert.equal(w.cells[i], M.Sponge);
   assert.equal(w.cells[index(w, 15, 11)], M.Sand);
-  assert.ok(w.fields.airflow.velocityX.some((value) => value > 0));
+  assert.ok(w.fields.pressure.some((value) => value !== 0));
   dragBrush(w, { x: 14, y: 12 }, { x: 19, y: 12 }, 3, "square");
   assert.equal(w.cells[index(w, 19, 12)], M.Sponge);
   assert.equal(w.storedAmount[index(w, 19, 12)], 17);
@@ -564,7 +566,7 @@ test("sponge absorbs several liquid types up to capacity and cannot mix oil with
       i = index(w, 6, 6),
       j = i + 1;
     w.set(i, M.Sponge);
-    for (let n = 0; n < 60; n++) {
+    for (let n = 0; n < 200; n++) {
       w.set(j, liquid);
       w.tick = (3 - (i % 3)) % 3;
       absorb(w, i, 6, 6);
@@ -633,8 +635,10 @@ test("touching sponges wick compatible liquid without creating or losing stored 
     j = i + 1;
   w.set(i, M.Sponge);
   w.set(j, M.Sponge);
+  w.set(i + w.width, M.Wall);
   w.storedLiquid[i] = M.Water;
   w.storedAmount[i] = 48;
+  w.random = () => 0;
   w.tick = (3 - (i % 3)) % 3;
   absorb(w, i, 8, 8);
   assert.equal(w.storedAmount[j], 4);
@@ -652,10 +656,13 @@ test("plants can drink from a wet sponge but do not consume its oil", () => {
     w.set(i, M.Plant);
     w.moisture[i] = 0;
     w.set(j, M.Sponge);
+    w.set(j + w.width, M.Wall);
     w.storedLiquid[j] = liquid;
     w.storedAmount[j] = 1;
     w.tick = (4 - (i % 4)) % 4;
     w.random = () => 0;
+    w.tick = (3 - (j % 3)) % 3;
+    absorb(w, j, 9, 8);
     grow(w, i, 8, 8);
     assert.equal(w.storedAmount[j], liquid === M.Water ? 0 : 1);
     assert.equal(w.moisture[i] > 0, liquid === M.Water);

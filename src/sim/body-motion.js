@@ -78,27 +78,37 @@ export function stepBodies(solver) {
       : -Infinity;
     return depthB - depthA || a.ids[0] - b.ids[0];
   });
+  w.fields.beginForceSample();
   for (const body of solver.bodies) {
     const p = body.motion;
     if (!p) continue;
-    w.fields.beginForceSample();
     let liquid = 0,
       contacts = 0,
       pressureX = 0,
       pressureY = 0,
+      pressureTorque = 0,
       rooted = false;
-    for (const id of body.ids) {
-      const i = solver.locations.get(id),
-        x = i % w.width,
-        y = Math.floor(i / w.width);
-      const fi = w.fields.forceGradient(x, y);
-      pressureX += w.fields.gradientX[fi];
-      pressureY += w.fields.gradientY[fi];
-    }
     for (const id of body.edges) {
       const i = solver.locations.get(id),
         x = i % w.width,
         y = Math.floor(i / w.width);
+      w.fields.surfaceForce(w, i);
+      pressureX += w.fields.forceX;
+      pressureY += w.fields.forceY;
+      pressureTorque +=
+        (x + w.offsetX[i] - p.x) * w.fields.forceY -
+        (y + w.offsetY[i] - p.y) * w.fields.forceX;
+      const m = materials[w.cells[i]],
+        strength = (m.toughness || 9) * (1.4 - m.brittleness);
+      if (
+        m.brittleness &&
+        w.fields.surfaceStress > strength &&
+        (w.tick + i) % 3 === 0 &&
+        w.fields.stressWrites < 128
+      ) {
+        w.fields.stressWrites++;
+        solver.queueFracture(i, (w.fields.surfaceStress - strength) * 0.03);
+      }
       for (const [dx, dy] of neighbors) {
         const j = w.index(x + dx, y + dy);
         if (j < 0 || solver.bodyOf.get(w.elasticId[j]) === body) continue;
@@ -133,7 +143,7 @@ export function stepBodies(solver) {
       2.5,
     );
     p.omega = clamp(
-      p.omega * 0.995,
+      (p.omega + (pressureTorque * 0.012) / body.inertia) * 0.995,
       Math.min(0.25, 1.5 / Math.max(1, body.radius)),
     );
     const steps = Math.max(

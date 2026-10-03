@@ -41,7 +41,7 @@ test("density vessel conserves liquids without leaking through its corners", () 
     loadPreset(w, "chemistry");
     const initial = w.count;
     run(w, 450);
-    assert.equal(w.count, initial);
+    assert.equal(w.count + w.storedAmount.reduce((a, b) => a + b, 0), initial);
     const left = Math.round(width * 0.31),
       right = left + Math.round(width * 0.38);
     for (let i = 0; i < w.length; i++)

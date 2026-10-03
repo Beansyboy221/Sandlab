@@ -1,7 +1,6 @@
 // Browser preferences override these defaults; standalone worlds use the same
 // rules without a UI dependency. Transient controls are not embedded in saves.
 export const defaultMechanics = {
-  windSimulation: true,
   pressureSimulation: true,
   temperatureSimulation: true,
   fragmentParticles: true,

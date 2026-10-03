@@ -29,7 +29,8 @@ with sync_playwright() as p:
         q=page.evaluate('''()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(60,60),d=r.canvas.width/b.width;return{x:b.x+p.x/d,y:b.y+p.y/d}}''')
         if touch:page.touchscreen.tap(**q)
         else:page.mouse.click(**q)
-        assert page.evaluate('sandlab.world.fields.airflow.velocityX.some(v=>v>0)')
+        assert page.evaluate('sandlab.world.fields.pressure.some(v=>v!==0)')
+        assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Blow'
         if touch and page.locator('#mobile-exit-focus').is_visible():page.locator('#mobile-exit-focus').click()
         page.locator('#settings-btn').click();page.locator('#settings-tab-atmosphere').click()
         page.locator('#setting-windStrength').fill('1');page.locator('#setting-windStrength').dispatch_event('input')

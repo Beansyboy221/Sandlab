@@ -1,5 +1,19 @@
 export const changelog = [
   {
+    version: "1.17.0",
+    date: "2026-10-03",
+    title: "Shared pores, pressure and cleaner controls",
+    changes: [
+      "The selected-material footer is removed from the material palette. Rocket is now Missile, and the Wind tool is now Blow; existing material IDs and custom shortcut actions stay compatible.",
+      "Wind and pressure share one Air & pressure switch. Blow and fans inject connected pressure differences instead of directly moving objects. The existing compressible field carries wind, pressure and momentum around obstacles. Pressure acts on exposed solid faces, pushes bodies, and breaks overloaded brittle surfaces within a fixed damage budget.",
+      "Airflow view shows optical-flow direction colors and animated streamlines. Orange surface highlights show compression; violet highlights show suction. Moving actors, missiles and vehicles sample the same localized field, including a correction to character pressure sampling coordinates.",
+      "Settings no longer shows the browser-storage success text. Reset preferences sits at the top. Sliders have larger interaction areas, speed selectors have comfortable padding, and toolbar groups and material categories have more space on desktop and mobile.",
+      "All porous materials use integer Porosity for liquid-pixel capacity, Permeability for intake and wicking rates, and Retention for clinginess. Sand drains readily, soil and clay retain water, and Sponge has a larger reservoir using the same rules. Compatible liquids wick according to saturation; incompatible mixtures stay separate.",
+      "Soil hydration and plant water uptake now use shared pore storage. Pressure releases contents, heat vents vapor or burning fuel, and frozen pores stop flow. Contents and nutrients survive movement, clipboard, saves and phase changes; sealed wet hosts wait for space before destruction instead of deleting trapped liquid.",
+      "Available liquids and wet particles drive staggered, bounded neighbor checks. Dry grains do not scan for absorption during simulation, and receiver stamps prevent liquid cascading across a bed in one tick.",
+    ],
+  },
+  {
     version: "1.16.0",
     date: "2026-10-03",
     title: "Linked portals",

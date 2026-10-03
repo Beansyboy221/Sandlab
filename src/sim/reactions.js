@@ -10,7 +10,7 @@ import {
   contactParticipants,
 } from "./chemistry.js";
 import { changePhase } from "./phase-changes.js";
-import { absorb } from "./absorption.js";
+import { absorb, absorbFromLiquid } from "./absorption.js";
 import { grow } from "./biology.js";
 import { weather } from "./weather.js";
 import { burnFuel, reactFire } from "./combustion.js";
@@ -56,6 +56,8 @@ export function react(world, i, x, y) {
   // chemistry handler only on a phase threshold, live burn/lifetime, or charge.
   if (
     !continuousRules[id] &&
+    !m.absorbable &&
+    !world.storedAmount[i] &&
     !(m.burn && (l[i] || t[i] >= m.ignite)) &&
     !(m.lifetime && l[i]) &&
     t[i] <= m.phaseMaximum &&
@@ -74,6 +76,15 @@ export function react(world, i, x, y) {
   // Contact chemistry precedes phase changes, so a hot water-reactive metal
   // still reacts with water before that water flashes into steam.
   if (contactParticipants[id] && reactContact(world, i, x, y)) return;
+  if (m.absorbable && absorbFromLiquid(world, i, x, y)) return;
+  if (
+    m.porosity &&
+    m.permeability &&
+    (world.storedAmount[i] || !world.inParticlePass)
+  ) {
+    absorb(world, i, x, y);
+    if (c[i] !== id) return;
+  }
   if (
     (t[i] > m.phaseMaximum || t[i] < m.phaseMinimum) &&
     changePhase(world, i, x, y, m)
@@ -88,7 +99,6 @@ export function react(world, i, x, y) {
     if (c[i] !== id) return;
   }
   if (m.explosive && reactExplosive(world, i, x, y, m)) return;
-  if (id === M.Sponge) absorb(world, i, x, y);
   if (m.burn && (!m.explosive || m.deflagrates)) {
     burnFuel(world, i, x, y, m);
     if (c[i] !== id || l[i] || t[i] >= m.ignite) return;
@@ -179,8 +189,7 @@ function etch(world, i, x, y) {
         target = j;
     });
     if (target >= 0) {
-      world.transform(target, 0);
-      world.transform(i, M.Water, t[i]);
+      if (world.transform(target, 0)) world.transform(i, M.Water, t[i]);
     }
   }
 }

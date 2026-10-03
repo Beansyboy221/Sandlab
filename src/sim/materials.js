@@ -888,9 +888,10 @@ export const materials = definitions.map(
       category,
       color,
       density,
-      // Fractions: pore volume, connected flow paths, and brittle impact response.
-      porosity: category === "powder" ? 0.3 : 0,
+      // Capacity counts liquid pixels. Rates and retention are fractions in [0, 1].
+      porosity: category === "powder" ? 1 : 0,
       permeability: category === "powder" ? 0.35 : 0,
+      retention: 0.7,
       brittleness:
         category === "solid"
           ? 0.5
@@ -913,6 +914,7 @@ export const materials = definitions.map(
   },
 );
 // Legacy names remain aliases for saved integrations; particle IDs do not change.
+M.Rocket = M.Missile;
 M["Heat-Seeking Missile"] = M["Seeking Missile"];
 M["Laser-Guided Missile"] = M["Guided Missile"];
 for (const m of materials)
@@ -1003,38 +1005,49 @@ for (const name of [
   materials[M[name]].combustionGas ??= M["CO2"];
 materials[M.Sponge].airPermeability = 0.8;
 
-// Packed fine grains can retain liquid even when their pore volume is large.
-// Permeability describes connected pores, rather than gas transparency.
-for (const [name, porosity, permeability, brittleness] of [
-  ["Sand", 0.4, 0.7, 0.8],
-  ["Dirt", 0.45, 0.22, 0.4],
-  ["Clay", 0.5, 0.001, 0.35],
-  ["Ash", 0.65, 0.08, 0.85],
-  ["Snow", 0.7, 0.65, 0.7],
-  ["Salt", 0.3, 0.35, 0.85],
-  ["Baking Soda", 0.35, 0.06, 0.7],
-  ["Rubble", 0.45, 0.9, 0.75],
-  ["Stone Gravel", 0.45, 0.9, 0.75],
-  ["Brick Rubble", 0.45, 0.8, 0.8],
-  ["Glass Shards", 0.35, 0.75, 0.95],
-  ["Wood Chips", 0.6, 0.65, 0.35],
-  ["Coal", 0.35, 0.35, 0.7],
-  ["Sponge", 0.95, 0.9, 0.1],
-  ["Wood", 0.4, 0.04, 0.35],
-  ["Stone", 0.1, 0.001, 0.65],
-  ["Concrete", 0.15, 0.004, 0.65],
-  ["Brick", 0.25, 0.03, 0.75],
-  ["Ceramic", 0.1, 0.002, 0.85],
-  ["Glass", 0, 0, 0.95],
-  ["Ice", 0, 0, 0.8],
-  ["Steel", 0, 0, 0.08],
-  ["Copper", 0, 0, 0.08],
-  ["Rubber", 0, 0, 0.03],
-  ["Jelly", 0.1, 0.001, 0.02],
-  ["Rope", 0.5, 0.2, 0.08],
-  ["Wall", 0, 0, 0],
+// Storage and free-fluid percolation share these properties. Fine clay holds
+// water strongly, coarse sand drains, and sponge has a much larger reservoir.
+for (const [name, porosity, permeability, retention, brittleness] of [
+  ["Sand", 1, 0.7, 0.55, 0.8],
+  ["Dirt", 3, 0.22, 0.92, 0.4],
+  ["Mud", 3, 0.22, 0.92, 0.4],
+  ["Clay", 2, 0.001, 0.99, 0.35],
+  ["Wet Clay", 2, 0.001, 0.99, 0.35],
+  ["Ash", 3, 0.08, 0.95, 0.85],
+  ["Snow", 2, 0.65, 0.65, 0.7],
+  ["Salt", 1, 0.35, 0.7, 0.85],
+  ["Baking Soda", 1, 0.06, 0.8, 0.7],
+  ["Rubble", 1, 0.9, 0.25, 0.75],
+  ["Stone Gravel", 1, 0.9, 0.25, 0.75],
+  ["Brick Rubble", 2, 0.8, 0.65, 0.8],
+  ["Glass Shards", 1, 0.75, 0.2, 0.95],
+  ["Wood Chips", 3, 0.65, 0.85, 0.35],
+  ["Coal", 2, 0.35, 0.8, 0.7],
+  ["Sponge", 48, 0.9, 0.995, 0.1],
+  ["Wood", 3, 0.04, 0.95, 0.35],
+  ["Stone", 1, 0.001, 0.97, 0.65],
+  ["Concrete", 1, 0.004, 0.96, 0.65],
+  ["Brick", 2, 0.03, 0.96, 0.75],
+  ["Ceramic", 1, 0.002, 0.98, 0.85],
+  ["Glass", 0, 0, 0, 0.95],
+  ["Ice", 0, 0, 0, 0.8],
+  ["Steel", 0, 0, 0, 0.08],
+  ["Copper", 0, 0, 0, 0.08],
+  ["Rubber", 0, 0, 0, 0.03],
+  ["Jelly", 1, 0.001, 0.98, 0.02],
+  ["Rope", 3, 0.2, 0.9, 0.08],
+  ["Plant", 2, 0.35, 0.99, 0.2],
+  ["Seed", 1, 0.15, 0.99, 0.3],
+  ["Wall", 0, 0, 0, 0],
 ])
-  Object.assign(materials[M[name]], { porosity, permeability, brittleness });
+  Object.assign(materials[M[name]], {
+    porosity,
+    permeability,
+    retention,
+    brittleness,
+  });
+for (const name of ["Oil", "Kerosene"]) materials[M[name]].absorbable = true;
+for (const name of ["Plant", "Seed"]) materials[M[name]].waterOnly = true;
 
 export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
 // Toughness is impact energy per exposed cell, separate from chemical resistance.

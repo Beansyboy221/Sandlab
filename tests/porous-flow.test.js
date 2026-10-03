@@ -12,14 +12,15 @@ const run = (w, n) => {
 };
 const packed = (grain = M.Sand, liquid = M.Water) => {
   const w = new World(24, 24);
-  w.mechanics.windSimulation = false;
+  w.mechanics.pressureSimulation = false;
   w.mechanics.temperatureSimulation = false;
   for (let y = 4; y < 24; y++)
     for (let x = 0; x < 24; x++) w.set(y * 24 + x, y < 16 ? grain : liquid);
   return w;
 };
 const crossed = (w) =>
-  w.cells.slice(0, 16 * 24).reduce((n, id) => n + (id === M.Water), 0);
+  w.cells.slice(0, 16 * 24).reduce((n, id) => n + (id === M.Water), 0) +
+  w.storedAmount.slice(0, 16 * 24).reduce((a, b) => a + b, 0);
 
 test("packed sand releases water gradually without teleporting or losing mass", () => {
   const w = packed();
@@ -28,15 +29,16 @@ test("packed sand releases water gradually without teleporting or losing mass", 
   assert.ok(crossed(w) > 0 && crossed(w) < 30, crossed(w));
   const before = crossed(w);
   run(w, 108);
-  assert.ok(crossed(w) > before);
-  assert.equal(w.count, initial);
+  assert.ok(crossed(w) + w.storedAmount.reduce((a, b) => a + b, 0) > before);
+  assert.equal(w.count + w.storedAmount.reduce((a, b) => a + b, 0), initial);
   assert.equal(
-    w.cells.reduce((n, id) => n + (id === M.Water), 0),
+    w.cells.reduce((n, id) => n + (id === M.Water), 0) +
+      w.storedAmount.reduce((a, b) => a + b, 0),
     192,
   );
   assert.equal(
     w.chunks.reduce((a, b) => a + b, 0),
-    initial,
+    w.count,
   );
 });
 
@@ -133,7 +135,10 @@ test("seeping follows all four gravity axes and still works after resizing resto
 test("physical material properties are finite, inspected, and brittleness scales impact damage", () => {
   for (const m of materials) {
     assert.ok(Number.isFinite(m.density), m.name);
-    for (const property of ["porosity", "permeability", "brittleness"])
+    assert.ok(
+      Number.isInteger(m.porosity) && m.porosity >= 0 && m.porosity <= 255,
+    );
+    for (const property of ["retention", "permeability", "brittleness"])
       assert.ok(
         Number.isFinite(m[property]) && m[property] >= 0 && m[property] <= 1,
         m.name + property,

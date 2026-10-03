@@ -194,7 +194,7 @@ test("room-temperature oxygen and CO2 are heavier than ambient air, while methan
   }
 });
 
-test("simulation switches stop their own transport and resume independently", () => {
+test("air and pressure switch together; temperature remains independent", () => {
   const w = new World(24, 24);
   w.set(at(w, 10, 5), M.Sand, 180);
   w.set(at(w, 10, 6), M.Sand, 20);
@@ -202,8 +202,7 @@ test("simulation switches stop their own transport and resume independently", ()
   w.fields.temperature[field] = 400;
   w.fields.add(10, 5, 8);
   applyTool(w, "wind", 10, 5, 2);
-  assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
-  w.mechanics.windSimulation = false;
+  assert.ok(w.fields.pressure.some((v) => v !== 0));
   w.mechanics.pressureSimulation = false;
   w.mechanics.temperatureSimulation = false;
   w.fields.configure(w.mechanics);
@@ -224,20 +223,13 @@ test("simulation switches stop their own transport and resume independently", ()
     ),
     "gravity continues with transport disabled",
   );
-  w.mechanics.windSimulation = true;
+  w.mechanics.pressureSimulation = true;
   w.fields.configure(w.mechanics);
   applyTool(w, "wind", 10, 5, 2);
   w.fields.update(w);
   assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
-  assert.ok(
-    w.fields.pressure.every((v) => v === 0),
-    "wind does not recreate disabled pressure",
-  );
+  assert.ok(w.fields.pressure.some((v) => v !== 0));
   assert.equal(w.fields.temperature[field], 400);
-  w.mechanics.pressureSimulation = true;
-  w.fields.configure(w.mechanics);
-  applyTool(w, "pressure", 10, 5, 2);
-  assert.ok(w.fields.pressure.some((v) => v > 0));
   w.mechanics.temperatureSimulation = true;
   run(w, 4);
   assert.ok(w.fields.temperature[field] < 400);
