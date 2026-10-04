@@ -53,3 +53,5 @@ Publish game changes only to the existing GitHub repository and GitHub Pages sit
 - `light-reconstruction.js` caches only silhouette-dependent interpolation stencils; opaque edits invalidate nearby regions. Smoke/filter transport stays in `light-shadows.js`. Preserve exact silhouette edge queries and bounded source/range budgets. `npm run bench:fire` compares full fire rendering across optional checkouts; lightning uses its existing particle lifetime for a scene flash.
 
 - Changelog bullets should be short, one sentence each, and describe player-visible changes; optimization entries should include measured scene-specific results when available, never invented speed claims.
+
+- Audio foley is cached in `audio-voices.js`; `sim/acoustic-listener.js` samples Echolocation’s shared face barriers and absorption for muffling and finite reflection taps. Keep 64 queued events, eight starts per frame, 24 active voices, three reflection taps and the 8,192-tile listener budget bounded. `npm run bench:audio`, `acoustics.test.js` and `audio_occlusion_check.py` verify this path.

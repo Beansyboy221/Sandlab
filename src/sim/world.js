@@ -368,6 +368,18 @@ export class World {
     this.swap(i, j);
     if (falling && vertical > 0)
       this.fallDistance[j] = Math.min(24, this.fallDistance[j] + 1);
+    if (
+      category === "liquid" &&
+      (j + this.tick) % 64 === 0 &&
+      this.fallDistance[j] >= 2
+    )
+      this.sound.emit(
+        "slosh",
+        x,
+        y,
+        Math.min(0.22, 0.05 + this.fallDistance[j] * 0.007),
+        materials[this.cells[j]].density,
+      );
     return true;
   }
   teleport(i, contact, dx, dy) {

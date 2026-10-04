@@ -13,7 +13,7 @@
 - Expand AI navigation with climbing and swimming, with routes verified against character trajectories.
 
 - Improve finite food chains, creature terrain navigation and obstacle-aware hunting without unbounded population growth. Measure larger flock populations before raising the current 32-body cap or introducing a spatial index.
-- Measure acoustic occlusion and richer multi-bounce audible reflections before extending the current bounded room echo.
+- Calibrate procedural foley on physical headphones and phone speakers; refine diagonal acoustic microchannels before extending the shared barrier transport or three finite reflection taps.
 
 - Benchmark rapidly changing many-light scenes on physical phones before increasing optical source or bounce budgets. Fire lighting now caches silhouette stencils and filtered angular transport, with 24 merged shadow sources and a scene-wide lightning flash. Refine volumetric transport only after measuring the current faint smoke scattering and surface reflection pass.
 - Verify standard controllers on physical iOS/Android devices and add configurable controller bindings when useful.

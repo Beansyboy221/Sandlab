@@ -115,3 +115,110 @@ test("stereo pans in screen coordinates and a controlled player becomes the list
   };
   assert.ok(soundPosition({ x: 20, y: 90 }, rotated).pan > 0);
 });
+
+test("audible listener transport shares thin-wall barriers, openings and sponge absorption", () => {
+  const w = new World(96, 64),
+    s = w.sound;
+  const sample = () => {
+    w.fields.rebuildBarriers(w);
+    s.rebuildAbsorption(w);
+    s.listener.prepare(w, 20, 32);
+    return s.listener.sample(72, 32);
+  };
+  const open = sample();
+  for (let y = 0; y < 64; y++) w.set(y * 96 + 47, M.Wall);
+  const sealed = sample();
+  assert.ok(sealed.gain < open.gain * 0.25);
+  assert.ok(sealed.cutoff < 600 && open.cutoff > 8000);
+  for (let y = 28; y < 36; y++) w.set(y * 96 + 47, 0);
+  const door = sample();
+  assert.ok(
+    door.gain > sealed.gain * 2 && door.cutoff > sealed.cutoff * 2,
+    "sound finds the opening",
+  );
+  w.clear();
+  for (let y = 0; y < 64; y++)
+    for (let x = 40; x < 56; x++) w.set(y * 96 + x, M.Sponge);
+  const absorbed = sample();
+  assert.ok(absorbed.gain < open.gain);
+  assert.ok(s.listener.visited <= Math.min(8192, s.wave.length));
+});
+
+test("interior flat surfaces reflect briefly while open edges and sponge absorb", () => {
+  const w = new World(96, 64),
+    s = w.sound;
+  w.border = "void";
+  const echoes = () => {
+    w.fields.rebuildBarriers(w);
+    s.rebuildAbsorption(w);
+    s.listener.prepare(w, 24, 32);
+    return s.listener.sample(32, 32).reflections;
+  };
+  assert.equal(echoes().length, 0);
+  for (let y = 0; y < 64; y++) w.set(y * 96 + 48, M.Wall);
+  const wall = echoes();
+  assert.ok(wall.length > 0 && wall.length <= 3);
+  assert.ok(
+    wall.every((e) => e.delay >= 0.025 && e.delay <= 0.32 && e.gain <= 0.15),
+  );
+  for (let y = 0; y < 64; y++)
+    for (let x = 44; x < 52; x++) w.set(y * 96 + x, M.Sponge);
+  const sponge = echoes();
+  assert.ok(
+    sponge.reduce((n, e) => n + e.gain, 0) <
+      wall.reduce((n, e) => n + e.gain, 0),
+  );
+});
+
+test("sound bursts disperse quickly and sleep within three seconds without new sources", () => {
+  const w = new World(96, 64);
+  w.sound.emit("explosion", 48, 32, 1);
+  run(w, 10);
+  const initial = energy(w);
+  run(w, 90);
+  assert.ok(energy(w) < initial * 0.02);
+  run(w, 90);
+  assert.equal(w.sound.active, false);
+  assert.ok(w.sound.wave.every((v) => v === 0));
+});
+
+test("flow and missiles emit distinct throttled movement sounds", () => {
+  const w = new World(96, 64);
+  w.sound.tick = 10;
+  w.tick = 10;
+  const i = 10 * 96 + 21;
+  w.set(i, M.Water);
+  w.fallDistance[i] = 5;
+  w.tick = 11;
+  const y = 11,
+    x = 21;
+  w.tryMove(i, x, y, 1); // j + tick = 1088, a staggered emitter.
+  assert.ok(w.sound.events.some((e) => e.kind === "slosh"));
+  w.sound.clear();
+  w.missiles.spawn(20, 20, 1, 0, M.Missile);
+  w.tick = 11;
+  w.sound.tick = 11;
+  w.missiles.step();
+  assert.ok(w.sound.events.some((e) => e.kind === "swoosh"));
+  const count = w.sound.emitted;
+  w.sound.emit("swoosh", 20, 20, 0.2);
+  assert.equal(w.sound.emitted, count);
+});
+
+test("listener fields remain bounded in large worlds and wrap across looping seams", () => {
+  const w = new World(512, 512);
+  w.fields.rebuildBarriers(w);
+  w.sound.rebuildAbsorption(w);
+  const listener = w.sound.listener;
+  listener.prepare(w, 256, 256);
+  assert.equal(listener.visited, 8192);
+  const costs = listener.cost;
+  listener.prepare(w, 256, 256);
+  assert.equal(listener.cost, costs);
+  const small = new World(64, 32);
+  small.border = "looping";
+  small.fields.rebuildBarriers(small);
+  small.sound.rebuildAbsorption(small);
+  small.sound.listener.prepare(small, 2, 16);
+  assert.ok(small.sound.listener.sample(62, 16).clarity > 0.9);
+});

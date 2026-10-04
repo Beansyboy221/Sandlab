@@ -1,4 +1,5 @@
-import { materials, M } from "./materials.js";
+import { AcousticListener } from "./acoustic-listener.js";
+import { AIR_DAMPING, absorption } from "./acoustic-properties.js";
 export const soundKinds = [
   "grain",
   "impact",
@@ -9,16 +10,9 @@ export const soundKinds = [
   "crackle",
   "chirp",
   "splash",
+  "slosh",
+  "swoosh",
 ];
-const absorption = Float32Array.from(materials, (m) =>
-  m.id === M.Sponge
-    ? 0.45
-    : m.category === "powder"
-      ? 0.08
-      : m.category === "liquid"
-        ? 0.025
-        : 0.012,
-);
 export class Acoustics {
   constructor(width, height) {
     this.width = Math.ceil(width / 4);
@@ -27,7 +21,7 @@ export class Acoustics {
     this.wave = new Float32Array(length);
     this.previous = new Float32Array(length);
     this.next = new Float32Array(length);
-    this.damping = new Float32Array(length).fill(0.988);
+    this.damping = new Float32Array(length).fill(AIR_DAMPING);
     this.tilesWide = Math.ceil(width / 16);
     this.tilesHigh = Math.ceil(height / 16);
     this.last = new Int32Array(
@@ -37,6 +31,9 @@ export class Acoustics {
     this.active = false;
     this.tick = 0;
     this.emitted = 0;
+    this.lastEmission = -1000;
+    this.revision = 1;
+    this.listener = new AcousticListener(this);
   }
   clear() {
     this.wave.fill(0);
@@ -46,6 +43,9 @@ export class Acoustics {
     this.last.fill(-1000);
     this.active = false;
     this.emitted = 0;
+    this.lastEmission = -1000;
+    this.absorptionTick = -1000;
+    this.revision++;
   }
   emit(kind, x, y, strength = 0.2, mass = 1) {
     const type = soundKinds.indexOf(kind);
@@ -63,7 +63,11 @@ export class Acoustics {
       type * this.tilesWide * this.tilesHigh +
       (y >> 4) * this.tilesWide +
       (x >> 4);
-    if (this.tick - this.last[tile] < 4) return;
+    if (
+      this.tick - this.last[tile] <
+      (kind === "slosh" || kind === "swoosh" ? 12 : 4)
+    )
+      return;
     this.last[tile] = this.tick;
     strength = Math.min(1.5, strength);
     mass = Math.max(0.1, Math.min(100, mass));
@@ -72,6 +76,7 @@ export class Acoustics {
     this.previous[i] = Math.max(-4, this.previous[i] - strength * 0.5);
     this.active = true;
     this.emitted++;
+    this.lastEmission = this.tick;
     const event = { kind, x, y, strength, mass, tick: this.tick };
     if (this.events.length < 64) this.events.push(event);
     else {
@@ -84,6 +89,8 @@ export class Acoustics {
     }
   }
   rebuildAbsorption(w) {
+    this.revision++;
+    this.absorptionTick = w.tick;
     for (let fy = 0; fy < this.height; fy++)
       for (let fx = 0; fx < this.width; fx++) {
         let loss = 0,
@@ -97,11 +104,27 @@ export class Acoustics {
               count++;
             }
           }
-        this.damping[fy * this.width + fx] = 1 - loss / Math.max(1, count);
+        this.damping[fy * this.width + fx] = Math.max(
+          0.4,
+          AIR_DAMPING - loss / Math.max(1, count),
+        );
       }
   }
   step(w) {
     this.tick = w.tick;
+    if (w.tick % 12 === 0) {
+      const air = w.fields.airflow;
+      for (let i = (w.tick / 12) % 32; i < this.wave.length; i += 32) {
+        const speed = Math.hypot(air.velocityX[i], air.velocityY[i]);
+        if (speed > 0.8)
+          this.emit(
+            "swoosh",
+            (i % this.width) * 4 + 2,
+            Math.floor(i / this.width) * 4 + 2,
+            Math.min(0.22, (speed - 0.6) * 0.12),
+          );
+      }
+    }
     if (!this.active) return;
     if (w.tick % 6 === 0) this.rebuildAbsorption(w);
     const {
@@ -142,7 +165,7 @@ export class Acoustics {
     this.previous = p;
     this.wave = n;
     this.next = prev;
-    if (peak < 0.0001) {
+    if (peak < 0.0005 || w.tick - this.lastEmission > 180) {
       this.wave.fill(0);
       this.previous.fill(0);
       this.active = false;

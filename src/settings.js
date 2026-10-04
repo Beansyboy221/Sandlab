@@ -61,6 +61,20 @@ export const settingGroups = [
     fields: [
       { key: "sound", label: "Sound effects", type: "toggle", default: true },
       {
+        key: "audioOcclusion",
+        label: "Wall muffling",
+        type: "toggle",
+        default: true,
+        depends: "sound",
+      },
+      {
+        key: "audioEcho",
+        label: "Room echoes",
+        type: "toggle",
+        default: true,
+        depends: "sound",
+      },
+      {
         key: "volume",
         label: "Volume",
         type: "range",

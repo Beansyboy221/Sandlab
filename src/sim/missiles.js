@@ -208,6 +208,13 @@ export class Missiles {
         a.vx += w.gravityX * 0.06;
         a.vy += w.gravityY * 0.06;
       }
+      if ((w.tick + a.id) % 12 === 0)
+        w.sound.emit(
+          "swoosh",
+          a.x,
+          a.y,
+          Math.min(0.3, Math.hypot(a.vx, a.vy) * 0.12),
+        );
       const steps = Math.max(1, Math.ceil(Math.hypot(a.vx, a.vy) * 3));
       for (let s = 0; s < steps; s++) {
         a.x += a.vx / steps;

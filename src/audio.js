@@ -1,15 +1,5 @@
+import { voiceProfiles, synthesizeVoice } from "./audio-voices.js";
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-const voices = {
-  grain: { duration: 0.045, frequency: 1900, noise: 1, tone: 0 },
-  impact: { duration: 0.18, frequency: 180, noise: 0.65, tone: 0.4 },
-  fizz: { duration: 0.25, frequency: 4200, noise: 1, tone: 0 },
-  melt: { duration: 0.3, frequency: 500, noise: 0.35, tone: 0.22 },
-  boil: { duration: 0.16, frequency: 900, noise: 0.65, tone: 0.18 },
-  explosion: { duration: 0.6, frequency: 100, noise: 1, tone: 0.45 },
-  crackle: { duration: 0.055, frequency: 2800, noise: 1, tone: 0 },
-  chirp: { duration: 0.12, frequency: 2100, noise: 0.04, tone: 0.25 },
-  splash: { duration: 0.12, frequency: 1500, noise: 1, tone: 0.08 },
-};
 export function soundPosition(event, renderer, player = null) {
   const source = renderer.project(event.x, event.y);
   const listener = player
@@ -21,8 +11,11 @@ export function soundPosition(event, renderer, player = null) {
     gain:
       1 /
       (1 +
-        Math.hypot(source.x - listener.x, source.y - listener.y) /
-          Math.max(1, width * 0.45)),
+        Math.pow(
+          Math.hypot(source.x - listener.x, source.y - listener.y) /
+            Math.max(1, width * 0.28),
+          2,
+        )),
   };
 }
 export class GameAudio {
@@ -68,15 +61,7 @@ export class GameAudio {
         limiter.ratio.value = 8;
         this.master.connect(limiter);
         limiter.connect(c.destination);
-        this.noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
-        const data = this.noise.getChannelData(0);
-        let seed = 17421;
-        for (let i = 0; i < data.length; i++) {
-          seed ^= seed << 13;
-          seed ^= seed >>> 17;
-          seed ^= seed << 5;
-          data[i] = (seed >>> 0) / 2147483648 - 1;
-        }
+        this.buffers = new Map();
       } catch {
         this.context = null;
         return;
@@ -103,105 +88,101 @@ export class GameAudio {
       events.length = 0;
       return;
     }
+    if (!events.length || this.active.size >= 24) {
+      events.length = 0;
+      return;
+    }
     events.sort((a, b) => b.strength - a.strength);
-    const player = this.playerControls.enabled
-      ? this.world.stickmen.player
-      : null;
+    const player = this.world.stickmen.player || null;
     const box = this.renderer.canvas.getBoundingClientRect();
     const listener = player
       ? { x: player.x[0], y: player.y[0] }
       : this.renderer.point(box.left + box.width / 2, box.top + box.height / 2);
+    const acoustics = this.world.sound;
+    this.world.fields.rebuildBarriers(this.world);
+    if (this.world.tick - (acoustics.absorptionTick ?? -1000) >= 6)
+      acoustics.rebuildAbsorption(this.world);
+    acoustics.listener.prepare(this.world, listener.x, listener.y);
     let count = 0;
     for (const e of events) {
       if (count >= 8 || this.active.size >= 24) break;
       if (this.world.tick - e.tick > 8) continue;
       const position = soundPosition(e, this.renderer, player);
-      let walls = 0;
-      const samples = Math.min(
-        48,
-        Math.ceil(Math.hypot(e.x - listener.x, e.y - listener.y)),
-      );
-      for (let n = 1; n < samples; n++) {
-        const i = this.world.index(
-          Math.floor(e.x + ((listener.x - e.x) * n) / samples),
-          Math.floor(e.y + ((listener.y - e.y) * n) / samples),
-        );
-        if (i >= 0 && this.world.fields.blocks(this.world.cells[i]) > 0.9)
-          walls++;
+      const transport = acoustics.listener.sample(e.x, e.y);
+      if (!this.settings.get("audioOcclusion")) {
+        transport.gain = 1;
+        transport.cutoff = 16000;
+        transport.clarity = 1;
       }
-      position.gain *= Math.max(0.2, Math.pow(0.8, walls));
-      this.play(e, position);
+      if (!this.settings.get("audioEcho")) transport.reflections = [];
+      position.gain *= transport.gain;
+      this.play(e, position, transport);
       count++;
     }
     events.length = 0;
   }
-  play(e, position) {
+  play(
+    e,
+    position,
+    transport = { cutoff: 16000, clarity: 1, reflections: [] },
+  ) {
     const c = this.context,
-      v = voices[e.kind];
+      v = voiceProfiles[e.kind];
     if (!v) return;
-    const start = c.currentTime,
-      duration = v.duration,
-      frequency = v.frequency / Math.pow(Math.max(0.5, e.mass), 0.22);
+    const start = c.currentTime;
+    const variant = this.played % 3,
+      key = e.kind + variant;
+    let buffer = this.buffers.get(key);
+    if (!buffer) {
+      const samples = synthesizeVoice(e.kind, c.sampleRate, variant);
+      buffer = c.createBuffer(
+        1,
+        samples.length + Math.ceil(c.sampleRate * 0.42),
+        c.sampleRate,
+      );
+      buffer.getChannelData(0).set(samples);
+      this.buffers.set(key, buffer);
+    }
+    const rate = clamp(1 / Math.pow(Math.max(0.5, e.mass), 0.14), 0.55, 1.15);
+    const duration = v.duration / rate;
     const gain = c.createGain(),
       pan = c.createStereoPanner(),
-      filter = c.createBiquadFilter();
+      muffle = c.createBiquadFilter();
+    const peak = Math.min(0.22, e.strength * 0.2) * position.gain * v.volume;
+    gain.gain.value = peak;
     pan.pan.value = position.pan;
-    filter.type =
-      e.kind === "fizz" || e.kind === "grain" ? "highpass" : "lowpass";
-    filter.frequency.value = frequency;
-    const peak = Math.min(0.18, e.strength * 0.11) * position.gain;
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(
-      Math.max(0.0002, peak),
-      start + 0.005,
-    );
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-    filter.connect(gain);
+    muffle.type = "lowpass";
+    muffle.Q.value = 0.65;
+    muffle.frequency.value = transport.cutoff;
     gain.connect(pan);
-    pan.connect(this.master);
-    const noise = c.createBufferSource(),
-      noiseGain = c.createGain();
-    noise.buffer = this.noise;
-    noiseGain.gain.value = v.noise;
-    noise.connect(noiseGain);
-    noiseGain.connect(filter);
-    noise.start(start);
-    let echo = null,
-      echoGain = null;
-    if (e.strength > 0.15 && this.world.border === "solid") {
-      // One quiet first reflection gives impacts room without a large reverb
-      // graph. Propagation and internal reflections are visible in Echolocation.
-      const distance = Math.min(
-        e.x,
-        e.y,
-        this.world.width - e.x,
-        this.world.height - e.y,
-      );
-      echo = c.createDelay(0.4);
-      echo.delayTime.value = Math.max(0.035, Math.min(0.25, distance / 400));
-      echoGain = c.createGain();
-      echoGain.gain.value = 0.14;
-      pan.connect(echo);
-      echo.connect(echoGain);
-      echoGain.connect(this.master);
-    }
-    noise.stop(start + duration + (echo?.delayTime.value || 0));
-    let tone = null,
-      toneGain = null;
-    if (v.tone) {
-      tone = c.createOscillator();
-      toneGain = c.createGain();
-      toneGain.gain.value = v.tone;
-      tone.frequency.setValueAtTime(frequency, start);
-      tone.frequency.exponentialRampToValueAtTime(
-        e.kind === "chirp" ? frequency * 1.8 : frequency * 0.35,
-        start + duration,
-      );
-      tone.connect(toneGain);
-      toneGain.connect(filter);
-      tone.start(start);
-      tone.stop(start + duration);
-    }
+    pan.connect(muffle);
+    muffle.connect(this.master);
+    const source = c.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = rate;
+    source.connect(gain);
+    const nodes = [source, gain, pan, muffle];
+    let tail = 0;
+    if (e.strength > 0.12)
+      for (const reflection of transport.reflections) {
+        const delay = c.createDelay(0.4),
+          wet = c.createGain(),
+          soften = c.createBiquadFilter();
+        delay.delayTime.value = reflection.delay;
+        wet.gain.value = reflection.gain;
+        soften.type = "lowpass";
+        soften.frequency.value = Math.min(3200, transport.cutoff);
+        soften.Q.value = 0.5;
+        pan.connect(delay);
+        delay.connect(wet);
+        wet.connect(soften);
+        soften.connect(this.master);
+        nodes.push(delay, wet, soften);
+        tail = Math.max(tail, reflection.delay);
+      }
+    // A silent buffer tail retains delayed nodes until their finite taps finish;
+    // no feedback loop can sustain a room's reverb indefinitely.
+    source.loop = false;
     const voice = { gain };
     this.active.add(voice);
     this.played++;
@@ -209,21 +190,18 @@ export class GameAudio {
       kind: e.kind,
       pan: position.pan,
       mass: e.mass,
-      frequency,
+      frequency: v.frequency * rate,
       gain: peak,
+      cutoff: transport.cutoff,
+      clarity: transport.clarity,
+      reflections: transport.reflections.length,
     });
     if (this.lastVoices.length > 24) this.lastVoices.shift();
-    noise.onended = () => {
+    source.start(start);
+    source.stop(start + duration + tail + 0.02);
+    source.onended = () => {
       this.active.delete(voice);
-      noise.disconnect();
-      noiseGain.disconnect();
-      tone?.disconnect();
-      toneGain?.disconnect();
-      filter.disconnect();
-      gain.disconnect();
-      pan.disconnect();
-      echo?.disconnect();
-      echoGain?.disconnect();
+      for (const node of nodes) node.disconnect();
     };
   }
 }

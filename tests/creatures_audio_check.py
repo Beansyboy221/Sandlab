@@ -15,6 +15,7 @@ with sync_playwright() as p:
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
         if touch:page.locator('#palette-toggle').click()
+        page.locator('[data-catalog=entities]').click()
         names=page.locator('.material-name').all_text_contents()
         assert all(name in names for name in ['Cat','Rabbit','Fish','Bird'])
         assert 'Sound' not in names and 'Light' not in names
@@ -37,7 +38,7 @@ with sync_playwright() as p:
         page.screenshot(path=str(ARTIFACTS/f'echolocation-{width}x{height}.png'))
         # Player-relative panning follows the visual screen even after phone rotation.
         page.wait_for_timeout(850)
-        pan=page.evaluate('''()=>{const w=sandlab.world;w.clear();const px=w.width*.3,py=w.height*.6;w.stickmen.spawn(px,py,M.Player);sandlab.playerControls.sync();const a=w.stickmen.player;const source={kind:'explosion',...(()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(a.x[0],a.y[0]),d=r.canvas.width/b.width;return r.point(b.left+(p.x+100)/d,b.top+p.y/d);})(),strength:1,mass:4,tick:w.tick};w.sound.events.push(source);sandlab.audio.update(false);return sandlab.audio.lastVoices.at(-1).pan;}''')
+        pan=page.evaluate('''()=>{const w=sandlab.world;w.clear();const px=w.width*.3,py=w.height*.6;w.stickmen.spawn(px,py,M.Player);sandlab.playerControls.sync();sandlab.playerControls.enabled=false;const a=w.stickmen.player;const source={kind:'explosion',...(()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(a.x[0],a.y[0]),d=r.canvas.width/b.width;return r.point(b.left+(p.x+100)/d,b.top+p.y/d);})(),strength:1,mass:4,tick:w.tick};w.sound.events.push(source);sandlab.audio.update(false);return sandlab.audio.lastVoices.at(-1).pan;}''')
         assert pan>.05,(width,pan)
         # Mute persists and leaves wave visualization working.
         page.evaluate('sandlab.settings.set("sound",false);sandlab.world.explode(20,20,5)');played=page.evaluate('sandlab.audio.played')

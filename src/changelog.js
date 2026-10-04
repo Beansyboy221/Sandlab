@@ -1,5 +1,17 @@
 export const changelog = [
   {
+    version: "1.20.0",
+    date: "2026-10-03",
+    title: "Natural sound and room acoustics",
+    changes: [
+      "Added swooshes and sloshes, with distinct procedural splashes, bubbling, fizzing, impacts and fire crackles.",
+      "Placed Players hear wall-muffled sound and short surface echoes using Echolocation’s shared barriers and absorption.",
+      "A sealed-room sound burst now settles in 154 ticks (2.6 seconds), versus more than 600 ticks in the previous benchmark.",
+      "One bounded listener field serves all voices, averaging 0.35 ms for eight queries in a 320×200 development benchmark.",
+      "Audio settings now include Wall muffling and Room echoes toggles.",
+    ],
+  },
+  {
     version: "1.19.1",
     date: "2026-10-03",
     title: "Faster fire lighting and lightning flashes",
