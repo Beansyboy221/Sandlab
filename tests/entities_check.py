@@ -25,11 +25,11 @@ with sync_playwright() as p:
         if not page.evaluate('sandlab.state.paused'):page.locator('#play-btn').click()
         page.evaluate("async()=>{window.M=(await import('./src/sim/materials.js')).M;sandlab.world.clear();}")
         open_palette(page,mobile)
-        assert page.locator('#catalog-total').inner_text()=='71'
-        assert page.locator('#materials .material').count()==71
+        assert page.locator('#catalog-total').inner_text()=='66'
+        assert page.locator('#materials .material').count()==66
         names=set(page.locator('.material-name').all_text_contents())
-        assert {'Fuel','Metal Dust','Sawdust','Glue','Cloud'}<=names
-        assert not {'Kerosene','Steel Powder','Wood Chips','Storm','Liquid Glue'}&names
+        assert {'Fuel','Steel','Wood','Glue','Cloud'}<=names
+        assert not {'Kerosene','Steel Powder','Wood Chips','Storm','Liquid Glue','Metal Dust','Sawdust','Rust','Rubble'}&names
         assert not set(page.locator('.material-name').all_text_contents()) & {'Player','Cat','Drone','Battery'}
         page.locator('#entities-tab').click()
         assert page.locator('#entities-tab').get_attribute('aria-selected')=='true'

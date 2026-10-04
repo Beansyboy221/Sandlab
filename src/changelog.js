@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.26.0",
+    date: "2026-10-04",
+    title: "Material families and shared chemistry",
+    changes: [
+      "Rubble is removed, and Metal Dust, Rust, Sawdust and Glass Shards become derived states instead of separate paint choices.",
+      "Fracture and melting retain each material’s family, pigment, motion and corrosion; heating Rust no longer creates Steel.",
+      "Acid strength, alkalinity, carbonates and reactive components generate shared contact rules, with finite dissolved products and local heat/pressure.",
+      "The physics contract documents each solver’s abstraction boundary and the remaining thermal and chemical calibration work.",
+    ],
+  },
+  {
     version: "1.25.0",
     date: "2026-10-04",
     title: "Flora, fracture and free-falling elastics",

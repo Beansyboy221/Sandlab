@@ -12,8 +12,8 @@ import { M, materials } from "./materials.js";
 import {
   reactContact,
   oxidize,
-  dissolveOrganic,
   contactParticipants,
+  etch,
 } from "./chemistry.js";
 import { changePhase } from "./phase-changes.js";
 import { absorb, absorbFromLiquid } from "./absorption.js";
@@ -31,7 +31,8 @@ const continuousRules = Uint8Array.from(materials, (m) =>
       m.energyRule ||
       m.oxidationRate ||
       m.flora ||
-      m.corrodesOrganic ||
+      m.acidity ||
+      m.alkalinity ||
       m.explosive ||
       m.heatSource ||
       m.weather ||
@@ -109,10 +110,6 @@ export function react(world, i, x, y) {
     oxidize(world, i, x, y, m);
     if (c[i] !== id) return;
   }
-  if (m.corrodesOrganic) {
-    dissolveOrganic(world, i, x, y);
-    if (c[i] !== id) return;
-  }
   if (m.explosive && reactExplosive(world, i, x, y, m)) return;
   if (m.burn && (!m.explosive || m.deflagrates)) {
     burnFuel(world, i, x, y, m);
@@ -136,7 +133,7 @@ export function react(world, i, x, y) {
     if (reactSpark(world, i, x, y)) return;
   } else if (m.lifetime && l[i] && --l[i] === 0) world.transform(i, 0);
   if (m.heatSource) heatSource(world, i, x, y, m);
-  else if (id === M.Acid) etch(world, i, x, y);
+  else if (m.acidity || m.alkalinity) etch(world, i, x, y, m);
   else if (id === M.Void || id === M.Clone) device(world, i, x, y, id);
 }
 
@@ -196,25 +193,6 @@ function heatSource(world, i, x, y, m) {
   world.eachNeighbor(x, y, (j) => {
     if (c[j]) t[j] += (t[i] - t[j]) * 0.12;
   });
-}
-function etch(world, i, x, y) {
-  const { cells: c, temp: t } = world;
-  // Strong acid etches susceptible mineral/organic surfaces slowly. Glass,
-  // oils, water, and unrelated devices do not vanish on contact. Metals and
-  // carbonates react through the product-aware contact registry above.
-  if (world.random() < 0.025) {
-    let target = -1;
-    world.eachNeighbor(x, y, (j) => {
-      if (
-        target < 0 &&
-        (c[j] === M.Stone || c[j] === M.Concrete || materials[c[j]].organic)
-      )
-        target = j;
-    });
-    if (target >= 0) {
-      if (world.transform(target, 0)) world.transform(i, M.Water, t[i]);
-    }
-  }
 }
 function device(world, i, x, y, id) {
   const c = world.cells;

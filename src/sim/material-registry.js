@@ -1,5 +1,18 @@
+import {
+  compileStateProfiles,
+  validatePhysicalTransitions,
+} from "./material-states.js";
 import { applyPerceptionProfiles } from "./material-perception.js";
 const referenceFields = [
+  "baseMaterial",
+  "neutralizedTo",
+  "neutralizationProduct",
+  "acidProduct",
+  "halideTo",
+  "reductionTo",
+  "reductionGas",
+  "waterReactionProduct",
+  "hydratesTo",
   "meltTo",
   "freezeTo",
   "boilTo",
@@ -13,6 +26,14 @@ const referenceFields = [
   "fragmentTo",
 ];
 const fractions = [
+  "acidity",
+  "alkalinity",
+  "carbonate",
+  "acidMetalReactivity",
+  "acidSolubility",
+  "alkaliSolubility",
+  "oxidizingStrength",
+  "reducingStrength",
   "permeability",
   "retention",
   "brittleness",
@@ -34,6 +55,7 @@ const fractions = [
   "soundTransmission",
 ];
 const positive = [
+  "surfaceArea",
   "conductivity",
   "viscosity",
   "elasticity",
@@ -68,6 +90,21 @@ export const capability = {
   phase: 128,
 };
 function validate(m) {
+  if (
+    m.materialState !== undefined &&
+    ![
+      "bulk",
+      "frozen",
+      "liquid",
+      "gas",
+      "fragment",
+      "oxide",
+      "compound",
+      "assembly",
+      "legacy",
+    ].includes(m.materialState)
+  )
+    throw Error(`Unknown material state for ${m.name}`);
   for (const key of ["occludesLight", "reflectsLight", "refractsLight"])
     if (m[key] !== undefined && typeof m[key] !== "boolean")
       throw Error(`Invalid ${key} for ${m.name}`);
@@ -183,6 +220,13 @@ export function compileMaterials(
                 : 0,
         conductivity: 0.04,
         oxidationRate: 0,
+        surfaceArea: 1,
+        acidity: 0,
+        alkalinity: 0,
+        carbonate: 0,
+        acidMetalReactivity: 0,
+        acidSolubility: 0,
+        alkaliSolubility: 0,
         resistance: 0,
         viscosity: 1,
         temperature: 20,
@@ -205,6 +249,13 @@ export function compileMaterials(
     M[alias] = M[name];
   }
   for (const m of materials) resolve(m, M, materials);
+  for (const m of materials) {
+    if (m.baseMaterial !== undefined) {
+      const base = materials[m.baseMaterial];
+      m.density ??= base.density;
+      m.color ??= base.color;
+    }
+  }
   configure(materials, M);
   applyPerceptionProfiles(materials, M);
   for (const m of materials) {
@@ -234,11 +285,20 @@ export function compileMaterials(
       });
     }
   finalize(materials, M);
+  compileStateProfiles(materials, definitions);
   applyPerceptionProfiles(materials, M);
   for (const m of materials) {
     resolve(m, M, materials);
     validate(m);
+    m.phaseMinimum = Math.max(m.freeze ?? -Infinity, m.condense ?? -Infinity);
+    m.phaseMaximum = Math.min(
+      m.dry ?? Infinity,
+      m.bake ?? Infinity,
+      m.melt ?? Infinity,
+      m.boil ?? Infinity,
+    );
   }
+  validatePhysicalTransitions(materials);
   const tables = { flags: new Uint8Array(materials.length) };
   // Float64 preserves the exact existing coefficients; no quantization drift.
   for (const key of [

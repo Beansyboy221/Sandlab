@@ -1,45 +1,14 @@
-import { canDissolve, addDissolved } from "./mixtures.js";
+import {
+  canDissolve,
+  addDissolved,
+  retainsMixture,
+  releaseDissolved,
+} from "./mixtures.js";
 import { releaseForChange } from "./absorption.js";
 import { addOxide } from "./oxidation.js";
+import { compileContactReactions } from "./reaction-registry.js";
 import { M, materials } from "./materials.js";
-// Indexed symmetric contact rules run only for participating substances.
-// Each reaction consumes its two reactants once and carries their heat forward.
-const contacts = [];
-function pair(a, b, resultA, resultB, options = {}) {
-  const reaction = { a, b, resultA, resultB, chance: 1, ...options };
-  (contacts[a] ??= [])[b] = reaction;
-  (contacts[b] ??= [])[a] = reaction;
-}
-
-pair(M.Water, M.Salt, M.Water, 0, { dissolve: M.Salt });
-pair(M.Water, M.Cement, 0, M.Concrete);
-pair(M.Water, M.Fertilizer, M.Water, 0, { dissolveNutrition: true });
-for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
-  pair(acid.id, M["Baking Soda"], M.Water, M["CO2"], {
-    pressure: 4,
-  });
-  pair(acid.id, M.Lye, M.Water, M.Salt, { heat: 35 });
-  pair(acid.id, M.Steel, M.Salt, M.Hydrogen, {
-    chance: 0.05,
-    heat: 12,
-  });
-  pair(acid.id, M["Steel Powder"], M.Salt, M.Hydrogen, {
-    chance: 0.12,
-    heat: 12,
-  });
-  pair(acid.id, M.Rust, M.Water, 0, { chance: 0.12 });
-  pair(acid.id, M.Copper, M.Water, M.Copper, { chance: 0.06, oxide: -32 });
-}
-for (const sodium of materials.filter((m) => m.reactsWithWater))
-  for (const water of materials.filter((m) => m.aqueous))
-    pair(sodium.id, water.id, M.Lye, M.Hydrogen, { heat: 600, pressure: 2 });
-pair(M.Chlorine, M.Steel, 0, M.Rust, { chance: 0.04 });
-pair(M.Chlorine, M.Copper, 0, M.Copper, { chance: 0.04, oxide: 48 });
-pair(M.Rust, M.Coal, M.Steel, M["CO2"], {
-  minimumTemperature: 700,
-  chance: 0.04,
-  pressure: 0.5,
-});
+const contacts = compileContactReactions(materials, M);
 // Count each registered unordered reactant pair once, independent of direction.
 export const interactionCount = contacts.reduce(
   (count, row, a) =>
@@ -54,11 +23,21 @@ function contact(w, i, j, row, x, y) {
   const rule = row[w.cells[j]];
   if (
     !rule ||
+    materials[w.cells[i]].static ||
+    materials[w.cells[j]].static ||
     Math.max(w.temp[i], w.temp[j]) < (rule.minimumTemperature || -273) ||
     (rule.chance < 1 && w.random() >= rule.chance)
   )
     return false;
   const forward = w.cells[i] === rule.a;
+  if (rule.dissolvedProduct) {
+    const host = forward ? i : j;
+    if (
+      w.dissolvedAmount[host] >= 4 ||
+      (w.dissolvedId[host] && w.dissolvedId[host] !== rule.dissolvedProduct)
+    )
+      return false;
+  }
   if (rule.oxide) {
     const coating = forward ? j : i,
       reagent = forward ? i : j;
@@ -79,6 +58,17 @@ function contact(w, i, j, row, x, y) {
     return true;
   }
 
+  const targetI = forward ? rule.resultA : rule.resultB,
+    targetJ = forward ? rule.resultB : rule.resultA;
+  if (
+    (w.dissolvedAmount[i] &&
+      !retainsMixture(targetI) &&
+      !releaseDissolved(w, i)) ||
+    (w.dissolvedAmount[j] &&
+      !retainsMixture(targetJ) &&
+      !releaseDissolved(w, j))
+  )
+    return false;
   if (
     !releaseForChange(w, i, forward ? rule.resultA : rule.resultB) ||
     !releaseForChange(w, j, forward ? rule.resultB : rule.resultA)
@@ -100,6 +90,11 @@ function contact(w, i, j, row, x, y) {
   );
   w.transform(i, forward ? rule.resultA : rule.resultB, temperature);
   w.transform(j, forward ? rule.resultB : rule.resultA, temperature);
+  if (rule.dissolvedProduct) {
+    const host = forward ? i : j;
+    w.dissolvedId[host] = rule.dissolvedProduct;
+    w.dissolvedAmount[host]++;
+  }
   const reactantGases =
     Number(materials[rule.a].category === "gas") +
     Number(materials[rule.b].category === "gas");
@@ -161,15 +156,50 @@ export function oxidize(w, i, x, y, material) {
   if (
     wet &&
     oxygen &&
-    w.random() < material.oxidationRate * (salty ? 4 : 1) * passivation
+    w.random() <
+      material.oxidationRate *
+        material.surfaceArea *
+        (salty ? 4 : 1) *
+        passivation
   )
     addOxide(w, i, 16);
 }
-export function dissolveOrganic(w, i, x, y) {
-  if (w.random() >= 0.06) return;
-  w.eachNeighbor(x, y, (j) => {
-    if (w.cells[i] === M.Lye && materials[w.cells[j]].organic) {
-      if (w.transform(j, 0)) w.transform(i, M.Water, w.temp[i]);
-    }
-  });
+export function etch(w, i, x, y, acid) {
+  if (w.dissolvedAmount[i] >= 4) return;
+  for (let d = 0; d < 4; d++) {
+    const j = w.relativeIndex(
+      x,
+      y,
+      d === 0 ? -1 : d === 1 ? 1 : 0,
+      d === 2 ? -1 : d === 3 ? 1 : 0,
+    );
+    if (j < 0) continue;
+    const target = materials[w.cells[j]],
+      product = target.fragmentTo ?? target.id;
+    const susceptibility = acid.acidity
+      ? target.acidSolubility
+      : target.alkaliSolubility;
+    const rate = acid.acidity
+      ? acid.acidity * susceptibility * 0.025
+      : acid.alkalinity * susceptibility * 0.06;
+    if (
+      !susceptibility ||
+      target.static ||
+      target.acidProduct !== undefined ||
+      (w.dissolvedId[i] && w.dissolvedId[i] !== product) ||
+      w.random() >= rate
+    )
+      continue;
+    if (
+      !releaseForChange(w, i, acid.neutralizedTo) ||
+      !releaseForChange(w, j, 0)
+    )
+      return;
+    const temperature = (w.temp[i] + w.temp[j]) * 0.5;
+    if (!w.transform(j, 0)) return;
+    w.transform(i, acid.neutralizedTo, temperature);
+    w.dissolvedId[i] = product;
+    w.dissolvedAmount[i]++;
+    return;
+  }
 }

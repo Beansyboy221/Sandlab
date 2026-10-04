@@ -100,3 +100,28 @@ export const acoustic = (
     ...(soundTransmission === undefined ? {} : { soundTransmission }),
   },
 });
+
+/** A derived state only supplies carrier changes and explicit component overrides. */
+export function defineMaterialState({ name, base, state, ...configuration }) {
+  if (!base || typeof base !== "string")
+    throw Error(`Missing base for ${name}`);
+  return defineMaterial({
+    name,
+    ...configuration,
+    properties: {
+      ...configuration.properties,
+      baseMaterial: base,
+      materialState: state,
+    },
+  });
+}
+export const acid = (acidity, neutralizedTo = "Water") => ({
+  properties: { acidity, neutralizedTo },
+});
+export const base = (
+  alkalinity,
+  neutralizationProduct = "Salt",
+  carbonate = 0,
+) => ({
+  properties: { alkalinity, neutralizationProduct, carbonate },
+});

@@ -1,9 +1,6 @@
 import { materialDefinitions } from "./material-definitions.js";
 import { compileMaterials } from "./material-registry.js";
-import {
-  applyMaterialProfiles,
-  applyFragmentProfiles,
-} from "./material-profiles.js";
+import { applyMaterialProfiles } from "./material-profiles.js";
 
 export const {
   M,
@@ -14,6 +11,7 @@ export const {
   applyMaterialProfiles,
   {
     Prism: "Crystal",
+    "Brick Rubble": "Brick Fragments",
     Wire: "Copper",
     Patina: "Copper",
     Rocket: "Missile",
@@ -26,7 +24,6 @@ export const {
   },
   // Historical chips and Storm slots migrate through canonical material IDs.
   {},
-  applyFragmentProfiles,
 );
 export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
 export const categories = [

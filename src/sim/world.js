@@ -209,7 +209,8 @@ export class World {
     this.moisture[i] = id === M.Mud ? 220 : id === M.Plant ? 80 : 0;
     this.nutrition[i] = materials[id].nutrition || 0;
     this.growth[i] = 0;
-    this.oxidationLevel[i] = oldId === 54 ? 255 : 0;
+    this.oxidationLevel[i] =
+      oldId === 54 || materials[id].materialState === "oxide" ? 255 : 0;
     const water = id === M.Mud ? 2 : id === M["Wet Clay"] ? 1 : 0;
     this.storedLiquid[i] = water ? M.Water : 0;
     this.storedAmount[i] = water;
@@ -236,22 +237,27 @@ export class World {
   }
   transform(i, id, ...state) {
     if (i < 0 || materials[this.cells[i]]?.static) return false;
-    id = mixtureBase[id];
+    id = mixtureBase[canonicalMaterial(id)];
+    const old = materials[this.cells[i]],
+      next = materials[id];
+    const sameSubstance =
+      this.cells[i] && id && old.baseMaterial === next.baseMaterial;
+    const pigment = this.pigment[i],
+      variant = this.variant[i],
+      oxide = this.oxidationLevel[i];
+    const vx = this.velocityX[i],
+      vy = this.velocityY[i];
+    const ox = this.offsetX[i],
+      oy = this.offsetY[i];
+    const charge = this.charge[i],
+      cooldown = this.cooldown[i];
     if (
       this.dissolvedAmount[i] &&
       !retainsMixture(id) &&
       !releaseDissolved(this, i)
     )
       return false;
-    const ingredient = this.dissolvedId[i],
-      units = this.dissolvedAmount[i];
-    if (!this.storedAmount[i]) {
-      this.set(i, id, ...state);
-      this.dissolvedId[i] = ingredient;
-      this.dissolvedAmount[i] = units;
-      return true;
-    }
-    if (!releaseForChange(this, i, id)) return false;
+    if (this.storedAmount[i] && !releaseForChange(this, i, id)) return false;
     const amount = this.storedAmount[i],
       type = this.storedLiquid[i],
       food = this.nutrition[i],
@@ -266,6 +272,22 @@ export class World {
       this.storedLiquid[i] = type;
       this.nutrition[i] = food;
       this.moisture[i] = moisture;
+    }
+    if (sameSubstance) {
+      this.pigment[i] = pigment;
+      this.variant[i] = variant;
+      this.oxidationLevel[i] =
+        next.materialState === "oxide"
+          ? 255
+          : old.materialState === "oxide" || next.materialState === "compound"
+            ? 0
+            : oxide;
+      this.offsetX[i] = ox;
+      this.offsetY[i] = oy;
+      this.velocityX[i] = vx;
+      this.velocityY[i] = vy;
+      this.charge[i] = next.conductive ? charge : 0;
+      this.cooldown[i] = cooldown;
     }
     return true;
   }

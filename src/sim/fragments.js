@@ -23,30 +23,14 @@ export class Fragments {
     const w = this.world,
       m = materials[w.cells[i]];
     if (m.fragmentTo === undefined || w.elasticAnchor[i]) return;
-    const temp = w.temp[i],
-      life = w.life[i],
-      pigment = w.pigment[i],
-      variant = w.variant[i],
-      charge = w.charge[i],
-      cooldown = w.cooldown[i],
-      residue = w.residue[i],
-      ox = w.offsetX[i],
-      oy = w.offsetY[i],
-      vx = w.velocityX[i],
-      vy = w.velocityY[i];
-    if (!w.transform(i, m.fragmentTo, temp, life)) {
+    const residue = w.residue[i];
+    // Family continuity is handled by World.transform for every physical state
+    // change; fragment-specific residue still carries fuel/ignition metadata.
+    if (!w.transform(i, m.fragmentTo, w.temp[i], w.life[i])) {
       this.dirty = true;
       return;
     }
-    w.pigment[i] = pigment;
-    w.variant[i] = variant;
-    w.charge[i] = charge;
-    w.cooldown[i] = cooldown;
     w.residue[i] = residue;
-    w.offsetX[i] = ox;
-    w.offsetY[i] = oy;
-    w.velocityX[i] = vx;
-    w.velocityY[i] = vy;
   }
   step() {
     if (!this.dirty || !this.world.mechanics.fragmentParticles) return;

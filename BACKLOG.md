@@ -1,6 +1,6 @@
 # Sandlab backlog
 
-- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. v1.19.0 adds contained-fluid mass without topology rebuilds. Next, calibrate thermal capacity/conductivity and phase accounting, then expand reaction authoring before an editor or new modes.
+- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. v1.19.0 adds contained-fluid mass without topology rebuilds. Next, calibrate thermal capacity/conductivity and phase accounting, then extend finite reagent capacity and concentration before an editor or new modes.
 
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
 - Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.
@@ -29,3 +29,6 @@
 - Calibrate Crystal caustics and beam surface normals on complex moving silhouettes; refine bounded interior glow before increasing spectral casts or optical cache budgets.
 
 - Calibrate oxide passivation against wet/salty exposure and add finite fungal substrate nutrition when richer ecosystems justify it; retain the 32-birth cap.
+
+- Extend the [physics contract](PHYSICS_MODEL.md): base/state transitions and common chemical components are implemented, but normalized reagent equivalents, partial neutralization, aqueous pH, chemical energy budgets and accurate multi-product quantities still need calibration fixtures.
+- Replace composite concrete/ceramic melt proxies with tested dehydration, sintering and melt-composition data when thermal amount accounting supports it; preserve family identity and finite contents.

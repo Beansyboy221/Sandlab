@@ -96,13 +96,16 @@ test("electric pulse crosses a wire, then recovers for another pulse", () => {
     0,
   );
 });
-test("acid attacks stone but cannot dissolve glass", () => {
+test("acid carries attacked stone as a finite solute and cannot dissolve glass", () => {
   const w = new World(10, 10);
   w.set(55, M["Acid"]);
-  w.set(56, M.Wood);
+  w.set(56, M.Stone);
   w.set(54, M.Glass);
+  w.random = () => 0;
   for (let i = 0; i < 100; i++) react(w, 55, 5, 5);
   assert.equal(w.cells[56], 0);
+  assert.equal(w.dissolvedId[55], M["Stone Gravel"]);
+  assert.equal(w.dissolvedAmount[55], 1);
   assert.equal(w.cells[54], M.Glass);
 });
 test("water dissolves salt and cures cement", () => {

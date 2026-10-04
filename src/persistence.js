@@ -10,7 +10,7 @@ import {
   validateLevelMetadata,
   applyLevelMetadata,
 } from "./level-properties.js";
-import { migrateMixture, soluble, MAX_DISSOLVED } from "./sim/mixtures.js";
+import { migrateMixture, dissolvable, MAX_DISSOLVED } from "./sim/mixtures.js";
 import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
 import { acceptsLiquid } from "./sim/absorption.js";
@@ -206,7 +206,7 @@ export function validateSnapshot(data) {
     const carrier = data.arrays.cells[i];
     if (
       (quantity &&
-        (!soluble[solute] ||
+        (!dissolvable[solute] ||
           !(
             carrier === M.Water ||
             carrier === M.Ice ||
@@ -315,7 +315,8 @@ export function restore(world, data) {
       world[key][i] = canonicalMaterial(world[key][i]);
   for (let i = 0; i < world.length; i++) {
     const old = data.arrays.cells[i];
-    if (old === 54) world.oxidationLevel[i] = 255;
+    if (old === 54 || materials[world.cells[i]].materialState === "oxide")
+      world.oxidationLevel[i] = 255;
     // Older soil hydration used an implicit water amount, not pore storage.
     if (!data.porousModel && !world.storedAmount[i]) {
       const amount =

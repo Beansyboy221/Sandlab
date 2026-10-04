@@ -20,7 +20,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Heater, 38);
-  assert.equal(materials.length, 137);
+  assert.equal(materials.length, 150);
   assert.equal(M["Liquid Nitrogen"], 71);
   for (const m of materials)
     for (const key of [
@@ -43,9 +43,9 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 test("removed materials are unavailable, names use capitals, and renamed substances preserve IDs", () => {
   assert.equal(M.CO2, 61);
   assert.equal(M["Glass Shards"], 79);
-  assert.equal(paletteMaterials.length, 71);
+  assert.equal(paletteMaterials.length, 66);
   const retired = materials.filter((m) => m.retired);
-  assert.equal(retired.length, 16);
+  assert.equal(retired.length, 17);
   for (const m of retired) {
     if (!["Storm", "Wire", "Patina"].includes(m.name))
       assert.equal(M[m.name], undefined);
@@ -186,7 +186,7 @@ test("corrosion requires wet exposed surfaces, salt accelerates it, and copper p
   assert.equal(copper.oxidationLevel[210], 223);
   assert.ok(conducts(copper, 210));
 });
-test("lye consumes organic matter but leaves mineral vessels, metal, and glass intact", () => {
+test("lye retains susceptible organics as solute but leaves rubber, mineral vessels, metal, and glass intact", () => {
   for (const target of [
     "Wood",
     "Rubber",
@@ -198,15 +198,21 @@ test("lye consumes organic matter but leaves mineral vessels, metal, and glass i
     const w = sample("Lye", target);
     w.random = () => 0;
     react(w, 210, 10, 10);
-    assert.equal(w.cells[211], materials[M[target]].organic ? 0 : M[target]);
-    if (materials[M[target]].organic) assert.equal(w.cells[210], M.Water);
+    assert.equal(
+      w.cells[211],
+      ["Wood", "Plant"].includes(target) ? 0 : M[target],
+    );
+    if (["Wood", "Plant"].includes(target)) {
+      assert.equal(w.cells[210], M.Water);
+      assert.equal(w.dissolvedAmount[210], 1);
+    }
   }
 });
 test("rust is reduced by hot coal, and burning sulfur produces smoke without removed gases", () => {
   const w = sample("Rust", "Coal", 750);
   w.random = () => 0;
   react(w, 210, 10, 10);
-  assert.equal(w.cells[210], M.Steel);
+  assert.equal(w.cells[210], M["Metal Dust"]);
   assert.equal(w.cells[211], M["CO2"]);
   w.clear();
   w.set(210, M.Sulfur, 400);

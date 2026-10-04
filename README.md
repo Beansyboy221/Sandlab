@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 71 materials and 23 entities, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 66 material presets and 23 entities, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 Live site: **https://beansyboy221.github.io/Sandlab/**. GitHub Pages is the sole publishing destination; the ChatGPT Site is retired.
 
@@ -284,7 +284,7 @@ New canvas and Canvas properties offer six modes with a 0–200% strength slider
 
 Modes share a coarse force field used by particles, rigid bodies, elastics, characters and vehicles. These are exploratory gameplay environments; character pathfinding still primarily targets supported terrain rather than orbital navigation. Mode properties survive saves, import/export, undo and positioned resizing.
 
-Tiny broken components (at most three pixels) become granular or liquid debris specific to their parent material. Wood becomes Wood Chips, Rope becomes Rope Fibers, Copper becomes Copper Granules, and Jelly becomes Jelly Drops, for example. Fine forms remain hidden behind their parent palette entry, keeping one material choice per family. Conversion preserves temperature, pigment and momentum; larger pieces retain tension/rotation, anchored elastics stay attached, and healthy small drawings are unchanged. Settings → Performance → Simplify tiny broken pieces disables conversion. The damage marker uses existing saved particle state and topology is checked only after changes.
+Tiny broken components (at most three pixels) become granular or liquid debris specific to their parent material. Wood becomes Sawdust, Rope becomes Rope Fibers, Copper becomes Copper Granules, and Jelly becomes Jelly Drops, for example. Fine forms remain hidden behind their parent palette entry, keeping one material choice per family. Conversion preserves temperature, pigment and momentum; larger pieces retain tension/rotation, anchored elastics stay attached, and healthy small drawings are unchanged. Settings → Performance → Simplify tiny broken pieces disables conversion. The damage marker uses existing saved particle state and topology is checked only after changes.
 
 Run `npm run bench:entities` to compare tiny-fragment conversion, dense mode scenes and laser-guidance cost on your hardware. Run `npm run test:entities` for desktop, portrait and landscape browser checks, including touch aiming, catalog isolation, mode controls, settings and history.
 
@@ -306,7 +306,7 @@ Add Sandlab to your home screen from Safari’s Share menu on iPhone or the brow
 
 ## Material engine and profiling
 
-Material slots are append-only in `src/sim/material-definitions.js`. `material-authoring.js` provides `defineMaterial`, `porous`, `springy`, `combustible`, `conductor` and `surface`. Traits merge left-to-right and explicit properties override them. Definitions compile once through `material-registry.js`; shared calibrated profiles and fragment mappings live separately. Existing systems import the small `materials.js` facade. Runtime materials are frozen so typed lookup tables cannot silently become stale. This is a development authoring API, not yet an in-game material editor.
+Material slots are append-only in `src/sim/material-definitions.js`. `material-authoring.js` provides `defineMaterial`, `porous`, `springy`, `combustible`, `conductor` and `surface`. Traits merge left-to-right and explicit properties override them. Definitions compile once through `material-registry.js`; shared calibrated profiles and base/state configurations live separately. Existing systems import the small `materials.js` facade. Runtime materials are frozen so typed lookup tables cannot silently become stale. This is a development authoring API, not yet an in-game material editor.
 
 ```js
 defineMaterial({
@@ -345,7 +345,7 @@ Movement deposits momentum into the existing coarse air faces, respecting barrie
 
 **Weather** uses suspended Cloud condensate and staggered 5×5 density samples every 16 ticks. Cool, dense cloud edges build coalescence and convert one existing cell into Water or Snow; warm or sparse clouds do not rain. Mixed frozen condensate (below −8°C) and liquid droplets (above −3°C), plus upward airflow, accumulate electrical charge for the shared bounded lightning tracer. Growth and moisture arrays preserve weather progress in saves. This is a finite, local weather abstraction rather than a calibrated humidity or electrostatic solver; the storm example starts with a mature charged core.
 
-**Glue** shares the spring solver and existing anchor bits, adhering to static surfaces after contact and releasing when softened or pulled under tension. Heating melts it into a viscous liquid phase; cooling restores the elastic material. Sawdust is lower-density, more porous, and burns faster than solid Wood, including as Wood’s fine debris. Fuel and Metal Dust retain the old Kerosene and Steel Powder IDs, and historical Wood Chips and Storm slots migrate to Sawdust and Cloud.
+**Glue** shares the spring solver and existing anchor bits, adhering to static surfaces after contact and releasing when softened or pulled under tension. Heating melts it into a viscous liquid phase; cooling restores the elastic material. Sawdust shares Wood’s substance density, is more porous, and burns faster than solid Wood, including as Wood’s fine debris. Fuel and Metal Dust retain the old Kerosene and Steel Powder IDs, and historical Wood Chips and Storm slots migrate to Sawdust and Cloud.
 
 ## Optical and acoustic components (1.24.0)
 
@@ -407,3 +407,59 @@ Sponge is an elastic reservoir with the same porosity/permeability storage as ot
 Thin brittle solids accumulate coarse air-load stress and shed pieces before impact, while finite collision energy spreads through a small contact neighborhood to produce crumbling. Ductile metals remain tougher. Air stress and impact spreading are capped at 64 and 128 samples per tick; neither recursively fractures neighboring bodies.
 
 `npm run bench:elastics` measures deforming free-fall meshes in isolation; this development container averaged 3.78 ms per whole tick for 750 Jelly nodes and 16.66 ms for 3,000 nodes (95th percentiles 6.56 and 29.88 ms). Crowded solid-contact scenes with 20/80/200 small bodies above a 6,000-pixel slab averaged 3.49/3.56/4.53 ms per rigid step. These are development measurements, not phone frame-rate guarantees.
+
+## Base materials and chemical components (1.26.0)
+
+[PHYSICS_MODEL.md](PHYSICS_MODEL.md) defines the abstraction boundary and current
+limits of every shared solver. Ordinary physical changes preserve a base family;
+chemistry requires known product data and bounded shared rules. Rubble is retired,
+and Metal Dust, Rust, Sawdust and Glass Shards are internal states of Steel, Wood
+or Glass rather than separate palette choices. Concrete, Ceramic, Crystal and
+Mirror retain their identities through fracture and melting. Heating Rust melts
+its oxide; only hot reducing material can produce metal again.
+
+Use `defineMaterialState` to provide a carrier and explicit state overrides;
+unspecified density/color and supported physical/chemical components inherit from
+the base. Define a base's `fragmentTo` and phase references in data. The compiler
+validates family continuity and freezes the resulting definitions. `materialModels`
+in `material-states.js` organizes stock families, and `paletteEntry: true` permits
+an explicit preset form such as Sand or an electronic assembly.
+
+```js
+defineMaterial({
+  name: "Test Metal",
+  representation: "rigid",
+  color: "#888888",
+  density: 7,
+  traits: [conductor(0.6), oxidizable(0.001, "#bf714d")],
+  properties: { fragmentTo: "Test Grains", melt: 800, meltTo: "Test Melt" },
+});
+defineMaterialState({
+  name: "Test Grains",
+  base: "Test Metal",
+  state: "fragment",
+  representation: "granular",
+  properties: { permeability: 0.7 },
+});
+defineMaterialState({
+  name: "Test Melt",
+  base: "Test Metal",
+  state: "liquid",
+  representation: "fluid",
+  properties: { freeze: 780, freezeTo: "Test Metal" },
+});
+```
+
+`acid(strength, neutralizedTo)` and `base(strength, saltProduct, carbonateContent)`
+are composable chemical traits. Their coefficients and known product references
+compile into a symmetric pair table through `reaction-registry.js`, with no
+per-particle rule scans. Current reagents consume whole cells; acid/base equivalent
+capacity, concentration-derived pH, buffers and partial neutralization are planned
+quantity-model upgrades rather than already implemented chemistry. Dissolved
+attack products use existing finite ingredient arrays, survive saves and pores,
+and are distinct from materials that dissolve spontaneously in plain Water.
+
+Run `node tests/material-states.test.js` for state inheritance, fracture/phase
+identity, old Rubble migration, corrosion continuity and component-derived reaction
+fixtures, and `python3 tests/material_states_check.py` for desktop/mobile palette,
+inspection and drawing checks. Shared registry changes require `npm test`.

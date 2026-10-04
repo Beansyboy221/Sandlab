@@ -42,14 +42,14 @@ with sync_playwright() as p:
   if touch:page.touchscreen.tap(**start)
   else:page.mouse.click(**start)
   assert page.evaluate('sandlab.world.backgroundPaint.every(Boolean)')
-  # The static tab includes Wall and Portal; acids have one tile.
+  # The static tab includes sources, Wall and Portal; acids have one tile.
   if touch:page.locator('#controls-toggle').click()
   choose(page,'paint')
   palette_open = page.locator('#palette').evaluate("e=>e.classList.contains('open')") if touch else page.evaluate("!document.body.classList.contains('palette-hidden')")
   if not palette_open:page.locator('#palette-toggle').click()
-  page.locator('#categories button').filter(has_text="Static").click();page.wait_for_function('()=>document.querySelectorAll(".material").length===3')
+  page.locator('#categories button').filter(has_text="Static").click();page.wait_for_function('()=>document.querySelectorAll(".material").length===10')
   page.locator('#categories button').filter(has_text="All").click();page.locator('#search').fill('acid');page.wait_for_function('()=>document.querySelectorAll(".material").length===1')
-  page.locator('#search').fill('');assert page.locator('.material').count()==71
+  page.locator('#search').fill('');assert page.locator('.material').count()==66
   if touch:page.locator('#palette-close').click()
   page.evaluate('''()=>{const w=sandlab.world;w.clear();for(let x=0;x<w.width;x++)w.set((w.height-20)*w.width+x,mat.Wall);for(let y=15;y<23;y++)for(let x=30;x<55;x++)w.set(y*w.width+x,mat.Steel);for(let n=0;n<25;n++)w.step();sandlab.renderer.draw()}''')
   assert page.evaluate('sandlab.world.rigid.locations.size')==200

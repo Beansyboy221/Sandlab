@@ -29,7 +29,7 @@ test("renamed materials retain save IDs, deprecated sources migrate, and powders
   assert.equal(canonicalMaterial(96), M.Sawdust);
   assert.ok(materials.some((m) => m.name === "Storm" && m.retired));
   const names = new Set(paletteMaterials.map((m) => m.name));
-  for (const name of ["Fuel", "Metal Dust", "Sawdust", "Glue", "Cloud"])
+  for (const name of ["Fuel", "Steel", "Wood", "Glue", "Cloud"])
     assert.ok(names.has(name), name);
   for (const name of [
     "Kerosene",
@@ -39,7 +39,7 @@ test("renamed materials retain save IDs, deprecated sources migrate, and powders
     "Liquid Glue",
   ])
     assert.ok(!names.has(name), name);
-  assert.ok(materials[M.Sawdust].density < materials[M.Wood].density);
+  assert.equal(materials[M.Sawdust].density, materials[M.Wood].density);
   assert.ok(materials[M.Sawdust].porosity > materials[M.Sand].porosity);
   assert.ok(materials[M.Sawdust].burn < materials[M.Wood].burn);
   const w = new World(20, 20),

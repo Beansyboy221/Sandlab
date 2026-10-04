@@ -30,7 +30,7 @@ with sync_playwright() as p:
             assert max(t['h'] for t in tiles)-min(t['h'] for t in tiles)<1
             assert min(t['h'] for t in tiles)==76
             page.screenshot(path=str(ROOT/'tests'/'artifacts'/f'elastic-palette-{width}.png'))
-        assert page.locator('.material').count()==71
+        assert page.locator('.material').count()==66
         for name in ['Molten Salt','Molten Copper','Steam','Ice','Liquid Nitrogen']:
             assert page.get_by_role('button',name=name,exact=True).count()==0
         page.locator('#search').fill('molten salt');assert page.locator('.material').count()==1
@@ -45,8 +45,8 @@ with sync_playwright() as p:
         assert page.locator('.material').count()==5
         assert set(page.locator('.material-name').all_inner_texts())=={'Sponge','Rope','Rubber','Jelly','Glue'}
         page.get_by_role('button',name='Rope',exact=True).click()
-        if touch:page.locator('#controls-toggle').tap()
-        page.evaluate('sandlab.world.clear();sandlab.state.setRadius(1)')
+        if touch and page.locator('#controls-toggle').get_attribute('aria-expanded')=='true':page.locator('#controls-toggle').tap()
+        page.evaluate('sandlab.state.paused=true;sandlab.world.clear();sandlab.state.setRadius(1)')
         page.mouse.move(**point(page,50,50));page.mouse.down();page.mouse.move(**point(page,85,50),steps=20);page.mouse.up()
         result=page.evaluate('''()=>{const w=sandlab.world;const count=w.count,ids=[...w.elastic.locations.keys()];const initial=[...w.elastic.locations.values()].reduce((sum,i)=>sum+(i%w.width)*w.gravityX+Math.floor(i/w.width)*w.gravityY,0)/count;let links=0;for(const i of w.elastic.locations.values())for(const b of w.elastic.bonds)if(w.elastic.locations.has(b[i]))links++;for(let n=0;n<90;n++)w.step();sandlab.renderer.draw();return {count,after:w.count,ids:ids.every(id=>w.elastic.locations.has(id)),links,travel:[...w.elastic.locations.values()].reduce((sum,i)=>sum+(i%w.width)*w.gravityX+Math.floor(i/w.width)*w.gravityY,0)/count-initial};}''')
         assert result['count']>36 and result['count']==result['after'] and result['ids'] and result['links']>35 and result['travel']>2,result

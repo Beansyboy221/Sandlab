@@ -1,0 +1,105 @@
+# Sandlab's physics contract
+
+Sandlab models macroscopic behavior at a pixel scale. The rule for abstraction is:
+**resolve local quantities, contact and geometry when they affect gameplay;
+approximate effects below a pixel or above the solver's bandwidth with bounded,
+data-driven rules.** A material name must not choose an unrelated physical result.
+
+## Materials, states and presets
+
+A base material owns shared physical and chemical components. A state selects its
+representation and overrides only the properties that differ: grains, a rigid
+body, an elastic mesh, a liquid, a gas, an oxide or a compound. Configuration is
+compiled once, not copied into a JavaScript object for every particle.
+
+`baseMaterial` preserves the family; `materialState` describes the form. Fracture
+uses `brittleness`, accumulated damage and `toughness`, then the family's
+`fragmentTo`. Fine fragments inherit conductivity, corrosion, combustion and
+optical properties; a cut does not turn Concrete into Stone or Crystal into Glass.
+Their density stays unchanged unless the state explicitly supplies a bulk-density
+override. Voids between grains normally supply the lower aggregate density.
+
+A physical phase transition must stay in its family, checked by the compiler.
+Temperature thresholds determine phase; pressure-dependent boiling, calibrated
+heat capacity and latent heat are not implemented yet. Rust cannot become metal
+by heating alone: its chemical reduction requires a reducer and a temperature
+threshold. Oxidation is saved state and travels through cuts and physical phases.
+
+The palette shows base presets, not every internal state. Metal Dust, Rust,
+Sawdust and Glass Shards remain valid simulation/save forms but are not independent
+paint choices. Sand is an explicit granular silicate preset alongside Glass;
+heating creates the family's liquid, cooling creates Glass. These configurations
+are silicate proxies, not mineral composition assays. Electronic assemblies retain
+separate controls, with their modeled metal or glass housing as the base; melting
+destroys their circuitry instead of cooling back into a working device.
+
+Old IDs remain readable. Generic Rubble migrates to Stone Gravel because the
+historical save never recorded its original composition; new fracture paths retain
+that identity. Existing Brick debris keeps its stable slot as Brick Fragments.
+
+## Chemical abstraction
+
+Chemistry cannot be inferred from density, acidity or appearance alone. Use two
+layers:
+
+1. Components describe classes of behavior: acid strength, alkalinity, carbonate
+   content, water reactivity, susceptibility to chemical attack, oxidation/reduction
+   behavior, solubility and exposed surface area.
+2. Known product references describe the supported chemical families. The compiler
+   expands components into symmetric indexed contact rules. A shared executor
+   checks conditions, consumes reagents once, creates products and couples heat
+   and gas production to the atmosphere. Adding a configured acid or carbonate
+   does not require a branch in a solver.
+
+The stock Acid models an aqueous, non-oxidizing acid; complex acids require
+explicit product data rather than inference from strength alone.
+
+`acidity` and `alkalinity` are normalized kinetic-strength coefficients from zero
+to one, not pH. The current amount model consumes whole reagent cells; weaker
+strength changes reaction probability, not the number of equivalents in a cell.
+Each successful attack exhausts its reagent. Pores and dissolved ingredients are
+finite integer reservoirs. Etching keeps attacked substance in the resulting
+carrier, rather than deleting it; evaporation can release it again.
+
+Carbonate neutralization produces CO2 and a dissolved salt product. Metal-acid
+reactions produce Hydrogen and a configured ionic salt state. Iron Salt and Copper
+Salt are simplified compound families, not exact molecular formulas; their
+identity and optical/thermal data are chemical configuration, not deductions from
+mechanical density. Oxidizing gas requires a configured compound product; hot
+carbon reduction uses a configured reduced state and gas product.
+
+**The next chemical quantity increment** should add acid/base equivalent capacity
+and concentration, with concentration traveling through the existing mixture and
+pore transport. Then derive aqueous pH for display and equilibrium, rather than
+using pH as a universal material property. Add ion balance, buffers and partial
+neutralization only after finite amount/yield tests. Adding a fake pH slider to
+non-aqueous solids would not make chemistry more accurate.
+
+Fixed occupied cells, different densities and whole-cell product yields do not
+provide exact SI mass or enthalpy conservation. Pressure/heat yields are normalized
+coefficients. Preserve stored ingredients and explicitly consumed reagents today;
+calibrate substance amounts, thermal energy and chemical yield accounting before
+claiming quantitative conservation or laboratory accuracy.
+
+## Shared mechanical systems
+
+| System            | Resolve                                                                                             | Approximate / current limit                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Motion            | Density, gravity, local displacement, friction, contact impulses, rigid rotation and spring tension | Fixed cell occupancy and bounded contact/substep budgets; no continuum stress tensor           |
+| Liquids           | Density displacement, viscosity, pore intake/transfer/drainage, permeability and retention          | Cellular local flow; no full incompressible Navier–Stokes or calibrated surface tension        |
+| Heat              | Local neighbor exchange, air temperature and configured phase thresholds                            | Relative conductivity and thresholds; heat capacity, latent heat and calibrated units are next |
+| Air               | Local pressure, face velocity, barriers, moving-matter momentum, vents and buoyancy                 | Coarse four-pixel tiles with finite force budgets; ambient oxygen remains implicit             |
+| Electricity       | Conductivity, insulation/oxidation, transported pulses, sparks and gates                            | Digital pulse propagation and heating; not a calibrated voltage/current network                |
+| Light             | Shared absorption, reflection, refraction, shadows and mechanical ray transport                     | Bounded geometric rays, coarse radiance, finite bounces and cosmetic interior glow             |
+| Sound             | Shared material barriers, absorption, dispersion, wave propagation and listener occlusion           | Damped coarse wave field, procedural foley and three finite reflection taps                    |
+| Biology / devices | Configured behavior kind and bounded specialized solver                                             | Growth, navigation, portals and fictional modes are explicitly authored gameplay models        |
+
+A realistic ordinary material should be added through data and existing components.
+A new solver is justified only for a missing reusable mechanism with a regression
+scene and a measured budget. Explicit chemical recipes and configured device
+behaviors are allowed; ad hoc material-name exceptions for ordinary motion,
+fracture, phase, transport or chemical susceptibility are not the extension path.
+
+Keep these models separate from puzzle goals, player controls and level scripting.
+These approximations are deterministic under the same saved seed and tick inputs;
+a neural next-frame guess must not replace authoritative contents or topology.

@@ -1,6 +1,12 @@
 # Sandlab engine evolution
 
-Status: staged roadmap. v1.19.0 adds contained-fluid mechanical mass to solids/elastics and shared pixel-exact brush geometry. v1.18.0 implements the first material compiler/trait increment, opt-in subsystem timings, compiled heat-transfer coefficients and reusable rigid textures. All 130 prior material definitions and aliases were compared exactly before migration. Units/calibration, expanded rule authoring, editable material packs and game modes remain future stages; this is not a claim of complete physical accuracy.
+Status: staged roadmap. v1.26.0 unifies base/state authoring, validates physical
+transition identities, preserves fracture/corrosion components and compiles common
+chemical contact rules from material data. See [PHYSICS_MODEL.md](PHYSICS_MODEL.md)
+for the explicit abstraction contract and implemented limits. v1.19.0 added
+contained-fluid mechanical mass; v1.18.0 established traits, registry validation,
+profiling and rigid textures. Quantitative amounts, thermal energy, editable
+material packs and game modes remain staged work.
 
 ## Target
 
@@ -10,18 +16,18 @@ Accuracy means defined units, stable qualitative relationships and tested conser
 
 ## What exists and what needs attention
 
-| Area                 | Existing implementation                                                                                                                   | Next coherent improvement                                                                                                                          |
-| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Material definitions | Composable authoring, validated immutable definitions, shared profiles and compiled tables; stable IDs                                    | Expand trait coverage and typed dispatch only when a concrete material or measured hot path needs it                                               |
-| Motion               | Grid particles, rigid shapes, elastic networks and jointed actors                                                                         | Keep these representations; use common local force/contact/property interfaces                                                                     |
-| Density and mass     | Relative particle density; rigid/elastic mechanical mass includes finite liquid reservoirs; negative gas densities encode rising behavior | Separate positive density from buoyancy; define amount/volume units and calibrate density/buoyancy units beyond solid/elastic contained-fluid mass |
-| Porous transport     | Integer capacity, permeability and retention; shared finite reservoirs                                                                    | Calibrate beds and drainage; describe capacity as a storage abstraction rather than literal physical void fraction                                 |
-| Heat                 | Neighbor temperature exchange using `conductivity`; threshold phase changes                                                               | Explicit thermal conductivity, heat capacity and latent heat; pressure/phase coupling in small tested increments                                   |
-| Electricity          | Conductive flag, timed charge propagation, gates and sparks                                                                               | Separate digital signals from electrical conductivity/current, then add limited Joule heating and resistance where useful                          |
-| Chemistry            | 28 registered unordered contact pairs, plus combustion, corrosion, biology and other rule handlers                                        | Declarative bounded contact/environment rules, explicit yields and heat/pressure budgets, fewer material-name branches                             |
-| Atmosphere           | Pressure and face velocity on four-cell tiles; barriers, buoyancy, temperature transport                                                  | Retain the shared field; calibrate sealed/vented scenes, boundary behavior and finite oxidizer                                                     |
-| Drawing              | Pixel buffer; cached rigid textures with continuous fallback; elastic/entity passes; lighting and bloom                                   | Use stage timings to target the next bottleneck; reuse elastic topology and preserve one camera/light pipeline                                     |
-| Diagnostics          | Opt-in per-stage simulation/render timings, overall FPS and bounded collision work counters                                               | Add topology/memory counters when needed; calibrate scenarios and measure on physical devices                                                      |
+| Area                 | Existing implementation                                                                                                                                       | Next coherent improvement                                                                                                         |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Material definitions | Composable authoring, validated immutable definitions, shared profiles and compiled tables; stable IDs                                                        | Expand trait coverage and typed dispatch only when a concrete material or measured hot path needs it                              |
+| Motion               | Grid particles, rigid shapes, elastic networks and jointed actors                                                                                             | Keep these representations; use common local force/contact/property interfaces                                                    |
+| Density and mass     | Relative particle density; rigid/elastic mechanical mass includes finite liquid reservoirs; positive gas density and separate buoyancy encode rising behavior | Define amount/volume units and calibrate density/buoyancy units beyond solid/elastic contained-fluid mass                         |
+| Porous transport     | Integer capacity, permeability and retention; shared finite reservoirs                                                                                        | Calibrate beds and drainage; describe capacity as a storage abstraction rather than literal physical void fraction                |
+| Heat                 | Neighbor temperature exchange using `conductivity`; threshold phase changes                                                                                   | Explicit thermal conductivity, heat capacity and latent heat; pressure/phase coupling in small tested increments                  |
+| Electricity          | Conductive flag, timed charge propagation, gates and sparks                                                                                                   | Separate digital signals from electrical conductivity/current, then add limited Joule heating and resistance where useful         |
+| Chemistry            | Component-compiled contact pairs, explicit product references, finite dissolution, combustion, corrosion and bounded behavior handlers                        | Extend normalized reagent amounts, acid/base equivalent capacity, concentration and energy/yield accounting before equilibrium/pH |
+| Atmosphere           | Pressure and face velocity on four-cell tiles; barriers, buoyancy, temperature transport                                                                      | Retain the shared field; calibrate sealed/vented scenes, boundary behavior and finite oxidizer                                    |
+| Drawing              | Pixel buffer; cached rigid textures with continuous fallback; elastic/entity passes; lighting and bloom                                                       | Use stage timings to target the next bottleneck; reuse elastic topology and preserve one camera/light pipeline                    |
+| Diagnostics          | Opt-in per-stage simulation/render timings, overall FPS and bounded collision work counters                                                                   | Add topology/memory counters when needed; calibrate scenarios and measure on physical devices                                     |
 
 ## Material composition
 

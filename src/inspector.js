@@ -230,6 +230,17 @@ export function cellProperties(world, point) {
         "Density",
         `${effectiveDensity(world, i) < 0.01 ? effectiveDensity(world, i).toPrecision(2) : effectiveDensity(world, i).toFixed(2)} units`,
       ],
+      ["Base Material", materials[m.baseMaterial].name],
+      [
+        "Physical State",
+        m.materialState === "bulk" ? m.category : m.materialState,
+      ],
+      ...(m.acidity
+        ? [["Acid Strength", `${Math.round(m.acidity * 100)}%`]]
+        : []),
+      ...(m.alkalinity
+        ? [["Base Strength", `${Math.round(m.alkalinity * 100)}%`]]
+        : []),
       ["Porosity", `${m.porosity} liquid pixels`],
       ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
       ["Retention", `${Math.round(m.retention * 100)}%`],

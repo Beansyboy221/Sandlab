@@ -1,30 +1,10 @@
 import { isEntity, entityCategory } from "./entity-kinds.js";
 import { M, materials, canonicalMaterial } from "./materials.js";
 
-// Alternate phases remain stable simulation/save IDs, but share one palette entry.
-const families = {
-  Water: ["Ice", "Steam", "Snow", "Brine", "Soapy Water"],
-  Dirt: ["Mud"],
-  Clay: ["Wet Clay"],
-  Glass: ["Molten Glass"],
-  Glue: ["Liquid Glue"],
-  Sponge: ["Sponge Crumbs"],
-  Rubber: ["Rubber Crumbs"],
-  Jelly: ["Jelly Drops"],
-  Rope: ["Rope Fibers"],
-  Brick: ["Brick Rubble"],
-  Stone: ["Lava", "Stone Gravel"],
-  Steel: ["Molten Steel"],
-  Salt: ["Molten Salt"],
-  Copper: ["Molten Copper", "Copper Granules"],
-  Sodium: ["Liquid Sodium"],
-  Wax: ["Liquid Wax", "Wax Shavings"],
-  Nitrogen: ["Liquid Nitrogen"],
-};
-export const paletteBase = new Uint8Array(materials.length);
-for (const m of materials) paletteBase[m.id] = canonicalMaterial(m.id);
-for (const [name, phases] of Object.entries(families))
-  for (const phase of phases) paletteBase[M[phase]] = M[name];
+// The registry owns substance families; the palette is only a projection of them.
+export const paletteBase = Uint8Array.from(materials, (m) =>
+  m.paletteEntry ? m.id : m.baseMaterial,
+);
 export const paletteEntries = materials.filter(
   (m) => m.id && !m.deprecated && paletteBase[m.id] === m.id,
 );
@@ -36,7 +16,12 @@ export function materialSearchText(m) {
     m.category,
     m.paletteCategory,
     isEntity(m) ? entityCategory(m) : "",
-    ...(families[m.name] || []),
+    ...materials
+      .filter(
+        (state) =>
+          state.baseMaterial === m.id && state.id !== m.id && !state.retired,
+      )
+      .map((state) => state.name),
   ]
     .join(" ")
     .toLowerCase();

@@ -27,7 +27,8 @@ function wreck(w, a) {
       Math.floor(a.x + w.gravityY * d),
       Math.floor(a.y - w.gravityX * d),
     );
-    if (j >= 0 && !w.cells[j]) w.set(j, d === 0 ? M.Spark : M.Rubble);
+    if (j >= 0 && !w.cells[j])
+      w.set(j, d === 0 ? M.Spark : materials[M.Steel].fragmentTo);
   }
   w.sound.emit("impact", a.x, a.y, 0.35);
 }

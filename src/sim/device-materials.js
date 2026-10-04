@@ -1,4 +1,7 @@
 const electronics = {
+  baseMaterial: "Steel",
+  materialState: "assembly",
+  paletteEntry: true,
   device: true,
   movable: false,
   conductivity: 0.12,

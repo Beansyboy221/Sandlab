@@ -57,12 +57,15 @@ export const energyMaterials = [
     "#547cc5",
     2.4,
     {
+      baseMaterial: "Glass",
+      materialState: "assembly",
+      paletteEntry: true,
       photoelectric: true,
       conductive: true,
       conductivity: 0.18,
       resistance: 0.8,
       melt: 1200,
-      meltTo: "Molten Steel",
+      meltTo: "Molten Glass",
     },
   ],
   [
@@ -81,8 +84,8 @@ export const energyMaterials = [
     "Glass Shards",
     "powder",
     "#a8c9d1",
-    2.3,
-    { conductivity: 0.07, melt: 1700, meltTo: "Glass" },
+    undefined,
+    { permeability: 0.75, retention: 0.2 },
   ],
   [
     "Dragonfire",

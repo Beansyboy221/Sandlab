@@ -6,6 +6,10 @@ import { M, materials } from "./materials.js";
 export const mixtureFields = ["dissolvedId", "dissolvedAmount"];
 export const MAX_DISSOLVED = 4;
 export const soluble = Uint8Array.from(materials, (m) => Number(!!m.soluble));
+// Chemical dissolution can carry attacked material without making it water-soluble.
+export const dissolvable = Uint8Array.from(materials, (m) =>
+  Number(!!m.soluble || m.acidSolubility > 0 || m.alkaliSolubility > 0),
+);
 export const mixtureBase = Uint8Array.from(materials, (m) =>
   m.id === M.Brine || m.id === M["Soapy Water"]
     ? M.Water

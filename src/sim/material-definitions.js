@@ -1,11 +1,13 @@
 import {
   defineMaterial,
+  defineMaterialState,
   porous,
   springy,
   combustible,
   conductor,
   oxidizable,
 } from "./material-authoring.js";
+import { registerMaterialStates } from "./material-states.js";
 import { fragmentMaterials } from "./fragment-materials.js";
 import { deviceMaterials } from "./device-materials.js";
 import { energyMaterials } from "./energy-materials.js";
@@ -19,7 +21,12 @@ export const materialDefinitions = [
     traits: [porous(1, 0.7, 0.55)],
     properties: {
       melt: 1700,
-      meltTo: "Glass",
+      meltTo: "Molten Glass",
+      baseMaterial: "Glass",
+      materialState: "fragment",
+      paletteEntry: true,
+      lightAbsorption: 0.88,
+      lightReflectivity: 0.12,
       conductivity: 0.09,
       brittleness: 0.8,
     },
@@ -190,6 +197,10 @@ export const materialDefinitions = [
     "#e2edf0",
     0.35,
     {
+      porosity: 2,
+      permeability: 0.65,
+      retention: 0.65,
+      brittleness: 0.7,
       temperature: -15,
       melt: 1,
       meltTo: "Water",
@@ -197,18 +208,7 @@ export const materialDefinitions = [
     },
   ],
   ["Cement", "powder", "#b8b6a1", 1.8, {}],
-  [
-    "Metal Dust",
-    "powder",
-    "#96a6b7",
-    5,
-    {
-      conductive: true,
-      conductivity: 0.4,
-      melt: 1450,
-      meltTo: "Molten Steel",
-    },
-  ],
+  ["Metal Dust", "powder", "#96a6b7", undefined, {}],
   [
     "Acid",
     "liquid",
@@ -563,8 +563,12 @@ export const materialDefinitions = [
     {
       conductivity: 0.025,
       resistance: 0.1,
-      melt: 1550,
-      meltTo: "Molten Steel",
+      conductive: false,
+      oxidationRate: 0,
+      acidMetalReactivity: 0,
+      acidSolubility: 0.12,
+      melt: 1600,
+      meltTo: "Molten Rust",
     },
   ],
   [
@@ -604,7 +608,6 @@ export const materialDefinitions = [
       conductive: true,
       alkaline: true,
       aqueous: true,
-      corrodesOrganic: true,
     },
   ],
   [
@@ -738,14 +741,15 @@ export const materialDefinitions = [
     "#cf83b4",
     1.05,
     {
+      fragmentTo: "Jelly Drops",
       elasticity: 0.08,
       damping: 0.88,
       tearAt: 6,
       conductivity: 0.12,
       melt: 75,
-      meltTo: "Water",
+      meltTo: "Jelly Drops",
       freeze: -3,
-      freezeTo: "Ice",
+      freezeTo: "Frozen Jelly",
       organic: true,
     },
   ],
@@ -825,7 +829,13 @@ materialDefinitions.push(
     99,
     { static: true, resistance: 1, conductivity: 0.08 },
   ],
-  ["Rubble", "powder", "#8d8b82", 2.4, { melt: 1200, meltTo: "Lava" }],
+  [
+    "Rubble",
+    "none",
+    "#8d8b82",
+    2.4,
+    { deprecated: true, retired: true, replacement: "Stone Gravel" },
+  ],
   [
     "Legacy Sawdust",
     "powder",
@@ -1009,3 +1019,124 @@ materialDefinitions.push(
     },
   ],
 );
+
+materialDefinitions.push(
+  defineMaterialState({
+    name: "Concrete Fragments",
+    base: "Concrete",
+    representation: "granular",
+    state: "fragment",
+    color: "#b8b6a1",
+    properties: { permeability: 0.8 },
+  }),
+  defineMaterialState({
+    name: "Ceramic Fragments",
+    base: "Ceramic",
+    representation: "granular",
+    state: "fragment",
+    color: "#d5bb96",
+    properties: { permeability: 0.7 },
+  }),
+  defineMaterialState({
+    name: "Crystal Shards",
+    base: "Crystal",
+    representation: "granular",
+    state: "fragment",
+    color: "#b9d2e6",
+    properties: { permeability: 0.75 },
+  }),
+  defineMaterialState({
+    name: "Mirror Shards",
+    base: "Mirror",
+    representation: "granular",
+    state: "fragment",
+    color: "#b9c6ce",
+    properties: { permeability: 0.75 },
+  }),
+  ...[
+    ["Crystal", 1400],
+    ["Mirror", 1400],
+    ["Concrete", 1500],
+    ["Brick", 1650],
+    ["Ceramic", 1800],
+  ].map(([base, threshold]) =>
+    defineMaterialState({
+      name: "Molten " + base,
+      base,
+      representation: "fluid",
+      state: "liquid",
+      color: "#ffab65",
+      properties: {
+        temperature: threshold + 80,
+        freeze: threshold - 30,
+        freezeTo: base,
+        viscosity: 4,
+        conductivity: 0.15,
+      },
+    }),
+  ),
+  defineMaterialState({
+    name: "Frozen Jelly",
+    base: "Jelly",
+    representation: "rigid",
+    state: "frozen",
+    color: "#d9b7d3",
+    properties: { melt: 0, meltTo: "Jelly", toughness: 3 },
+  }),
+  defineMaterialState({
+    name: "Molten Rust",
+    base: "Steel",
+    representation: "fluid",
+    state: "oxide",
+    color: "#dc7949",
+    density: 3.1,
+    properties: {
+      temperature: 1680,
+      freeze: 1570,
+      freezeTo: "Rust",
+      viscosity: 5,
+      conductivity: 0.025,
+      conductive: false,
+      oxidationRate: 0,
+      acidMetalReactivity: 0,
+      acidSolubility: 0.12,
+    },
+  }),
+);
+materialDefinitions.push(
+  defineMaterialState({
+    name: "Iron Salt",
+    base: "Steel",
+    representation: "granular",
+    state: "compound",
+    color: "#c5a16e",
+    density: 3,
+    properties: {
+      soluble: true,
+      conductivity: 0.12,
+      conductive: true,
+      oxidationRate: 0,
+      acidMetalReactivity: 0,
+      viscosityIncrease: 0.15,
+      freezeDepression: 2,
+    },
+  }),
+  defineMaterialState({
+    name: "Copper Salt",
+    base: "Copper",
+    representation: "granular",
+    state: "compound",
+    color: "#72b5a3",
+    density: 3.4,
+    properties: {
+      soluble: true,
+      conductivity: 0.12,
+      conductive: true,
+      oxidationRate: 0,
+      acidMetalReactivity: 0,
+      viscosityIncrease: 0.15,
+      freezeDepression: 2,
+    },
+  }),
+);
+registerMaterialStates(materialDefinitions);

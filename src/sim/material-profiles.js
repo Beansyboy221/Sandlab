@@ -43,7 +43,7 @@ export function applyMaterialProfiles(materials, M) {
 
   for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 
-  for (const name of ["Steel", "Metal Dust"])
+  for (const name of ["Steel"])
     Object.assign(materials[M[name]], {
       oxidizeTo: M.Rust,
       oxidationRate: 0.0015,
@@ -55,9 +55,54 @@ export function applyMaterialProfiles(materials, M) {
       waterLike: true,
       absorbable: true,
     });
-  materials[M["Acid"]].acidic = true;
+  Object.assign(materials[M.Acid], {
+    acidic: true,
+    acidity: 1,
+    neutralizedTo: M.Water,
+  });
+  Object.assign(materials[M.Lye], {
+    alkalinity: 1,
+    neutralizedTo: M.Water,
+    neutralizationProduct: M.Salt,
+  });
+  Object.assign(materials[M["Baking Soda"]], {
+    alkalinity: 0.5,
+    carbonate: 1,
+    neutralizationProduct: M.Salt,
+  });
+  Object.assign(materials[M.Steel], {
+    acidMetalReactivity: 0.05,
+    acidProduct: M["Iron Salt"],
+    halideTo: M["Iron Salt"],
+  });
+  Object.assign(materials[M.Copper], { halideTo: M["Copper Salt"] });
+  Object.assign(materials[M.Rust], {
+    acidProduct: M["Iron Salt"],
+    reductionTo: M["Metal Dust"],
+    reductionTemperature: 700,
+  });
+  materials[M["Molten Rust"]].acidProduct = M["Iron Salt"];
+  Object.assign(materials[M.Chlorine], { oxidizingStrength: 1 });
+  Object.assign(materials[M.Coal], {
+    reducingStrength: 1,
+    reductionGas: M.CO2,
+  });
+  for (const name of ["Sodium", "Liquid Sodium"])
+    materials[M[name]].waterReactionProduct = M.Lye;
+  materials[M.Cement].hydratesTo = M.Concrete;
+  materials[M.Fertilizer].nutritionSoluble = true;
+  for (const [name, solubility] of [
+    ["Stone", 0.25],
+    ["Concrete", 1],
+    ["Wood", 0.2],
+    ["Plant", 0.5],
+  ])
+    materials[M[name]].acidSolubility = solubility;
+  // Fired ceramic has its own melt, rather than borrowing stone's liquid identity.
+  materials[M.Ceramic].melt = 1800;
+  materials[M.Ceramic].meltTo = M["Molten Ceramic"];
   for (const name of ["Wood", "Plant", "Seed", "Sponge", "Wax", "Liquid Wax"])
-    materials[M[name]].organic = true;
+    Object.assign(materials[M[name]], { organic: true, alkaliSolubility: 1 });
 
   for (const name of ["Hydrogen", "Methane"])
     materials[M[name]].requiresOxygen = true;
@@ -95,9 +140,8 @@ export function applyMaterialProfiles(materials, M) {
     ["Snow", 2, 0.65, 0.65, 0.7],
     ["Salt", 1, 0.35, 0.7, 0.85],
     ["Baking Soda", 1, 0.06, 0.8, 0.7],
-    ["Rubble", 1, 0.9, 0.25, 0.75],
     ["Stone Gravel", 1, 0.9, 0.25, 0.75],
-    ["Brick Rubble", 2, 0.8, 0.65, 0.8],
+    ["Brick Fragments", 2, 0.8, 0.65, 0.8],
     ["Glass Shards", 1, 0.75, 0.2, 0.95],
     ["Sawdust", 4, 0.3, 0.94, 0.65],
     ["Coal", 2, 0.35, 0.8, 0.7],
@@ -130,27 +174,20 @@ export function applyMaterialProfiles(materials, M) {
     if (m.rigid) {
       m.toughness = m.conductive ? 26 : 6;
       m.compressiveStrength = m.conductive ? 60 : 12;
-      if ([M.Stone, M.Concrete, M.Brick, M.Ceramic].includes(m.id))
-        m.breakInto = M.Rubble;
       if (m.id === M.Brick || m.id === M.Ceramic) {
         m.toughness = m.id === M.Brick ? 2.5 : 2;
-        m.breakInto = M["Brick Rubble"];
       }
       if (m.id === M.Glass || m.id === M.Crystal) {
         m.toughness = 1.8;
         m.compressiveStrength = 3;
-        m.breakInto = M["Glass Shards"];
       }
       if (m.id === M.Ice) {
         m.toughness = 3;
         m.compressiveStrength = 4;
-        m.breakInto = M.Snow;
       }
       if (m.id === M.Wood) {
         m.toughness = 8;
-        m.breakInto = M["Sawdust"];
       }
-      if (m.id === M.Steel) m.breakInto = M["Metal Dust"];
       if (m.resistance === 1) m.resistance = 0.97;
     }
 
@@ -164,29 +201,4 @@ export function applyMaterialProfiles(materials, M) {
     ["Wall", 0.5, 0.05],
   ])
     Object.assign(materials[M[name]], { friction, restitution });
-}
-
-export function applyFragmentProfiles(materials, M) {
-  for (const [from, to] of Object.entries({
-    Wood: "Sawdust",
-    Stone: "Stone Gravel",
-    Steel: "Metal Dust",
-    Copper: "Copper Granules",
-    Glass: "Glass Shards",
-    Crystal: "Glass Shards",
-    Sponge: "Sponge Crumbs",
-    Mirror: "Glass Shards",
-    Ice: "Snow",
-    Rubber: "Rubber Crumbs",
-    Jelly: "Jelly Drops",
-    Rope: "Rope Fibers",
-    Wax: "Wax Shavings",
-    Brick: "Brick Rubble",
-    Ceramic: "Brick Rubble",
-    Concrete: "Brick Rubble",
-  }))
-    if (M[from] !== undefined) {
-      materials[M[from]].fragmentTo = M[to];
-      materials[M[to]].fragment = true;
-    }
 }
