@@ -1,4 +1,34 @@
 export function applyMaterialProfiles(materials, M) {
+  // Density is positive mass per volume; buoyancy is a separate response to
+  // implicit ambient air. Historical signed gas values encoded both at once.
+  for (const [name, density] of [
+    ["Steam", 0.0006],
+    ["Smoke", 0.001],
+    ["Oxygen", 0.00143],
+    ["Hydrogen", 0.00009],
+    ["Methane", 0.00066],
+    ["Chlorine", 0.0032],
+    ["Nitrogen", 0.00117],
+    ["CO2", 0.00198],
+    ["Cloud", 0.001],
+    ["Bubble", 0.001],
+  ]) {
+    materials[M[name]].density = density;
+    materials[M[name]].buoyancy = density > 0.0012 ? 1 : -1;
+  }
+  materials[M.Mirror].density = materials[M.Glass].density;
+  Object.assign(materials[M.Salt], {
+    soluble: true,
+    freezeDepression: 5,
+    viscosityIncrease: 0.15,
+  });
+  Object.assign(materials[M.Soap], {
+    soluble: true,
+    freezeDepression: 2,
+    viscosityIncrease: 0.8,
+    surfactant: true,
+  });
+
   for (const m of materials)
     m.paletteCategory = m.device
       ? "devices"

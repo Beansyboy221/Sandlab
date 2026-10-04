@@ -1,3 +1,4 @@
+import { freezingPoint } from "./mixtures.js";
 import { M, materials } from "./materials.js";
 export function changePhase(w, i, x, y, m) {
   const temperature = w.temp[i];
@@ -42,7 +43,10 @@ export function changePhase(w, i, x, y, m) {
   else if (m.boil !== undefined && temperature > m.boil) {
     target = m.boilTo;
     w.fields.add(x, y, 1.5);
-  } else if (m.freeze !== undefined && temperature < m.freeze)
+  } else if (
+    m.freeze !== undefined &&
+    temperature < (m.id === M.Water ? freezingPoint(w, i) : m.freeze)
+  )
     target = m.freezeTo;
   else if (m.condense !== undefined && temperature < m.condense)
     target = m.condenseTo;

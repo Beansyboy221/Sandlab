@@ -1,3 +1,13 @@
+import {
+  mixtureBase,
+  migrateMixture,
+  retainsMixture,
+  releaseDissolved,
+  canDissolve,
+  addDissolved,
+  effectiveDensity,
+  effectiveViscosity,
+} from "./mixtures.js";
 import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 import {
   PerformanceCounters,
@@ -65,6 +75,8 @@ export class World {
     this.growth = new Uint8Array(this.length);
     this.storedLiquid = new Uint8Array(this.length);
     this.storedAmount = new Uint8Array(this.length);
+    this.dissolvedId = new Uint8Array(this.length);
+    this.dissolvedAmount = new Uint8Array(this.length);
     // Unsaved scheduler scratch; storage itself travels in particleStateFields.
     this.poreUpdated = new Uint32Array(this.length);
     for (const key of portalFields)
@@ -130,7 +142,8 @@ export class World {
     lifetime = materials[id].lifetime || 0,
     connectElastic = true,
   ) {
-    id = canonicalMaterial(id);
+    const legacyId = canonicalMaterial(id);
+    id = mixtureBase[legacyId];
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
     if (materials[id].projectile) {
       this.missiles.world = this;
@@ -197,6 +210,9 @@ export class World {
     const water = id === M.Mud ? 2 : id === M["Wet Clay"] ? 1 : 0;
     this.storedLiquid[i] = water ? M.Water : 0;
     this.storedAmount[i] = water;
+    this.dissolvedId[i] = 0;
+    this.dissolvedAmount[i] = 0;
+    migrateMixture(this, i, legacyId);
     this.poreUpdated[i] = 0;
     this.chargedAt[i] = 0;
     this.charge[i] = 0;
@@ -217,8 +233,19 @@ export class World {
   }
   transform(i, id, ...state) {
     if (i < 0 || materials[this.cells[i]]?.static) return false;
+    id = mixtureBase[id];
+    if (
+      this.dissolvedAmount[i] &&
+      !retainsMixture(id) &&
+      !releaseDissolved(this, i)
+    )
+      return false;
+    const ingredient = this.dissolvedId[i],
+      units = this.dissolvedAmount[i];
     if (!this.storedAmount[i]) {
       this.set(i, id, ...state);
+      this.dissolvedId[i] = ingredient;
+      this.dissolvedAmount[i] = units;
       return true;
     }
     if (!releaseForChange(this, i, id)) return false;
@@ -226,7 +253,11 @@ export class World {
       type = this.storedLiquid[i],
       food = this.nutrition[i],
       moisture = this.moisture[i];
+    const remainingIngredient = this.dissolvedId[i],
+      remainingUnits = this.dissolvedAmount[i];
     this.set(i, id, ...state);
+    this.dissolvedId[i] = remainingIngredient;
+    this.dissolvedAmount[i] = remainingUnits;
     if (amount) {
       this.storedAmount[i] = amount;
       this.storedLiquid[i] = type;
@@ -295,6 +326,8 @@ export class World {
       "growth",
       "storedLiquid",
       "storedAmount",
+      "dissolvedId",
+      "dissolvedAmount",
       "chunks",
     ])
       this[key].fill(0);
@@ -386,6 +419,16 @@ export class World {
     return transportParticle(this, i, contact, dx, dy);
   }
   swap(i, j) {
+    const moving = materials[this.cells[i]];
+    if (!moving.rigid && moving.id && !moving.gas)
+      this.fields.airflow.displace(
+        this,
+        i % this.width,
+        Math.floor(i / this.width),
+        (j % this.width) - (i % this.width),
+        Math.floor(j / this.width) - Math.floor(i / this.width),
+        moving,
+      );
     if (
       !this.fields.obstaclesDirty &&
       this.fields.blocks(this.cells[i]) !== this.fields.blocks(this.cells[j])
@@ -460,8 +503,16 @@ export class World {
       b.category === "powder"
     )
       return false;
-    if (vertical > 0) return a.density > b.density + 0.08;
-    if (vertical < 0) return a.density < b.density - 0.04;
+    if (vertical > 0)
+      return (
+        effectiveDensity(this, i) >
+        effectiveDensity(this, j) + (a.gas && b.gas ? 0.00004 : 0.08)
+      );
+    if (vertical < 0)
+      return (
+        effectiveDensity(this, i) <
+        effectiveDensity(this, j) - (a.gas && b.gas ? 0.00002 : 0.04)
+      );
     return false;
   }
   move(i, x, y) {
@@ -474,7 +525,7 @@ export class World {
     }
     if (moveKinetic(this, i, x, y)) return;
     const gas = m.gas,
-      fall = gas ? (m.density > 0 ? 1 : -1) : 1,
+      fall = gas ? (m.buoyancy ?? (m.density > 0 ? 1 : -1)) : 1,
       downX = this.gravityX,
       downY = this.gravityY,
       acrossX = downY,
@@ -527,6 +578,13 @@ export class World {
     const nx = x + downX * fall,
       ny = y + downY * fall;
     if (this.tryMove(i, nx, ny, fall)) return;
+    if (
+      cat === "powder" &&
+      this.storedAmount[i] &&
+      materials[this.storedLiquid[i]].waterLike &&
+      this.random() < (0.4 * this.storedAmount[i]) / Math.max(1, m.porosity)
+    )
+      return;
     for (let side = 0; side < 2; side++) {
       const sign = side ? -direction : direction;
       if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
@@ -554,7 +612,7 @@ export class World {
       this.fallDistance[i] = 0;
     }
     if (cat === "liquid" || gas) {
-      if (this.random() > 1 / m.viscosity) return;
+      if (this.random() > 1 / effectiveViscosity(this, i)) return;
       const reach = gas ? 1 : 4;
       for (let side = 0; side < 2; side++) {
         const sign = side ? -direction : direction;
@@ -815,6 +873,10 @@ export class World {
           ny = Math.round(y) + dy;
         if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) continue;
         const i = ny * this.width + nx;
+        if (canDissolve(this, i, id)) {
+          addDissolved(this, i, id);
+          continue;
+        }
         if (
           !id ||
           replace ||

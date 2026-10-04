@@ -14,7 +14,9 @@ export function moveKinetic(w, i, x, y) {
   if (mode) {
     w.environment.sample(x, y);
     w.fields.airflow.sample(w.fields, x, y);
-    const buoyancy = m.gas ? (m.density > 0 ? 0.15 : -0.15) : 1,
+    const buoyancy = m.gas
+        ? (m.buoyancy ?? (m.density > 0 ? 1 : -1)) * 0.15
+        : 1,
       drag = m.gas ? 0.08 : m.category === "liquid" ? 0.02 : 0.005;
     w.velocityX[i] = clamp(
       w.velocityX[i] +

@@ -20,9 +20,9 @@ const run = (w, n) => {
   for (let i = 0; i < n; i++) w.step();
 };
 test("catalogs are separate, complete, and preserve IDs for old creatures and devices", () => {
-  assert.equal(paletteMaterials.length, 63);
+  assert.equal(paletteMaterials.length, 59);
   assert.equal(paletteEntities.length, 32);
-  assert.equal(paletteEntries.length, 95);
+  assert.equal(paletteEntries.length, 91);
   assert.ok(paletteMaterials.every((m) => !isEntity(m)));
   assert.ok(paletteEntities.every(isEntity));
   assert.equal(M["Heat-Seeking Missile"], 105);

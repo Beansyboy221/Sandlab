@@ -93,7 +93,7 @@ test("neutralization heats and pressurizes locally, metal acid reactions create 
     react(w, 300, 12, 12);
     assert.ok(w.fields.pressure[w.fields.index(12, 12)] > 0);
     assert.ok(w.temp[300] > 20);
-    assert.equal(w.cells[301], target === "Steel" ? M.Hydrogen : M.Brine);
+    assert.equal(w.cells[301], target === "Steel" ? M.Hydrogen : M.Salt);
   }
   for (const target of [
     M.Glass,
@@ -187,10 +187,7 @@ test("room-temperature oxygen and CO2 are heavier than ambient air, while methan
     const w = new World(24, 24);
     w.set(12 * 24 + 12, id);
     w.move(12 * 24 + 12, 12, 12);
-    assert.equal(
-      w.cells[(12 + (materials[id].density > 0 ? 1 : -1)) * 24 + 12],
-      id,
-    );
+    assert.equal(w.cells[(12 + materials[id].buoyancy) * 24 + 12], id);
   }
 });
 

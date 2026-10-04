@@ -100,12 +100,21 @@ test("reaction bench reacts and pottery kiln dries and fires without melting its
     assert.equal(count(chemistry, M.Sodium), 0);
     const pottery = new World(width, height);
     loadPreset(pottery, "pottery");
-    const wetBefore = count(pottery, M["Wet Clay"]);
+    const wetBefore = pottery.storedAmount.reduce(
+      (n, a, i) => n + Number(pottery.cells[i] === M.Clay && a > 0),
+      0,
+    );
     run(pottery, 400);
     assert.ok(count(pottery, M.Brick) > 10);
     // Clay must vent vapor to dry. Flow can leave some wet cells enclosed by
     // fired bricks; those cells correctly retain water instead of deleting it.
-    assert.ok(count(pottery, M["Wet Clay"]) < wetBefore / 3);
+    assert.ok(
+      pottery.storedAmount.reduce(
+        (n, a, i) => n + Number(pottery.cells[i] === M.Clay && a > 0),
+        0,
+      ) <
+        wetBefore / 3,
+    );
     assert.equal(count(pottery, M.Lava), 0);
   }
 });

@@ -1,3 +1,4 @@
+import { mixtureFields } from "./mixtures.js";
 import { rigidFields } from "./rigid-bodies.js";
 import { elasticFields } from "./elasticity.js";
 import { portalFields } from "./portals.js";
@@ -19,6 +20,7 @@ export const particleStateFields = [
   "growth",
   "storedLiquid",
   "storedAmount",
+  ...mixtureFields,
   ...portalFields,
   ...elasticFields,
   ...rigidFields,

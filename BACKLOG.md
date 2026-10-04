@@ -23,3 +23,5 @@
 - Extend gravity-relative character navigation and contact support around Planet cores; keep orbital forces shared and bounded.
 
 - Calibrate pore transport with more experimental beds; calibrate intake/outflow momentum and interfacial wetting; contained-fluid weight is now included without topology rebuilds. Shared integer reservoirs, permeability and retention now cover powders, solids, elastics and plant roots.
+
+- Extend per-cell dissolved ingredients beyond one additive slot only when useful reactions justify the extra memory; add solubility curves and precipitation thresholds without losing component mass.

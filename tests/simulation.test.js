@@ -110,7 +110,8 @@ test("water dissolves salt and cures cement", () => {
   w.set(55, M.Water);
   w.set(56, M.Salt);
   react(w, 55, 5, 5);
-  assert.equal(w.cells[55], M.Brine);
+  assert.equal(w.cells[55], M.Water);
+  assert.equal(w.dissolvedId[55], M.Salt);
   assert.equal(w.cells[56], 0);
   w.set(55, M.Water);
   w.set(56, M.Cement);
@@ -572,8 +573,8 @@ test("sponge absorbs several liquid types up to capacity and cannot mix oil with
       absorb(w, i, 6, 6);
     }
     assert.equal(w.storedAmount[i], 48);
-    assert.equal(w.storedLiquid[i], liquid);
-    assert.equal(w.cells[j], liquid);
+    assert.equal(w.storedLiquid[i], liquid === M.Brine ? M.Water : liquid);
+    assert.equal(w.cells[j], liquid === M.Brine ? M.Water : liquid);
     w.set(j, liquid === M.Oil ? M.Water : M.Oil);
     absorb(w, i, 6, 6);
     assert.equal(w.cells[j], liquid === M.Oil ? M.Water : M.Oil);
@@ -608,7 +609,9 @@ test("sponge save state is deterministic, backward compatible, and validated bef
   const w = new World(20, 20),
     i = index(w, 10, 10);
   w.set(i, M.Sponge);
-  w.storedLiquid[i] = M.Brine;
+  w.storedLiquid[i] = M.Water;
+  w.dissolvedId[i] = M.Salt;
+  w.dissolvedAmount[i] = 1;
   w.storedAmount[i] = 23;
   applyTool(w, "vacuum", 10, 10, 2);
   const copy = new World(20, 20);

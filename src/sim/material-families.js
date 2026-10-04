@@ -3,7 +3,9 @@ import { M, materials, canonicalMaterial } from "./materials.js";
 
 // Alternate phases remain stable simulation/save IDs, but share one palette entry.
 const families = {
-  Water: ["Ice", "Steam", "Snow", "Cloud"],
+  Water: ["Ice", "Steam", "Snow", "Cloud", "Brine", "Soapy Water"],
+  Dirt: ["Mud"],
+  Clay: ["Wet Clay"],
   Glass: ["Molten Glass"],
   Wood: ["Wood Chips"],
   Rubber: ["Rubber Crumbs"],

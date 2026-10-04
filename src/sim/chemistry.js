@@ -1,3 +1,4 @@
+import { canDissolve, addDissolved } from "./mixtures.js";
 import { releaseForChange } from "./absorption.js";
 import { M, materials } from "./materials.js";
 // Indexed symmetric contact rules run only for participating substances.
@@ -8,19 +9,20 @@ function pair(a, b, resultA, resultB, options = {}) {
   (contacts[a] ??= [])[b] = reaction;
   (contacts[b] ??= [])[a] = reaction;
 }
-pair(M.Water, M.Salt, M.Brine, 0);
+
+pair(M.Water, M.Salt, M.Water, 0, { dissolve: M.Salt });
 pair(M.Water, M.Cement, 0, M.Concrete);
 pair(M.Water, M.Fertilizer, M.Water, 0, { dissolveNutrition: true });
 for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
   pair(acid.id, M["Baking Soda"], M.Water, M["CO2"], {
     pressure: 4,
   });
-  pair(acid.id, M.Lye, M.Water, M.Brine, { heat: 35 });
-  pair(acid.id, M.Steel, M.Brine, M.Hydrogen, {
+  pair(acid.id, M.Lye, M.Water, M.Salt, { heat: 35 });
+  pair(acid.id, M.Steel, M.Salt, M.Hydrogen, {
     chance: 0.05,
     heat: 12,
   });
-  pair(acid.id, M["Steel Powder"], M.Brine, M.Hydrogen, {
+  pair(acid.id, M["Steel Powder"], M.Salt, M.Hydrogen, {
     chance: 0.12,
     heat: 12,
   });
@@ -56,6 +58,17 @@ function contact(w, i, j, row, x, y) {
   )
     return false;
   const forward = w.cells[i] === rule.a;
+  if (rule.dissolve) {
+    const host = forward ? i : j,
+      source = forward ? j : i;
+    if (!canDissolve(w, host, rule.dissolve)) return false;
+    const temperature = (w.temp[host] + w.temp[source]) * 0.5;
+    if (!w.transform(source, 0)) return false;
+    addDissolved(w, host, rule.dissolve);
+    w.temp[host] = temperature;
+    return true;
+  }
+
   if (
     !releaseForChange(w, i, forward ? rule.resultA : rule.resultB) ||
     !releaseForChange(w, j, forward ? rule.resultB : rule.resultA)
@@ -129,7 +142,7 @@ export function oxidize(w, i, x, y, material) {
     const id = w.cells[j];
     if (materials[id].waterLike) wet = true;
     if (!id || id === M.Oxygen) oxygen = true;
-    if (id === M.Brine) salty = true;
+    if (id === M.Salt || w.dissolvedId[j] === M.Salt) salty = true;
   });
   if (wet && oxygen && w.random() < material.oxidationRate * (salty ? 4 : 1))
     w.transform(i, material.oxidizeTo, w.temp[i]);

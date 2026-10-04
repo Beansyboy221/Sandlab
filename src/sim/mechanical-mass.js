@@ -1,3 +1,4 @@
+import { dissolvedMass } from "./mixtures.js";
 import { materialTables } from "./materials.js";
 
 // One dry solid/elastic cell has mass equal to its relative density. Each
@@ -5,9 +6,11 @@ import { materialTables } from "./materials.js";
 // Reservoir capacity is a gameplay storage abstraction, not literal void space.
 export function containedFluidMass(world, i) {
   const amount = world.storedAmount[i];
-  return amount
-    ? amount * Math.max(0, materialTables.density[world.storedLiquid[i]])
-    : 0;
+  return (
+    (amount
+      ? amount * Math.max(0, materialTables.density[world.storedLiquid[i]])
+      : 0) + dissolvedMass(world, i)
+  );
 }
 export function cellMass(world, i) {
   return materialTables.density[world.cells[i]] + containedFluidMass(world, i);

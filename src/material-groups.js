@@ -1,4 +1,4 @@
-import { paletteEntries } from "./sim/material-families.js";
+import { paletteEntries, paletteBase } from "./sim/material-families.js";
 export const materialGroupsKey = "sandlab.material-groups.v1";
 export const MAX_MATERIAL_GROUPS = 16;
 const allowed = new Set(paletteEntries.map((m) => m.id));
@@ -17,7 +17,16 @@ function validateGroup(group) {
   return {
     id: group.id,
     name: group.name.trim(),
-    materials: [...new Set(group.materials.filter((id) => allowed.has(id)))],
+    materials: [
+      ...new Set(
+        group.materials
+          .filter(
+            (id) => Number.isInteger(id) && id >= 0 && id < paletteBase.length,
+          )
+          .map((id) => paletteBase[id])
+          .filter((id) => allowed.has(id)),
+      ),
+    ],
   };
 }
 export class MaterialGroups {

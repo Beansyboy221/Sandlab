@@ -1,3 +1,4 @@
+import { MAX_DISSOLVED } from "./mixtures.js";
 import { M, materials } from "./materials.js";
 
 export const absorbable = (id) => !!materials[id]?.absorbable;
@@ -83,6 +84,12 @@ export function absorb(w, i, x, y) {
       compatible(w.storedLiquid[j], t) &&
       (!w.inParticlePass || w.poreUpdated[j] !== w.tick)
     ) {
+      if (
+        w.dissolvedId[i] &&
+        w.dissolvedId[j] &&
+        w.dissolvedId[i] !== w.dissolvedId[j]
+      )
+        continue;
       const b = w.storedAmount[j];
       // Equalize saturation rather than raw amounts, so a large sponge can wet
       // a small soil pore without that soil endlessly pumping liquid back.
@@ -151,12 +158,30 @@ export function absorbFromLiquid(w, i, x, y) {
   return false;
 }
 function takeLiquid(w, i, j) {
+  if (
+    (w.dissolvedId[i] &&
+      w.dissolvedId[j] &&
+      w.dissolvedId[i] !== w.dissolvedId[j]) ||
+    w.dissolvedAmount[i] + w.dissolvedAmount[j] > 255
+  )
+    return false;
   if (w.nutrition[i] + w.nutrition[j] > 255) return false;
   const a = w.storedAmount[i],
     type = w.cells[j],
     food = w.nutrition[j],
     heat = w.temp[j];
-  if (!w.transform(j, 0)) return false;
+  const additive = w.dissolvedId[j],
+    solute = w.dissolvedAmount[j];
+  w.dissolvedId[j] = w.dissolvedAmount[j] = 0;
+  if (!w.transform(j, 0)) {
+    w.dissolvedId[j] = additive;
+    w.dissolvedAmount[j] = solute;
+    return false;
+  }
+  if (solute) {
+    w.dissolvedId[i] = additive;
+    w.dissolvedAmount[i] += solute;
+  }
   w.temp[i] = (w.temp[i] * (a + 1) + heat) / (a + 2);
   w.storedAmount[i] = a + 1;
   w.storedLiquid[i] = mixed(w.storedLiquid[i], type);
@@ -168,6 +193,16 @@ function transfer(w, i, j, units) {
   const a = w.storedAmount[i],
     b = w.storedAmount[j],
     t = w.storedLiquid[i];
+  const solute = Math.min(
+    Math.floor((w.dissolvedAmount[i] * units) / a),
+    MAX_DISSOLVED * materials[w.cells[j]].porosity - w.dissolvedAmount[j],
+  );
+  if (solute) {
+    w.dissolvedId[j] = w.dissolvedId[i];
+    w.dissolvedAmount[j] += solute;
+    w.dissolvedAmount[i] -= solute;
+    if (!w.dissolvedAmount[i]) w.dissolvedId[i] = 0;
+  }
   const food = Math.round((w.nutrition[i] * units) / a);
   w.temp[j] = (w.temp[j] * (b + 1) + w.temp[i] * units) / (b + 1 + units);
   w.storedLiquid[j] = mixed(w.storedLiquid[j], t);
@@ -187,11 +222,6 @@ function hydrate(w, i) {
     return;
   const amount = materials[w.storedLiquid[i]].waterLike ? w.storedAmount[i] : 0;
   w.moisture[i] = Math.min(255, amount * 80);
-  if (id === M.Clay && amount) w.transform(i, M["Wet Clay"], w.temp[i]);
-  else if (id === M.Dirt && amount === materials[id].porosity)
-    w.transform(i, M.Mud, w.temp[i]);
-  else if (id === M.Mud && !amount) w.transform(i, M.Dirt, w.temp[i]);
-  else if (id === M["Wet Clay"] && !amount) w.transform(i, M.Clay, w.temp[i]);
 }
 
 export function consumeWater(w, i) {
@@ -217,6 +247,18 @@ function release(w, i, x, y, output, downwardOnly = false) {
         output === M.Steam ? 120 : output === M.Fire ? 680 : w.temp[i],
       );
       w.nutrition[j] = food;
+      if (!hot) {
+        const solute = Math.min(
+          MAX_DISSOLVED,
+          Math.floor(w.dissolvedAmount[i] / amount),
+        );
+        if (solute) {
+          w.dissolvedId[j] = w.dissolvedId[i];
+          w.dissolvedAmount[j] = solute;
+          w.dissolvedAmount[i] -= solute;
+          if (!w.dissolvedAmount[i]) w.dissolvedId[i] = 0;
+        }
+      }
     }
     w.nutrition[i] -= food;
     w.storedAmount[i]--;

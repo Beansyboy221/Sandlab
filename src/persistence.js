@@ -10,6 +10,7 @@ import {
   validateLevelMetadata,
   applyLevelMetadata,
 } from "./level-properties.js";
+import { migrateMixture, soluble, MAX_DISSOLVED } from "./sim/mixtures.js";
 import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
 import { acceptsLiquid } from "./sim/absorption.js";
@@ -109,6 +110,8 @@ export function validateSnapshot(data) {
         "growth",
         "storedLiquid",
         "storedAmount",
+        "dissolvedId",
+        "dissolvedAmount",
         ...portalFields,
       ].includes(key)
         ? new Uint32Array(length)
@@ -153,9 +156,13 @@ export function validateSnapshot(data) {
                     ? 65535
                     : key === "storedAmount"
                       ? 255
-                      : ["cells", "clone", "residue", "storedLiquid"].includes(
-                            key,
-                          )
+                      : [
+                            "cells",
+                            "clone",
+                            "residue",
+                            "storedLiquid",
+                            "dissolvedId",
+                          ].includes(key)
                         ? materials.length - 1
                         : 255;
     const minimum =
@@ -193,6 +200,22 @@ export function validateSnapshot(data) {
         throw Error("Invalid elastic particle identity.");
       elasticIds.add(id);
     }
+    const solute = data.arrays.dissolvedId?.[i] || 0,
+      quantity = data.arrays.dissolvedAmount?.[i] || 0;
+    const carrier = data.arrays.cells[i];
+    if (
+      (quantity &&
+        (!soluble[solute] ||
+          !(
+            carrier === M.Water ||
+            carrier === M.Ice ||
+            materials[carrier]?.porosity
+          ) ||
+          quantity >
+            MAX_DISSOLVED * Math.max(1, materials[carrier]?.porosity || 0))) ||
+      (!quantity && solute)
+    )
+      throw Error("Invalid dissolved ingredients.");
     const amount = data.arrays.storedAmount?.[i] || 0,
       type = data.arrays.storedLiquid?.[i] || 0;
     if (
@@ -280,7 +303,13 @@ export function restore(world, data) {
   world.lastStrikeTick = -1;
   for (const key of arrays)
     world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
-  for (const key of ["cells", "clone", "residue", "storedLiquid"])
+  for (const key of [
+    "cells",
+    "clone",
+    "residue",
+    "storedLiquid",
+    "dissolvedId",
+  ])
     for (let i = 0; i < world.length; i++)
       world[key][i] = canonicalMaterial(world[key][i]);
   for (let i = 0; i < world.length; i++) {
@@ -302,6 +331,7 @@ export function restore(world, data) {
       const lifetime = materials[world.cells[i]].lifetime;
       world.life[i] = lifetime ? world.life[i] || lifetime : 0;
     }
+    migrateMixture(world, i, old);
     // Older sponge saves stored the dissolved liquid's type, before nutrition
     // became a property of ordinary water. Keep that finite food supply readable.
     if (data.arrays.storedLiquid?.[i] === 66 && !world.nutrition[i])
@@ -383,6 +413,8 @@ export function unpack(data) {
         "growth",
         "storedLiquid",
         "storedAmount",
+        "dissolvedId",
+        "dissolvedAmount",
       ].includes(key)
         ? [data.width * data.height, 0]
         : undefined);

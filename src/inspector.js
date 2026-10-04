@@ -1,6 +1,11 @@
 import { circuitDirection, circuitOutput } from "./sim/circuits.js";
 import { actorProfile } from "./sim/creature-profiles.js";
 import { materials, M } from "./sim/materials.js";
+import {
+  effectiveDensity,
+  effectiveViscosity,
+  freezingPoint,
+} from "./sim/mixtures.js";
 import { cellMass } from "./sim/mechanical-mass.js";
 
 export function cellAt(world, point) {
@@ -200,7 +205,20 @@ export function cellProperties(world, point) {
   );
   if (m.id)
     rows.push(
-      ["Density", `${m.density.toFixed(2)} units`],
+      ...(world.dissolvedAmount[i]
+        ? [
+            [
+              "Dissolved",
+              `${materials[world.dissolvedId[i]].name} · ${world.dissolvedAmount[i]} pixels`,
+            ],
+            ["Viscosity", effectiveViscosity(world, i).toFixed(2)],
+            ["Freezing point", `${freezingPoint(world, i).toFixed(1)}°C`],
+          ]
+        : []),
+      [
+        "Density",
+        `${effectiveDensity(world, i) < 0.01 ? effectiveDensity(world, i).toPrecision(2) : effectiveDensity(world, i).toFixed(2)} units`,
+      ],
       ["Porosity", `${m.porosity} liquid pixels`],
       ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
       ["Retention", `${Math.round(m.retention * 100)}%`],

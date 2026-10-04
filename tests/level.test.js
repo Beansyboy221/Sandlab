@@ -98,7 +98,8 @@ test("looping seams connect heat, electricity, contact chemistry, pressure, and 
   w.set(left, M.Water);
   w.set(right, M.Salt);
   assert.equal(reactContact(w, left, 0, 10), true);
-  assert.equal(w.cells[left], M.Brine);
+  assert.equal(w.cells[left], M.Water);
+  assert.equal(w.dissolvedId[left], M.Salt);
   assert.equal(w.cells[right], 0);
   w.fields.clear();
   w.fields.add(0, 12, 8);
@@ -139,7 +140,9 @@ test("shrinking crops the chosen rectangle and preserves every particle property
   const w = configured("solid");
   w.tick = 40;
   w.set(8 * 32 + 12, M.Sponge, 87);
-  w.storedLiquid[8 * 32 + 12] = M.Brine;
+  w.storedLiquid[8 * 32 + 12] = M.Water;
+  w.dissolvedId[8 * 32 + 12] = M.Salt;
+  w.dissolvedAmount[8 * 32 + 12] = 1;
   w.storedAmount[8 * 32 + 12] = 12;
   w.life[8 * 32 + 12] = 56;
   w.nutrition[8 * 32 + 12] = 20;

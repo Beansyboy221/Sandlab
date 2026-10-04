@@ -55,3 +55,5 @@ Publish game changes only to the existing GitHub repository and GitHub Pages sit
 - Changelog bullets should be short, one sentence each, and describe player-visible changes; optimization entries should include measured scene-specific results when available, never invented speed claims.
 
 - Audio foley is cached in `audio-voices.js`; `sim/acoustic-listener.js` samples Echolocation’s shared face barriers and absorption for muffling and finite reflection taps. Keep 64 queued events, eight starts per frame, 24 active voices, three reflection taps and the 8,192-tile listener budget bounded. `npm run bench:audio`, `acoustics.test.js` and `audio_occlusion_check.py` verify this path.
+
+- `sim/mixtures.js` owns conserved dissolved ingredients and legacy mixture conversion; preserve its two typed state arrays across edits, pores and saves. Moving-matter air deposits are capped per tile and use persistent rigid bonds for exposure. Check `mixtures.test.js` and `palette_rail_check.py`; use the full suite for component transport changes.

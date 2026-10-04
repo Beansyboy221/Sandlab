@@ -14,6 +14,47 @@ export class Airflow {
     this.west = new Float32Array(height);
     this.north = new Float32Array(width);
     this.x = this.y = 0;
+    this.motionStamp = new Uint32Array(width * height);
+    this.motionBudget = new Float32Array(width * height);
+  }
+  displace(world, x, y, dx, dy, material) {
+    const f = world.fields;
+    if (!f.windEnabled || material.gas || !material.id) return;
+    if (f.border === "looping") {
+      dx -= Math.round(dx / world.width) * world.width;
+      dy -= Math.round(dy / world.height) * world.height;
+    }
+    const speed = Math.hypot(dx, dy);
+    if (speed < 0.02) return;
+    const i = f.index(
+      Math.max(0, Math.min(world.width - 1, x)),
+      Math.max(0, Math.min(world.height - 1, y)),
+    );
+    const stamp = world.tick + 1;
+    if (this.motionStamp[i] !== stamp) {
+      this.motionStamp[i] = stamp;
+      this.motionBudget[i] = 0;
+    }
+    const pores =
+      (material.porosity / (material.porosity + 2)) * material.permeability;
+    const impulse = Math.min(
+      0.05 - this.motionBudget[i],
+      Math.min(3, speed) * 0.003 * (1 - pores),
+    );
+    if (impulse <= 0) return;
+    this.motionBudget[i] += impulse;
+    // Deposit momentum on shared open faces. Their divergence generates local
+    // pressure in Fields.update; impermeable walls cannot receive through-flow.
+    this.velocityX[i] = clamp(
+      this.velocityX[i] + (dx / speed) * impulse * f.horizontal[i],
+      -MAX_AIR_SPEED,
+      MAX_AIR_SPEED,
+    );
+    this.velocityY[i] = clamp(
+      this.velocityY[i] + (dy / speed) * impulse * f.vertical[i],
+      -MAX_AIR_SPEED,
+      MAX_AIR_SPEED,
+    );
   }
   step(f, world) {
     if (!f.windEnabled) {
@@ -199,6 +240,8 @@ export class Airflow {
 
   clear() {
     for (const key of airflowFields) this[key].fill(0);
+    this.motionStamp.fill(0);
+    this.motionBudget.fill(0);
     this.nextX.fill(0);
     this.nextY.fill(0);
     this.x = this.y = 0;

@@ -50,11 +50,13 @@ test("capacity-weighted wicking conserves liquid and dissolved nutrients across 
     j = i + 1;
   w.set(j, M.Sand);
   w.storedAmount[i] = 48;
-  w.storedLiquid[i] = M.Brine;
+  w.storedLiquid[i] = M.Water;
+  w.dissolvedId[i] = M.Salt;
+  w.dissolvedAmount[i] = 1;
   w.nutrition[i] = 96;
   absorb(w, i, 8, 8);
   assert.equal(w.storedAmount[j], 1);
-  assert.equal(w.storedLiquid[j], M.Brine);
+  assert.equal(w.storedLiquid[j], M.Water);
   assert.equal(w.storedAmount[i] + w.storedAmount[j], 48);
   assert.equal(w.nutrition[i] + w.nutrition[j], 96);
   w.storedLiquid[j] = M.Oil;
@@ -159,6 +161,7 @@ test("pore contents survive saves, clipboard and legacy hydration; invalid capac
   w.set(i, M.Mud);
   const legacy = snapshot(w);
   delete legacy.porousModel;
+  legacy.arrays.cells[i] = M.Mud;
   legacy.arrays.storedAmount[i] = 0;
   legacy.arrays.storedLiquid[i] = 0;
   restore(copy, legacy);

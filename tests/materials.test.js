@@ -42,7 +42,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 test("removed materials are unavailable, names use capitals, and renamed substances preserve IDs", () => {
   assert.equal(M.CO2, 61);
   assert.equal(M["Glass Shards"], 79);
-  assert.equal(paletteMaterials.length, 63);
+  assert.equal(paletteMaterials.length, 59);
   const retired = materials.filter((m) => m.retired);
   assert.equal(retired.length, 12);
   for (const m of retired) {
@@ -109,22 +109,30 @@ test("neutralization and gas-generating contacts consume exactly one reactant pa
   for (const [a, b, first, second] of [
     ["Acid", "Baking Soda", "Water", "CO2"],
     ["Acid", "Baking Soda", "Water", "CO2"],
-    ["Acid", "Lye", "Water", "Brine"],
+    ["Acid", "Lye", "Water", "Salt"],
     ["Sodium", "Water", "Lye", "Hydrogen"],
     ["Liquid Sodium", "Brine", "Lye", "Hydrogen"],
     ["Water", "Fertilizer", "Water", "Empty"],
   ])
     for (const reversed of [false, true]) {
       const w = sample(a, b);
+      const componentCount =
+        w.count + w.dissolvedAmount.reduce((n, v) => n + v, 0);
       react(w, reversed ? 211 : 210, reversed ? 11 : 10, 10);
       assert.equal(w.cells[210], M[first], a);
       assert.equal(w.cells[211], M[second], b);
       const cells = w.cells.slice();
       react(w, 210, 10, 10); // no stale reactant repeats into another neighbor
-      assert.ok(w.count <= (a === "Acid" || a === "Acid" ? 3 : 2));
+      assert.ok(w.count <= componentCount + (a === "Acid" ? 1 : 0));
       assert.equal(w.count, w.cells.filter(Boolean).length);
-      if (a.includes("sodium") || a === "Sodium") assert.ok(w.temp[211] >= 230);
-      else if (b !== "Baking Soda") assert.deepEqual(w.cells, cells);
+      if (a.includes("Sodium")) assert.ok(w.temp[211] >= 230);
+      else if (b !== "Baking Soda" && b !== "Lye")
+        assert.deepEqual(w.cells, cells);
+      if (b === "Lye") {
+        assert.equal(w.cells[210], M.Water);
+        assert.equal(w.dissolvedId[210], M.Salt);
+        assert.equal(w.dissolvedAmount[210], 1);
+      }
     }
 });
 test("sodium reactions add pressure and can ignite their hydrogen byproduct without unbounded temperature", () => {
@@ -206,7 +214,8 @@ test("wet clay dries into separate clay and steam, then fires into stable brick"
   const sealed = sample("Wet Clay", "Ceramic", 130);
   for (const i of [209, 190, 230]) sealed.set(i, M.Ceramic);
   react(sealed, 210, 10, 10);
-  assert.equal(sealed.cells[210], M["Wet Clay"]);
+  assert.equal(sealed.cells[210], M.Clay);
+  assert.equal(sealed.storedAmount[210], 1);
 });
 test("copper and sodium phase cycles, cryogenic boiling, and dense gas displacement use shared physics", () => {
   const w = new World(20, 20);

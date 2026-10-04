@@ -1,3 +1,9 @@
+import {
+  mixContact,
+  diffuseDissolved,
+  freezingPoint,
+  soluble,
+} from "./mixtures.js";
 import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
 import { arcGap } from "./sparks.js";
@@ -18,6 +24,7 @@ import { burnFuel, reactFire } from "./combustion.js";
 const continuousRules = Uint8Array.from(materials, (m) =>
   Number(
     Boolean(
+      soluble[m.id] ||
       contactParticipants[m.id] ||
       m.energyRule ||
       m.oxidizeTo ||
@@ -64,12 +71,14 @@ export function react(world, i, x, y) {
     t[i] >= m.phaseMinimum
   )
     return;
+  if (mixContact(world, i, x, y)) return;
+  if (world.dissolvedAmount[i]) diffuseDissolved(world, i, x, y);
   if (m.energyRule) {
     reactEnergy(world, i, x, y, m);
     return;
   }
   if (
-    (id === M.Soap || id === M.Bubble || id === M["Soapy Water"]) &&
+    (id === M.Bubble || (id === M.Water && world.dissolvedId[i] === M.Soap)) &&
     reactBubbles(world, i, x, y)
   )
     return;
@@ -87,6 +96,9 @@ export function react(world, i, x, y) {
   }
   if (
     (t[i] > m.phaseMaximum || t[i] < m.phaseMinimum) &&
+    (id !== M.Water ||
+      t[i] < freezingPoint(world, i) ||
+      t[i] > m.phaseMaximum) &&
     changePhase(world, i, x, y, m)
   )
     return;

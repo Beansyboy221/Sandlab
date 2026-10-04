@@ -298,6 +298,13 @@ export class Renderer {
               b *= 0.75;
             }
           }
+          if (this.world.dissolvedAmount[i]) {
+            const additive = colors[this.world.dissolvedId[i]],
+              blend = Math.min(0.3, this.world.dissolvedAmount[i] * 0.06);
+            r += (additive[0] - r) * blend;
+            g += (additive[1] - g) * blend;
+            b += (additive[2] - b) * blend;
+          }
           if (id === M.Glass) {
             r *= 0.66;
             g *= 0.76;

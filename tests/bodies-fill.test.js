@@ -112,6 +112,8 @@ test("all solids fall as connected shapes under each gravity direction, with mea
     [-1, 0],
   ]) {
     const w = new World(100, 100);
+    // Isolate gravity and rigid mass from aerodynamic torque.
+    w.mechanics.pressureSimulation = false;
     w.setGravity(gx, gy);
     rect(w, 40, 40, 9, 4, M.Steel);
     const before = center(w);

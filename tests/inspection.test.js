@@ -44,18 +44,21 @@ test("inspection reports stored liquids, clone targets, frozen mixtures, and ign
   const world = new World(16, 16),
     point = { x: 0, y: 0 };
   world.set(0, M.Sponge);
-  world.storedLiquid[0] = M.Brine;
+  world.storedLiquid[0] = M.Water;
+  world.dissolvedId[0] = M.Salt;
+  world.dissolvedAmount[0] = 1;
   world.storedAmount[0] = 23;
   assert.ok(
     cellProperties(world, point).rows.some(
-      ([label, value]) => label === "Absorbed" && value === "Brine · 23 / 48",
+      ([label, value]) => label === "Absorbed" && value === "Water · 23 / 48",
     ),
   );
   world.set(0, M.Ice);
-  world.residue[0] = M.Brine;
+  world.dissolvedId[0] = M.Salt;
+  world.dissolvedAmount[0] = 1;
   assert.ok(
     cellProperties(world, point).rows.some(
-      ([label, value]) => label === "Frozen from" && value === "Brine",
+      ([label, value]) => label === "Dissolved" && value === "Salt · 1 pixels",
     ),
   );
   world.set(0, M.Clone);

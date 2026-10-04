@@ -37,7 +37,9 @@ test("copy and paste preserve complete independent particle state including spon
     i = at(w, 3, 3);
   w.set(i, M.Sponge, 83, 12);
   w.storedAmount[i] = 19;
-  w.storedLiquid[i] = M.Brine;
+  w.storedLiquid[i] = M.Water;
+  w.dissolvedId[i] = M.Salt;
+  w.dissolvedAmount[i] = 1;
   w.cooldown[i] = 8;
   w.set(i + 1, M.Clone);
   w.clone[i + 1] = M.Water;

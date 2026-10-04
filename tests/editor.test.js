@@ -11,7 +11,9 @@ test("undo and redo restore the entire world, including simulation since an edit
     history = new EditHistory(world);
   history.remember("Empty world");
   world.set(150, M.Sponge, 85);
-  world.storedLiquid[150] = M.Brine;
+  world.storedLiquid[150] = M.Water;
+  world.dissolvedId[150] = M.Salt;
+  world.dissolvedAmount[150] = 1;
   world.storedAmount[150] = 12;
   world.fields.add(6, 9, 3);
   world.tick = 24;

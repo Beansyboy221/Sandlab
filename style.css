@@ -2953,3 +2953,78 @@ body:not(.mobile-layout) .toolbox :is(.icon-button, .play-button) {
     max-width: none;
   }
 }
+
+/* Two independent scroll panes keep the category rail reachable in long catalogs. */
+.palette-browser {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  transition: grid-template-columns 0.2s ease;
+}
+.palette-browser.groups-expanded {
+  grid-template-columns: minmax(0, 1fr) 116px;
+}
+.palette-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.category-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 6px;
+}
+.category-rail > button {
+  flex: none;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 8px;
+}
+.palette .category-rail .category-tabs {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  gap: 6px;
+  margin: 0;
+  padding-bottom: 12px;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+.palette .category-rail .category-tabs button {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  justify-content: center;
+}
+.category-rail .category-tabs button span {
+  display: none;
+}
+.groups-expanded .category-rail .category-tabs button {
+  justify-content: flex-start;
+}
+.groups-expanded .category-rail .category-tabs button span {
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.palette .palette-content .material-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-height: 0;
+}
+.palette .groups-expanded .palette-content .material-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (prefers-reduced-motion: reduce) {
+  .palette-browser {
+    transition: none;
+  }
+}

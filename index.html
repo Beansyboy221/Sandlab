@@ -491,21 +491,36 @@
             aria-label="Search materials"
           /><kbd>/</kbd>
         </div>
-        <div
-          class="category-tabs"
-          id="categories"
-          aria-label="Material categories"
-        ></div>
-        <div class="material-section-title">
-          <span id="category-title">All materials</span
-          ><span id="material-count">44</span>
+        <div class="palette-browser" id="palette-browser">
+          <div class="palette-content">
+            <div class="material-section-title">
+              <span id="category-title">All materials</span
+              ><span id="material-count">44</span>
+            </div>
+            <div
+              class="material-grid"
+              id="materials"
+              role="tabpanel"
+              aria-labelledby="materials-tab"
+            ></div>
+          </div>
+          <nav class="category-rail" aria-label="Catalog groups">
+            <button
+              id="category-rail-toggle"
+              class="icon-button"
+              type="button"
+              aria-label="Expand group names"
+              aria-expanded="false"
+            >
+              <span data-icon="chevron-left"></span>
+            </button>
+            <div
+              class="category-tabs"
+              id="categories"
+              aria-label="Material categories"
+            ></div>
+          </nav>
         </div>
-        <div
-          class="material-grid"
-          id="materials"
-          role="tabpanel"
-          aria-labelledby="materials-tab"
-        ></div>
       </aside>
     </main>
     <div class="toast" id="toast" role="status"></div>

@@ -153,19 +153,21 @@ test("soap dissolves in water, heated soapy water forms bubbles, and bubbles ris
   w.set(211, M.Water);
   react(w, 210, 10, 10);
   assert.equal(w.cells[210], 0);
-  assert.equal(w.cells[211], M["Soapy Water"]);
+  assert.equal(w.cells[211], M.Water);
+  assert.equal(w.dissolvedId[211], M.Soap);
   w.temp[211] = 70;
   w.tick = 6;
   w.random = () => 0;
   react(w, 211, 11, 10);
-  assert.equal(w.cells[211], M.Bubble);
-  w.set(191, M.Water);
-  w.move(211, 11, 10);
   assert.equal(w.cells[191], M.Bubble);
   assert.equal(w.cells[211], M.Water);
-  w.temp[191] = 100;
-  react(w, 191, 11, 9);
-  assert.equal(w.cells[191], 0);
+  assert.equal(w.dissolvedAmount[211], 1);
+  w.set(171, M.Water);
+  w.move(191, 11, 9);
+  assert.equal(w.cells[171], M.Bubble);
+  w.temp[171] = 100;
+  react(w, 171, 11, 8);
+  assert.equal(w.cells[171], 0);
   w.set(210, M.Bubble);
   w.fields.add(10, 10, 10);
   react(w, 210, 10, 10);
@@ -188,7 +190,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 63);
+  assert.equal(paletteMaterials.length, 59);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],

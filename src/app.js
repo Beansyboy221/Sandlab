@@ -485,6 +485,8 @@ function renderCategories() {
           ? icon("layers")
           : materialIcon(cat);
     b.append(label);
+    b.title = label.textContent;
+    b.setAttribute("aria-label", label.textContent);
     b.dataset.group = cat;
     b.classList.toggle("selected", cat === category);
     b.setAttribute("aria-pressed", String(cat === category));
@@ -501,6 +503,31 @@ function renderCategories() {
   }
 }
 renderCategories();
+let railExpanded = false;
+try {
+  railExpanded = localStorage.getItem("sandlab.group-rail") === "expanded";
+} catch {}
+function syncGroupRail() {
+  $("palette-browser").classList.toggle("groups-expanded", railExpanded);
+  const toggle = $("category-rail-toggle");
+  toggle.setAttribute("aria-expanded", String(railExpanded));
+  toggle.setAttribute(
+    "aria-label",
+    railExpanded ? "Shrink group names" : "Expand group names",
+  );
+  toggle.innerHTML = icon(railExpanded ? "chevron-right" : "chevron-left");
+}
+$("category-rail-toggle").addEventListener("click", () => {
+  railExpanded = !railExpanded;
+  syncGroupRail();
+  try {
+    localStorage.setItem(
+      "sandlab.group-rail",
+      railExpanded ? "expanded" : "icons",
+    );
+  } catch {}
+});
+syncGroupRail();
 const groupsPanel = new MaterialGroupsPanel(
   $("groups-dialog"),
   materialGroups,

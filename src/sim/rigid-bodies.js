@@ -458,6 +458,15 @@ export class RigidBodies {
         w.set(i, 0);
         continue;
       }
+      if (!w.bond0[i] || !w.bond1[i] || !w.bond2[i] || !w.bond3[i])
+        w.fields.airflow.displace(
+          w,
+          i % w.width,
+          Math.floor(i / w.width),
+          this.targetX[n] - ((i % w.width) + 0.5 + w.offsetX[i]),
+          this.targetY[n] - (Math.floor(i / w.width) + 0.5 + w.offsetY[i]),
+          materials[w.cells[i]],
+        );
       if (i !== j) w.swap(i, j);
     }
     for (let n = 0; n < body.ids.length; n++) {

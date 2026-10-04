@@ -1,5 +1,17 @@
 export const changelog = [
   {
+    version: "1.22.0",
+    date: "2026-10-04",
+    title: "Components and moving air",
+    changes: [
+      "Material groups now form a right-hand rail that expands from icons to names on desktop and mobile.",
+      "Water carries Salt or Soap, and Dirt and Clay retain water in pores, replacing separate mixture materials while preserving old saves.",
+      "Ingredients alter density, viscosity, freezing, foaming and corrosion, and survive absorption, evaporation and editing.",
+      "Moving grains, liquids, solids and elastics push the shared air field with bounded local momentum transfer.",
+      "Gas density is positive and separate from buoyancy, and Mirror now has glass density.",
+    ],
+  },
+  {
     version: "1.21.0",
     date: "2026-10-04",
     title: "Material-driven sound",
