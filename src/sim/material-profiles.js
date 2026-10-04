@@ -16,6 +16,8 @@ export function applyMaterialProfiles(materials, M) {
     materials[M[name]].density = density;
     materials[M[name]].buoyancy = density > 0.0012 ? 1 : -1;
   }
+  materials[M.Cloud].buoyancy = 0;
+  materials[M.Cloud].dispersion = 0.025;
   materials[M.Mirror].density = materials[M.Glass].density;
   Object.assign(materials[M.Salt], {
     soluble: true,
@@ -40,7 +42,7 @@ export function applyMaterialProfiles(materials, M) {
 
   for (const name of ["Heater", "Cooler"]) materials[M[name]].heatSource = true;
 
-  for (const name of ["Steel", "Steel Powder"])
+  for (const name of ["Steel", "Metal Dust"])
     Object.assign(materials[M[name]], {
       oxidizeTo: M.Rust,
       oxidationRate: 0.0015,
@@ -65,7 +67,7 @@ export function applyMaterialProfiles(materials, M) {
   // their own chemistry and products. Palette grouping never changes physical rules.
   materials[M.Hydrogen].combustionGas = M.Steam;
   materials[M.Methane].combustionGas = M["CO2"];
-  materials[M.Kerosene].combustionGas = M["CO2"];
+  materials[M.Fuel].combustionGas = M["CO2"];
   for (const name of [
     "Oil",
     "Wood",
@@ -95,7 +97,7 @@ export function applyMaterialProfiles(materials, M) {
     ["Stone Gravel", 1, 0.9, 0.25, 0.75],
     ["Brick Rubble", 2, 0.8, 0.65, 0.8],
     ["Glass Shards", 1, 0.75, 0.2, 0.95],
-    ["Wood Chips", 3, 0.65, 0.85, 0.35],
+    ["Sawdust", 4, 0.3, 0.94, 0.65],
     ["Coal", 2, 0.35, 0.8, 0.7],
     ["Wood", 3, 0.04, 0.95, 0.35],
     ["Stone", 1, 0.001, 0.97, 0.65],
@@ -118,7 +120,7 @@ export function applyMaterialProfiles(materials, M) {
       retention,
       brittleness,
     });
-  for (const name of ["Oil", "Kerosene"]) materials[M[name]].absorbable = true;
+  for (const name of ["Oil", "Fuel"]) materials[M[name]].absorbable = true;
   for (const name of ["Plant", "Seed"]) materials[M[name]].waterOnly = true;
 
   // Toughness is impact energy per exposed cell, separate from chemical resistance.
@@ -137,9 +139,9 @@ export function applyMaterialProfiles(materials, M) {
       }
       if (m.id === M.Wood) {
         m.toughness = 10;
-        m.breakInto = M["Wood Chips"];
+        m.breakInto = M["Sawdust"];
       }
-      if (m.id === M.Steel) m.breakInto = M["Steel Powder"];
+      if (m.id === M.Steel) m.breakInto = M["Metal Dust"];
       if (m.resistance === 1) m.resistance = 0.97;
     }
 
@@ -157,9 +159,9 @@ export function applyMaterialProfiles(materials, M) {
 
 export function applyFragmentProfiles(materials, M) {
   for (const [from, to] of Object.entries({
-    Wood: "Wood Chips",
+    Wood: "Sawdust",
     Stone: "Stone Gravel",
-    Steel: "Steel Powder",
+    Steel: "Metal Dust",
     Copper: "Copper Granules",
     Glass: "Glass Shards",
     Mirror: "Glass Shards",

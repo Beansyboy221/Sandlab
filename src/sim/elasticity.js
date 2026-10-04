@@ -322,6 +322,20 @@ export class Elasticity {
       const x = i % w.width,
         y = Math.floor(i / w.width),
         m = materials[w.cells[i]];
+      // Adhesive contact is local, reusing anchor bits; heat or tension releases
+      // the bond without creating a second graph or searching a surface.
+      if (m.adhesion) {
+        const sticky =
+          w.temp[i] < m.soften &&
+          Math.hypot(fx[i], fy[i]) < m.adhesion * cellMass(w, i) * 8;
+        w.elasticAnchor[i] = 0;
+        if (sticky)
+          for (let d = 0; d < 4; d++) {
+            const [dx, dy] = supports[d],
+              j = w.index(x + dx, y + dy);
+            if (j >= 0 && this.support(j)) w.elasticAnchor[i] |= 1 << d;
+          }
+      }
       for (let d = 0; d < 4; d++)
         if (w.elasticAnchor[i] & (1 << d)) {
           const [dx, dy] = supports[d],

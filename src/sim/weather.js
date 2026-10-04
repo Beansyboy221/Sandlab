@@ -1,3 +1,4 @@
+import { cloudWeather } from "./cloud-weather.js";
 import { M, materials } from "./materials.js";
 export function strike(w, x, y) {
   // Trace once per tick; painted lightning cannot multiply into an unbounded storm.
@@ -81,25 +82,9 @@ export function strike(w, x, y) {
   }
 }
 export function weather(w, i, x, y) {
-  const id = w.cells[i],
-    below = w.relativeIndex(x, y, 0, 1);
-  if (id === M.Lightning) {
+  if (w.cells[i] === M.Lightning) {
     if (!w.clone[i]) strike(w, x, y);
     if (w.cells[i] === M.Lightning && (!w.life[i] || --w.life[i] === 0))
       w.transform(i, 0);
-  } else if (id === M.Storm) {
-    if (!w.life[i]) w.life[i] = 240 + Math.floor(w.random() * 180);
-    if (--w.life[i] === 0) strike(w, x + w.gravityX, y + w.gravityY);
-    if (below >= 0 && !w.cells[below] && w.random() < 0.04)
-      w.transform(below, M.Cloud);
-  } else {
-    if (!w.life[i] || --w.life[i] === 0) {
-      w.transform(i, 0);
-      return;
-    }
-    if (below >= 0 && !w.cells[below] && w.random() < 0.008) {
-      w.transform(below, M.Water);
-      w.life[i] = Math.max(1, w.life[i] - 25);
-    }
-  }
+  } else cloudWeather(w, i, x, y, strike);
 }

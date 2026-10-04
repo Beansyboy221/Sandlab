@@ -53,11 +53,25 @@ export function buildExperiment(w, id) {
   } else if (id === "storm") {
     rect(W * 0.32, ground - 12, W * 0.36, 12, "Water");
     line(W * 0.5, ground, W * 0.5, H * 0.48, "Steel", 1);
-    const source = Math.round(H * 0.12) * W + Math.round(W * 0.5);
-    w.set(source, M.Storm);
-    w.life[source] = 80;
-    for (let n = 0; n < 7; n++)
-      w.brush(W * (0.33 + n * 0.055), H * 0.18, 5, M.Cloud, "circle", true);
+    // A cold, moist cloud cap above warm rising air forms a mixed-phase storm.
+    for (let yy = Math.round(H * 0.12); yy < H * 0.25; yy++)
+      for (let xx = Math.round(W * 0.3); xx < W * 0.7; xx++) {
+        const t = yy < H * 0.18 ? -15 : 8;
+        const i = yy * W + xx;
+        w.set(i, M.Cloud, t);
+        // This example starts with a mature, charged mixed-phase core over the
+        // rod; actual discharge still requires condensate and an updraft.
+        if (Math.abs(xx - W * 0.5) < 3 && Math.abs(yy - H * 0.18) < 2)
+          w.growth[i] = 119;
+      }
+    for (let yy = 0; yy < w.fields.height; yy++)
+      for (let xx = 0; xx < w.fields.width; xx++) {
+        const i = yy * w.fields.width + xx;
+        if (xx * 4 > W * 0.3 && xx * 4 < W * 0.7) {
+          w.fields.temperature[i] = yy * 4 < H * 0.18 ? -15 : 35;
+          w.fields.airflow.velocityY[i] = yy * 4 < H * 0.4 ? -0.22 : 0;
+        }
+      }
     for (const x of [W * 0.18, W * 0.82]) {
       line(x, ground, x, H * 0.65, "Wood", 1);
       w.brush(x, H * 0.62, 8, M.Plant, "circle", true);

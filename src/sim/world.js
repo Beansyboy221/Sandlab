@@ -575,6 +575,9 @@ export class World {
       moveSurfaceFlame(this, i, x, y)
     )
       return;
+    // Suspended condensate follows airflow with slow diffusion, rather than
+    // racing to the ceiling like a hot gas.
+    if (gas && fall === 0 && this.random() > (m.dispersion ?? 1)) return;
     const nx = x + downX * fall,
       ny = y + downY * fall;
     if (this.tryMove(i, nx, ny, fall)) return;

@@ -23,6 +23,7 @@ const fractions = [
   "oxidationRate",
   "lifetimeVariation",
   "damping",
+  "adhesion",
 ];
 const positive = [
   "conductivity",

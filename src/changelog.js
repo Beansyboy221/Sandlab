@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.23.0",
+    date: "2026-10-04",
+    title: "Cloud weather and sticky elastics",
+    changes: [
+      "Renamed Kerosene to Fuel and Steel Powder to Metal Dust, and replaced Wood Chips with lighter, absorbent, faster-burning Sawdust.",
+      "Glue stretches, sticks to static surfaces, releases under heat or tension, and softens into liquid when heated.",
+      "Cloud density, temperature, mixed ice and droplets, and updrafts now drive rain, snow and lightning instead of a Storm emitter.",
+    ],
+  },
+  {
     version: "1.22.1",
     date: "2026-10-04",
     title: "Group controls",

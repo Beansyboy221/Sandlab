@@ -186,7 +186,17 @@ export function cellProperties(world, point) {
               ? "Inactive"
               : "Persistent",
     ],
-    ["Charge", world.charge[i] ? `${world.charge[i]} ticks` : "None"],
+    [
+      "Charge",
+      m.weather
+        ? `${Math.round((world.growth[i] / 120) * 100)}%`
+        : world.charge[i]
+          ? `${world.charge[i]} ticks`
+          : "None",
+    ],
+    ...(m.weather
+      ? [["Coalescence", `${Math.round((world.moisture[i] / 96) * 100)}%`]]
+      : []),
     ["Pressure", world.fields.pressure[world.fields.index(x, y)].toFixed(2)],
     [
       "Airflow",

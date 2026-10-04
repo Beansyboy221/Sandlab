@@ -15,20 +15,13 @@ const run = (w, n) => {
 test("specific substance names preserve original save IDs without a generic gas alias", () => {
   for (const [name, id] of [
     ["Steel", 11],
-    ["Steel Powder", 19],
+    ["Metal Dust", 19],
     ["Acid", 20],
-    ["Kerosene", 23],
+    ["Fuel", 23],
     ["Methane", 30],
   ])
     assert.equal(M[name], id);
-  for (const name of [
-    "Gas",
-    "Metal",
-    "Metal dust",
-    "Fuel",
-    "Vinegar",
-    "Insulator",
-  ])
+  for (const name of ["Gas", "Metal", "Metal dust", "Vinegar", "Insulator"])
     assert.equal(M[name], undefined);
   assert.equal(materials[M.Hydrogen].combustionGas, M.Steam);
   assert.equal(materials[M.Methane].combustionGas, M["CO2"]);

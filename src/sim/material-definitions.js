@@ -196,7 +196,7 @@ export const materialDefinitions = [
   ],
   ["Cement", "powder", "#b8b6a1", 1.8, {}],
   [
-    "Steel Powder",
+    "Metal Dust",
     "powder",
     "#96a6b7",
     5,
@@ -245,7 +245,7 @@ export const materialDefinitions = [
     },
   ],
   [
-    "Kerosene",
+    "Fuel",
     "liquid",
     "#de8d65",
     0.7,
@@ -491,8 +491,20 @@ export const materialDefinitions = [
     -1,
     { lifetime: 9, temperature: 1800, movable: false },
   ],
-  ["Storm", "special", "#879bbc", 99, { resistance: 1 }],
-  ["Cloud", "gas", "#a4b4c3", -0.12, { lifetime: 700 }],
+  [
+    "Storm",
+    "none",
+    "#111b20",
+    0,
+    { deprecated: true, retired: true, replacement: "Cloud" },
+  ],
+  [
+    "Cloud",
+    "gas",
+    "#a4b4c3",
+    0.001,
+    { conductivity: 0.008, weather: true, rainThreshold: 0.36 },
+  ],
   [
     "Furnace",
     "none",
@@ -821,14 +833,17 @@ materialDefinitions.push(
   ],
   ["Rubble", "powder", "#8d8b82", 2.4, { melt: 1200, meltTo: "Lava" }],
   [
-    "Wood Chips",
+    "Legacy Sawdust",
     "powder",
     "#bc8c58",
-    0.55,
+    0.3,
     {
+      deprecated: true,
+      retired: true,
+      replacement: "Sawdust",
       organic: true,
-      ignite: 280,
-      burn: 90,
+      ignite: 230,
+      burn: 65,
       residue: "Ash",
       combustionGas: "CO2",
     },
@@ -877,3 +892,44 @@ materialDefinitions.push([
     lightEmission: 0.45,
   },
 ]);
+
+materialDefinitions.push(
+  defineMaterial({
+    name: "Glue",
+    color: "#e9d59b",
+    density: 1.1,
+    traits: [
+      springy(0.055, 0.96, 5),
+      porous(1, 0.03, 0.98),
+      combustible(260, 160, "Ash"),
+    ],
+    properties: {
+      adhesion: 0.85,
+      soften: 55,
+      melt: 90,
+      meltTo: "Liquid Glue",
+      friction: 0.95,
+      restitution: 0.01,
+      brittleness: 0.03,
+      conductivity: 0.04,
+      organic: true,
+      combustionGas: "CO2",
+    },
+  }),
+  [
+    "Liquid Glue",
+    "liquid",
+    "#e4c587",
+    1.1,
+    {
+      viscosity: 25,
+      freeze: 55,
+      freezeTo: "Glue",
+      ignite: 260,
+      burn: 160,
+      residue: "Ash",
+      combustionGas: "CO2",
+      organic: true,
+    },
+  ],
+);

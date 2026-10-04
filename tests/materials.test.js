@@ -19,7 +19,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Heater, 38);
-  assert.equal(materials.length, 130);
+  assert.equal(materials.length, 132);
   assert.equal(M["Liquid Nitrogen"], 71);
   for (const m of materials)
     for (const key of [
@@ -42,11 +42,12 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 test("removed materials are unavailable, names use capitals, and renamed substances preserve IDs", () => {
   assert.equal(M.CO2, 61);
   assert.equal(M["Glass Shards"], 79);
-  assert.equal(paletteMaterials.length, 59);
+  assert.equal(paletteMaterials.length, 60);
   const retired = materials.filter((m) => m.retired);
-  assert.equal(retired.length, 12);
+  assert.equal(retired.length, 14);
   for (const m of retired) {
-    assert.equal(M[m.name], undefined);
+    if (m.name !== "Storm") assert.equal(M[m.name], undefined);
+    else assert.equal(M.Storm, M.Cloud);
     assert.ok(!paletteMaterials.includes(m));
     assert.ok(!materials[canonicalMaterial(m.id)].deprecated);
   }
@@ -68,8 +69,11 @@ test("old saves migrate removed cells, structural state, clone targets and spong
   const old = snapshot(w);
   for (let n = 0; n < retired.length; n++)
     old.arrays.cells[100 + n] = retired[n].id;
-  old.arrays.nutrition[103] = 96;
-  old.arrays.life[104] = 0;
+  const nutrientIndex = 100 + retired.findIndex((m) => m.id === 66);
+  const smokeIndex =
+    100 + retired.findIndex((m) => canonicalMaterial(m.id) === M.Smoke);
+  old.arrays.nutrition[nutrientIndex] = 96;
+  old.arrays.life[smokeIndex] = 0;
   old.arrays.storedLiquid[200] = 66;
   old.arrays.clone[210] = 80;
   old.arrays.residue[211] = 66;
@@ -77,8 +81,8 @@ test("old saves migrate removed cells, structural state, clone targets and spong
   restore(loaded, unpack(pack(old)));
   for (let n = 0; n < retired.length; n++)
     assert.equal(loaded.cells[100 + n], canonicalMaterial(retired[n].id));
-  assert.equal(loaded.nutrition[103], 96);
-  assert.equal(loaded.life[104], materials[M.Smoke].lifetime);
+  assert.equal(loaded.nutrition[nutrientIndex], 96);
+  assert.equal(loaded.life[smokeIndex], materials[M.Smoke].lifetime);
   assert.equal(loaded.storedLiquid[200], M.Water);
   assert.equal(loaded.storedAmount[200], 3);
   assert.equal(loaded.nutrition[200], 255);

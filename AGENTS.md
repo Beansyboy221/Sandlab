@@ -42,7 +42,7 @@ Publish game changes only to the existing GitHub repository and GitHub Pages sit
 
 ## Material extension and profiling
 
-- `material-definitions.js` owns append-only material slots. Compose traits with `defineMaterial` from `material-authoring.js`; the registry compiler resolves references, validates and freezes definitions. Runtime state belongs in typed particle arrays, never in a material definition. Preserve the explicitly documented historical Wood Chips name collision.
+- `material-definitions.js` owns append-only material slots. Compose traits with `defineMaterial` from `material-authoring.js`; the registry compiler resolves references, validates and freezes definitions. Runtime state belongs in typed particle arrays, never in a material definition. Keep the old Wood Chips slot canonicalized to Sawdust; renamed materials retain aliases and stable IDs.
 - `material-profiles.js` holds shared calibrated properties and fragment mappings. `materials.js` is the compatibility facade used by existing systems. Compile static lookup tables after every profile/migration; do not mutate definitions or tables during ticks.
 - Enable the existing debug panel for opt-in simulation/render stage timings. `PerformanceCounters` is unsaved scratch; leave clocks outside particle loops. `rigid-textures.js` caches only body geometry/current base colors, with live lighting applied separately.
 - New focused checks: `node tests/material-registry.test.js`, `node tests/performance-counters.test.js`, `python3 tests/rigid_textures_check.py`. Use the full suite for registry/schema changes.

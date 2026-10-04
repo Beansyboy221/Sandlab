@@ -1,11 +1,20 @@
 // Fine debris uses granular movement instead of a separate body or spring graph.
 export const fragmentMaterials = [
   [
-    "Wood Chips",
+    "Sawdust",
     "powder",
     "#bd9269",
-    0.65,
-    { burn: 220, ignite: 230, residue: "Ash", fragment: true },
+    0.3,
+    {
+      burn: 65,
+      ignite: 230,
+      residue: "Ash",
+      fragment: true,
+      organic: true,
+      conductivity: 0.015,
+      airPermeability: 0.7,
+      combustionGas: "CO2",
+    },
   ],
   [
     "Stone Gravel",

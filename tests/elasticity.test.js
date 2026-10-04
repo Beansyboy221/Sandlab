@@ -29,7 +29,7 @@ function links(w) {
 test("only elastics have springs and every material has one meaningful palette group", () => {
   assert.deepEqual(
     materials.filter((m) => m.elasticity).map((m) => m.name),
-    ["Rubber", "Rope", "Jelly"],
+    ["Rubber", "Rope", "Jelly", "Glue"],
   );
   for (const m of materials.filter(
     (m) => m.id && !m.deprecated && !isEntity(m),
@@ -190,7 +190,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 59);
+  assert.equal(paletteMaterials.length, 60);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],

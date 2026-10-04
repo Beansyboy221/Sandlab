@@ -31,13 +31,13 @@ const continuousRules = Uint8Array.from(materials, (m) =>
       m.corrodesOrganic ||
       m.explosive ||
       m.heatSource ||
+      m.weather ||
       [
         M.Soap,
         M.Bubble,
         M["Soapy Water"],
         M.Sponge,
         M.Lightning,
-        M.Storm,
         M.Cloud,
         M.Plant,
         M.Seed,
@@ -115,7 +115,7 @@ export function react(world, i, x, y) {
     burnFuel(world, i, x, y, m);
     if (c[i] !== id || l[i] || t[i] >= m.ignite) return;
   }
-  if (id === M.Lightning || id === M.Storm || id === M.Cloud) {
+  if (id === M.Lightning || m.weather) {
     weather(world, i, x, y);
     return;
   }

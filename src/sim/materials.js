@@ -14,11 +14,15 @@ export const {
   applyMaterialProfiles,
   {
     Rocket: "Missile",
+    Kerosene: "Fuel",
+    "Steel Powder": "Metal Dust",
+    "Wood Chips": "Sawdust",
+    Storm: "Cloud",
     "Heat-Seeking Missile": "Seeking Missile",
     "Laser-Guided Missile": "Guided Missile",
   },
-  // Both historical slots remain readable; the newer debris owns the name.
-  { "Wood Chips": [96, 121] },
+  // Historical chips and Storm slots migrate through canonical material IDs.
+  {},
   applyFragmentProfiles,
 );
 export const canonicalMaterial = (id) => materials[id]?.canonicalId ?? id;
