@@ -6,7 +6,7 @@ import {
   entityCategories,
   entityLabels,
 } from "./sim/entity-kinds.js";
-import { MaterialGroups } from "./material-groups.js";
+import { MaterialGroups, GroupVisibility } from "./material-groups.js";
 import { MaterialGroupsPanel } from "./material-groups-panel.js";
 import { FrameClock } from "./frame-clock.js";
 import { defaultMechanics } from "./sim/mechanics-options.js";
@@ -396,7 +396,7 @@ function setCatalog(kind) {
   $("palette-close").setAttribute("aria-label", `Close ${kind}`);
   $("groups-btn").setAttribute(
     "aria-label",
-    `Create or edit ${kind === "entities" ? "entity" : "material"} groups`,
+    `New ${kind === "entities" ? "entity" : "material"} group`,
   );
   for (const tab of document.querySelectorAll("[data-catalog]")) {
     const active = tab.dataset.catalog === kind;
@@ -467,32 +467,71 @@ function renderMaterials() {
       : materialGroups.get(category)?.name ||
         (catalogKind === "entities" ? entityLabels : categoryLabels)[category];
 }
+const groupCreateButton = $("groups-btn");
+let removingGroups = false;
+const groupVisibility = new GroupVisibility([
+  ...categories.filter((id) => id !== "all").map((id) => "materials:" + id),
+  ...entityCategories
+    .filter((id) => id !== "all")
+    .map((id) => "entities:" + id),
+]);
 function renderCategories() {
   $("categories").replaceChildren();
+  $("palette-browser").classList.toggle("groups-removing", removingGroups);
+  $("groups-edit-toggle").setAttribute("aria-pressed", String(removingGroups));
+  $("groups-edit-toggle").setAttribute(
+    "aria-label",
+    removingGroups ? "Finish removing groups" : "Remove groups",
+  );
+  $("groups-restore").hidden = ![...groupVisibility.hidden].some((id) =>
+    id.startsWith(catalogKind + ":"),
+  );
   for (const cat of [
-    ...(catalogKind === "entities" ? entityCategories : categories),
+    ...(catalogKind === "entities" ? entityCategories : categories).filter(
+      (id) => !groupVisibility.hidden.has(catalogKind + ":" + id),
+    ),
     ...materialGroups.groups.map((group) => group.id),
   ]) {
-    const b = document.createElement("button");
-    const label = document.createElement("span");
+    const b = document.createElement("button"),
+      label = document.createElement("span");
+    const custom = materialGroups.get(cat);
     label.textContent =
-      materialGroups.get(cat)?.name ||
+      custom?.name ||
       (catalogKind === "entities" ? entityLabels : categoryLabels)[cat];
     b.innerHTML =
-      cat === "all"
-        ? icon("grid")
-        : materialGroups.get(cat)
-          ? icon("layers")
-          : materialIcon(cat);
+      removingGroups && cat !== "all"
+        ? icon("minus")
+        : cat === "all"
+          ? icon("grid")
+          : custom
+            ? icon("layers")
+            : materialIcon(cat);
     b.append(label);
-    b.title = label.textContent;
-    b.setAttribute("aria-label", label.textContent);
+    const accessible =
+      removingGroups && cat !== "all"
+        ? `${custom ? "Delete" : "Hide"} ${label.textContent} group`
+        : label.textContent;
+    b.title = accessible;
+    b.setAttribute("aria-label", accessible);
     b.dataset.group = cat;
+    b.disabled = removingGroups && cat === "all";
     b.classList.toggle("selected", cat === category);
     b.setAttribute("aria-pressed", String(cat === category));
     b.addEventListener("click", () => {
+      if (removingGroups) {
+        try {
+          if (custom) materialGroups.delete(cat);
+          else groupVisibility.hide(catalogKind + ":" + cat);
+          if (category === cat) category = "all";
+          renderCategories();
+          renderMaterials();
+        } catch (error) {
+          toast(error.message);
+        }
+        return;
+      }
       category = cat;
-      for (const tab of $("categories").children) {
+      for (const tab of $("categories").querySelectorAll("[data-group]")) {
         const selected = tab.dataset.group === category;
         tab.classList.toggle("selected", selected);
         tab.setAttribute("aria-pressed", String(selected));
@@ -501,7 +540,22 @@ function renderCategories() {
     });
     $("categories").append(b);
   }
+  $("categories").append(groupCreateButton);
 }
+$("groups-edit-toggle").addEventListener("click", () => {
+  removingGroups = !removingGroups;
+  renderCategories();
+});
+$("groups-restore").addEventListener("click", () => {
+  try {
+    groupVisibility.restore(catalogKind);
+    removingGroups = false;
+    renderCategories();
+  } catch (error) {
+    toast(error.message);
+  }
+});
+
 renderCategories();
 let railExpanded = false;
 try {
@@ -536,14 +590,18 @@ const groupsPanel = new MaterialGroupsPanel(
     close: closeDialog,
     changed: (id) => {
       category = id;
+      removingGroups = false;
       renderCategories();
       renderMaterials();
+      [...$("categories").querySelectorAll("[data-group]")]
+        .find((button) => button.dataset.group === id)
+        ?.scrollIntoView({ block: "nearest" });
     },
   },
 );
 $("groups-btn").addEventListener("click", () =>
   groupsPanel.open(
-    materialGroups.get(category)?.id,
+    "",
     catalogKind === "entities" ? paletteEntities : paletteMaterials,
     catalogKind,
   ),

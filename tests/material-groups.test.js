@@ -113,3 +113,44 @@ test("group count is bounded and custom names stay plain data", () => {
   groups.save(groups.groups[0].id, "Renamed", [M.Water]);
   assert.equal(groups.groups.length, 16);
 });
+
+test("category visibility validates IDs, persists by catalog and preserves state on storage failure", async () => {
+  const { GroupVisibility, groupVisibilityKey } =
+    await import("../src/material-groups.js");
+  const store = {
+    value: JSON.stringify([
+      "materials:powder",
+      "entities:wildlife",
+      "materials:all",
+      "invalid",
+    ]),
+    getItem() {
+      return this.value;
+    },
+    setItem(key, value) {
+      assert.equal(key, groupVisibilityKey);
+      this.value = value;
+    },
+  };
+  const allowed = ["materials:powder", "materials:liquid", "entities:wildlife"];
+  const groups = new GroupVisibility(allowed, store);
+  assert.deepEqual(
+    [...groups.hidden],
+    ["materials:powder", "entities:wildlife"],
+  );
+  groups.hide("materials:all");
+  groups.hide("materials:liquid");
+  assert.deepEqual(new GroupVisibility(allowed, store).hidden, groups.hidden);
+  groups.restore("materials");
+  assert.deepEqual([...groups.hidden], ["entities:wildlife"]);
+  store.setItem = () => {
+    throw Error("quota");
+  };
+  assert.throws(() => groups.hide("materials:powder"));
+  assert.throws(() => groups.restore("entities"));
+  assert.deepEqual([...groups.hidden], ["entities:wildlife"]);
+  for (const value of ["{", JSON.stringify([{}]), "x".repeat(4097)]) {
+    store.value = value;
+    assert.equal(new GroupVisibility(allowed, store).hidden.size, 0);
+  }
+});

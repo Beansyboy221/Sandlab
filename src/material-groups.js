@@ -98,3 +98,38 @@ export class MaterialGroups {
     this.groups = groups;
   }
 }
+
+export const groupVisibilityKey = "sandlab.hidden-groups.v1";
+export class GroupVisibility {
+  constructor(allowed, storage) {
+    this.allowed = new Set(allowed);
+    this.storage = storage;
+    this.hidden = new Set();
+    try {
+      this.storage = storage ?? globalThis.localStorage;
+      const raw = this.storage?.getItem(groupVisibilityKey);
+      const list = raw?.length <= 4096 ? JSON.parse(raw) : null;
+      if (Array.isArray(list))
+        this.hidden = new Set(list.filter((id) => this.allowed.has(id)));
+    } catch {}
+  }
+  persist(next) {
+    try {
+      this.storage.setItem(groupVisibilityKey, JSON.stringify([...next]));
+    } catch {
+      throw Error(
+        "Groups could not be saved. Browser storage is unavailable or full.",
+      );
+    }
+    this.hidden = next;
+  }
+  hide(id) {
+    if (!this.allowed.has(id)) return;
+    this.persist(new Set([...this.hidden, id]));
+  }
+  restore(kind) {
+    this.persist(
+      new Set([...this.hidden].filter((id) => !id.startsWith(kind + ":"))),
+    );
+  }
+}

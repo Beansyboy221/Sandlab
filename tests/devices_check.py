@@ -51,18 +51,18 @@ with sync_playwright() as p:
         assert page.locator('#group-count').inner_text()=='2 selected'
         page.locator('#group-save').click();page.wait_for_function('() => !document.querySelector("#groups-dialog").open')
         assert page.locator('#materials .material-name').all_text_contents()==['Sand','Water']
-        page.locator('#groups-btn').click();page.locator('#group-name').fill('My Powders')
+        page.locator('#groups-btn').click();page.locator('#group-select').select_option(label='My Lab');page.locator('#group-name').fill('My Powders')
         page.locator('#group-materials').get_by_role('button',name='Water',exact=True).click();page.locator('#group-save').click()
         assert page.locator('#materials .material-name').all_text_contents()==['Sand']
         page.reload();page.wait_for_function('() => !!window.sandlab');palette(page,mobile)
         page.locator('[data-group="custom-1"]').click();assert page.locator('#category-title').text_content()=='My Powders', (page.locator('#category-title').inner_text(),page.evaluate('sandlab.materialGroups.groups'),errors)
-        page.locator('#groups-btn').click();page.locator('#group-delete').click()
+        page.locator('#groups-btn').click();page.locator('#group-select').select_option(label='My Powders');page.locator('#group-delete').click()
         assert page.locator('#group-select').input_value()==''
         assert not page.locator('[data-group="custom-1"]').count()
         page.locator('#group-name').fill('<img src=x onerror=alert(1)>');page.locator('#group-save').click()
         assert page.locator('#categories img').count()==0
         assert page.locator('[data-group="custom-1"]').text_content()=='<img src=x onerror=alert(1)>'
-        page.locator('#groups-btn').click();page.locator('#group-delete').click();page.locator('#groups-dialog .dialog-close').click()
+        page.locator('#groups-btn').click();page.locator('#group-select').select_option(label='<img src=x onerror=alert(1)>');page.locator('#group-delete').click();page.locator('#groups-dialog .dialog-close').click()
         page.locator('[data-group="all"]').click()
         if mobile:page.locator('#palette-close').click()
         page.evaluate("async()=>{window.deviceM=(await import('./src/sim/materials.js')).M;sandlab.world.clear();}")

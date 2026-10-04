@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.22.1",
+    date: "2026-10-04",
+    title: "Group controls",
+    changes: [
+      "The plus now follows the last group, with a removal mode for deleting custom groups or hiding and restoring built-in groups.",
+    ],
+  },
+  {
     version: "1.22.0",
     date: "2026-10-04",
     title: "Components and moving air",

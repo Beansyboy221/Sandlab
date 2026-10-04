@@ -36,6 +36,34 @@ with sync_playwright() as p:
             assert all(t['h']>=44 for t in geometry['tabs']),geometry
             assert len(set(t['x'] for t in geometry['tabs']))==1,geometry
             assert page.locator('#categories button span').first.is_visible()==expanded, page.evaluate("()=>({expanded:document.querySelector('#palette-browser').className,display:getComputedStyle(document.querySelector('#categories button span')).display,html:document.querySelector('#categories button').outerHTML})")
+        assert page.locator('#categories button').last.get_attribute('id')=='groups-btn'
+        before=page.locator('#categories [data-group]').count()
+        page.locator('#groups-btn').click()
+        page.locator('#group-name').fill('Favorites')
+        page.locator('#group-materials').get_by_role('button',name='Sand',exact=True).click()
+        page.locator('#group-save').click()
+        page.wait_for_function('!document.querySelector("#groups-dialog").open')
+        assert page.locator('#categories [data-group]').count()==before+1
+        assert page.locator('#categories button').nth(-2).get_attribute('data-group')=='custom-1'
+        assert page.locator('#categories button').last.get_attribute('id')=='groups-btn'
+        assert page.locator('#category-title').text_content()=='Favorites'
+        page.locator('#groups-edit-toggle').click()
+        assert page.locator('#categories [data-group="all"]').is_disabled()
+        page.get_by_role('button',name='Delete Favorites group',exact=True).click()
+        assert not page.locator('#categories [data-group="custom-1"]').count()
+        assert page.locator('#category-title').text_content()=='All materials'
+        page.locator('#categories [data-group="powder"]').click()
+        assert not page.locator('#categories [data-group="powder"]').count()
+        assert page.locator('#groups-restore').is_visible()
+        page.reload();page.wait_for_function('!!window.sandlab');page.evaluate('sandlab.state.paused=true')
+        if mobile:
+            page.locator('#controls-toggle').click();page.locator('#palette-toggle').click()
+        page.wait_for_timeout(300)
+        assert not page.locator('#categories [data-group="powder"]').count()
+        page.locator('#groups-restore').click()
+        assert page.locator('#categories [data-group="powder"]').count()==1
+        assert not page.locator('#groups-restore').is_visible()
+        assert page.locator('#categories button').last.get_attribute('id')=='groups-btn'
         page.locator('#categories [data-group="liquid"]').click()
         assert page.locator('.material').count()>0
         page.locator('#entities-tab').click();assert page.locator('.material').count()==32

@@ -3028,3 +3028,24 @@ body:not(.mobile-layout) .toolbox :is(.icon-button, .play-button) {
     transition: none;
   }
 }
+.category-rail > button[aria-pressed="true"] {
+  color: var(--accent);
+  background: #a6d5bd10;
+}
+.palette .category-rail > button[hidden] {
+  display: none;
+}
+.palette .category-rail .category-tabs #groups-btn {
+  border: 1px dashed var(--line);
+  color: var(--accent);
+}
+.category-rail #groups-btn > span[data-icon] {
+  display: inline-flex;
+}
+.palette .groups-removing .category-tabs [data-group]:not([disabled]) {
+  color: #e59a88;
+  border-color: #e59a8830;
+}
+.palette .groups-removing .category-tabs [disabled] {
+  opacity: 0.35;
+}
