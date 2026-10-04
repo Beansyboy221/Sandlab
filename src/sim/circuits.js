@@ -1,3 +1,4 @@
+import { conducts } from "./oxidation.js";
 import { materials, M } from "./materials.js";
 // Output follows the Facing control. A is behind, B is on the left of that heading.
 const directions = [
@@ -44,7 +45,7 @@ export class Circuits {
     if (j < 0) return false;
     const m = materials[w.cells[j]];
     if (m.id === M.Spark) return true;
-    if (!m.circuit) return Boolean(this.signals[j]);
+    if (!m.circuit) return conducts(w, j) && Boolean(this.signals[j]);
     const [dx, dy] = circuitDirection(w.heading[j]);
     return (
       Boolean(this.signals[j]) &&
@@ -53,7 +54,7 @@ export class Circuits {
   }
   energize(j) {
     const w = this.world;
-    if (j >= 0 && materials[w.cells[j]].conductive && !w.cooldown[j]) {
+    if (j >= 0 && conducts(w, j) && !w.cooldown[j]) {
       w.charge[j] = 6;
       w.cooldown[j] = 18;
       w.chargedAt[j] = w.tick;

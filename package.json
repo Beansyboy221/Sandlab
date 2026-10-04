@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.24.0",
+  "version": "1.25.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -35,6 +35,7 @@
     "test:airflow": "python3 tests/airflow_check.py",
     "test:entities": "python3 tests/entities_check.py",
     "bench:entities": "node tests/entities-benchmark.js",
+    "bench:elastics": "node tests/elastic-benchmark.js",
     "bench:collisions": "node tests/collision-benchmark.js",
     "check": "node scripts/check.mjs",
     "inspect": "node scripts/inspect.mjs",

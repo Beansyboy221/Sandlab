@@ -1,3 +1,4 @@
+import { conducts } from "./oxidation.js";
 import { M, materials } from "./materials.js";
 
 export function emitSpark(world, i, x, y, residue = 0) {
@@ -31,7 +32,7 @@ export function arcGap(world, i, x, y) {
     if (gap < 0 || target < 0) continue;
     if (
       !world.cells[gap] &&
-      materials[world.cells[target]].conductive &&
+      conducts(world, target) &&
       !world.cooldown[target]
     ) {
       world.transform(gap, M.Spark, 1200, 20);

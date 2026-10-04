@@ -69,6 +69,9 @@ export const combustible = (ignite, burn, residue, properties = {}) => ({
 export const conductor = (conductivity) => ({
   properties: { conductive: true, conductivity },
 });
+export const oxidizable = (oxidationRate, oxidationColor) => ({
+  properties: { oxidationRate, oxidationColor },
+});
 export const surface = (friction, restitution, brittleness) => ({
   properties: { friction, restitution, brittleness },
 });

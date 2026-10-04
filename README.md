@@ -1,6 +1,6 @@
 # Sandlab
 
-An original, client-side falling-sand sandbox with 59 materials and 32 entities, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
+An original, client-side falling-sand sandbox with 71 materials and 23 entities, customizable canvases, a responsive drawing surface, and local worlds. No application server, accounts, or build step is required.
 
 Live site: **https://beansyboy221.github.io/Sandlab/**. GitHub Pages is the sole publishing destination; the ChatGPT Site is retired.
 
@@ -33,7 +33,7 @@ Choose an element and drag to paint. The tool picker on the drawing toolbar offe
 - View offers Natural, Temperature, Pressure, Airflow and Echolocation.
 - Lightning uses brush size as its repetition rate: 1 strike/s at size 1, about 12.6 strikes/s at size 30. The drawing slider shows Rate when lightning is selected.
 
-Try oil over water, sand in a density column, cement with water, an acid bath in glass, ice next to a heater, metal touched by a spark, or TNT connected to a fuse. Seeds germinate on moist soil. Plants share moisture through roots and stems, grow upward, and stop growing outside suitable temperatures. Lightning seeks nearby conductors, heats its impact point, and energizes wires. Dense cool clouds coalesce into rain or snow; mixed ice and water in upward airflow build charge for lightning, with one bounded strike per tick. Clone learns an adjacent movable material. Fans push to the right; voids drain their surroundings. Wax melts and solidifies for casting experiments.
+Try oil over water, sand in a density column, cement with water, an acid bath in glass, ice next to a heater, metal touched by a spark, or TNT connected to a fuse. Seeds germinate on moist soil. Plants share moisture through roots and stems, grow upward, and stop growing outside suitable temperatures. Lightning seeks nearby conductors, heats its impact point, and energizes conductors. Dense cool clouds coalesce into rain or snow; mixed ice and water in upward airflow build charge for lightning, with one bounded strike per tick. Clone learns an adjacent movable material. Fans push to the right; voids drain their surroundings. Wax melts and solidifies for casting experiments.
 
 New phone worlds use a 200 × 300 grid; larger screens use 320 × 200. Rotating or resizing a window preserves the world. Imported saves retain their original dimensions and canvas properties.
 
@@ -243,13 +243,13 @@ Settings → Player offers joystick side, diameter, horizontal inset and vertica
 
 New canvas and Canvas properties provide Ambient light (0–100%). Full ambient light preserves the existing appearance; at zero, unlit foreground and background are black. These properties are saved with the world and survive history, import/export and resize. Old saves without an ambient value use 100%. Diagnostic views remain readable regardless of ambient light.
 
-Lamp in Entities → Sources is a stationary, warm light source. Fire, sparks, lightning, charge, burning material, incandescent surfaces, hot creatures and missile engines also emit light. Local illumination uses radial falloff and coarse shadow visibility. Glass and clear liquids transmit light; opaque surfaces block it. A short, attenuated surface reflection picks up material/pigment color. Settings → Rendering → Reflected light ranges from no bounce to a subtle 25%; Bloom controls a separate soft halo.
+Lamp in Materials → Static is a stationary, warm light source. Fire, sparks, lightning, charge, burning material, incandescent surfaces, hot creatures and missile engines also emit light. Local illumination uses radial falloff and coarse shadow visibility. Glass and clear liquids transmit light; opaque surfaces block it. A short, attenuated surface reflection picks up material/pigment color. Settings → Rendering → Reflected light ranges from no bounce to a subtle 25%; Bloom controls a separate soft halo.
 
 Optics use two- or four-pixel radiance tiles, at most 24 spatially merged sources and full particle silhouettes for directional shadows. Cached reconstruction stencils and angular filtered transport keep moving fire bounded; ordinary light reaches 112–192 pixels with smooth falloff and faint smoke scattering. Lightning produces one scene-wide, lifetime-driven flash. Optical updates remain at half the display rate, with live shading shared by particles, bodies, actors, Inspect and world previews.
 
 The plus at the end of the category rail creates a custom group. Create a named collection, select materials, and save it; choose an existing group in the editor to change its name or members. The rail’s minus button enables removal: custom groups are deleted, built-in groups are hidden, and All remains available. Restore brings back hidden groups for the current catalog. Groups persist locally, with a limit of 16, and never change built-in physics categories. Explosives and Fiction are properties rather than palette groups; fixed sources are under Static.
 
-Entities → Electrical includes fixed Wire, Battery, AND/OR/XOR/NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan, with missiles under Entities → Missiles and Drone/Rover under Entities → Vehicles. Gates are ideal powered logic components. Facing sets their output port; A is the cell behind, B the cell to the left of the heading. A charged conductor, correctly oriented gate output or adjacent Spark is a high input. AND/OR/XOR take A and B; NOT, Toggle, Delay, Lamp and Fan take A. Toggle flips on rising edges; Delay is a 12-tick shift register. Battery repeatedly energizes the wire in front using the shared conductor cooldown. Wire stays fixed and propagates pulses with the existing conduction, heating and arcing rules. Gate evaluations share a pre-tick signal snapshot, so update order cannot change a circuit. State uses the existing life and heading arrays and survives copying, saving and resizing. Inspect displays signal state and ports. Logic workbench provides three isolated test circuits.
+Entities → Electrical includes Battery, AND/OR/XOR/NOT Gates, Toggle Gate, Delay Gate, Signal Lamp and Electric Fan, with missiles under Entities → Missiles and Drone/Rover under Entities → Vehicles. Gates are ideal powered logic components. Facing sets their output port; A is the cell behind, B the cell to the left of the heading. A charged conductor, correctly oriented gate output or adjacent Spark is a high input. AND/OR/XOR take A and B; NOT, Toggle, Delay, Lamp and Fan take A. Toggle flips on rising edges; Delay is a 12-tick shift register. Battery repeatedly energizes a conductor in front using the shared conductor cooldown. Copper conducts pulses and falls with physical mass; the Logic workbench supports its Copper traces on Wall. Gate evaluations share a pre-tick signal snapshot, so update order cannot change a circuit. State uses the existing life and heading arrays and survives copying, saving and resizing. Inspect displays signal state and ports. Logic workbench provides three isolated test circuits.
 
 Drone and Rover use the existing capped moving-device pool and a separate motion module. Drones maintain flight and turn at obstacles; rovers accelerate along the gravity-relative ground, fall, step over two-cell ledges and turn at walls. Disabling motors lets both fall. Swept footprints catch thin walls; hard impacts, corrosive contact and heat reduce condition and leave debris on destruction. Warm, Cool, Blow, Grab and Erase affect machines. Settings → Devices controls motors and cruise speed. Device yard is a safe starter scene. Machines preserve condition, velocity and temperature through save/load, undo and resizing; older missile saves retain their schema.
 
@@ -269,7 +269,7 @@ Development measurements on 2026-10-03 (30 warm-up and 180 measured ticks): the 
 
 ## Entities and canvas modes
 
-Materials contains substances; Entities contains Characters, Wildlife, Missiles, Vehicles, Electrical and Sources. Each tab has its own category filters and search. Custom groups retain mixed memberships, showing only entries belonging to the current tab. Pick switches to the appropriate catalog. New IDs are append-only, so existing creature and device saves remain compatible.
+Materials contains substances; Entities contains Characters, Wildlife, Missiles, Vehicles and Electrical. Each tab has its own category filters and search. Custom groups retain mixed memberships, showing only entries belonging to the current tab. Pick switches to the appropriate catalog. New IDs are append-only, so existing creature and device saves remain compatible.
 
 Guided Missile follows the nearest visible live Laser particle inside the configured sensing range, then falls back to the cursor. Opaque matter blocks beam acquisition; Glass, clear liquids and gases transmit it. Looping worlds acquire beams across their seam. Choose Guide from the main tool picker and tap or drag to aim without drawing; mouse movement also sets a target. Guide hides the material button. Missile retains its launch direction without homing. The existing 32 moving-object limit and eight-second missile lifetime bound the work. Settings → Devices includes Laser guidance.
 
@@ -359,7 +359,7 @@ The same scalar coefficients drive scene light and mechanical beams, and Inspect
 shows percentages, refractive index, packet intensity and wavelength.
 
 Draw Photon to place a white broadband packet, or Laser for a red monochromatic
-beam. Prism separates white packets into seven visible bands; ordinary Glass
+beam. Crystal separates white packets into seven visible bands; ordinary Glass
 and clear liquids bend beams with gentler dispersion. Smooth mirrors preserve
 laser direction, while rough opaque surfaces scatter their reflected fraction
 as weaker photon packets. Absorption heats surfaces; Solar Cell converts absorbed
@@ -399,3 +399,11 @@ coarse-pointer devices; headphones can retain balanced output. The Safari media
 route is feature-detected, and mobile distance attenuation uses the longer screen
 dimension so rotating does not change loudness merely because the width changes.
 Actual phone-speaker timbre still requires physical-device listening tests.
+
+Flora includes Seeds, Plants, Fungus and Virus. Fungus needs moisture and consumes organic substrates; Virus infects living Flora, incubates, replicates using host tissue and expires without hosts. Microbial births are capped at 32 per tick. Heater, Cooler, Fan, Clone, Void, Lamp, Black Hole and Repulsor live in Materials; Entities contains actors, guided machines and reactive electrical devices.
+
+Sponge is an elastic reservoir with the same porosity/permeability storage as other materials. Unsupported spring components preserve their center of mass during raster placement, so deformed meshes cannot acquire artificial support from their own grid cells. Contacts and anchors still constrain motion. Oxidation rate is a composable material property; a saved byte records each particle's coating level and affects color and conduction. Old Patina migrates to fully oxidized Copper, and old Wire migrates to Copper.
+
+Thin brittle solids accumulate coarse air-load stress and shed pieces before impact, while finite collision energy spreads through a small contact neighborhood to produce crumbling. Ductile metals remain tougher. Air stress and impact spreading are capped at 64 and 128 samples per tick; neither recursively fractures neighboring bodies.
+
+`npm run bench:elastics` measures deforming free-fall meshes in isolation; this development container averaged 3.78 ms per whole tick for 750 Jelly nodes and 16.66 ms for 3,000 nodes (95th percentiles 6.56 and 29.88 ms). Crowded solid-contact scenes with 20/80/200 small bodies above a 6,000-pixel slab averaged 3.49/3.56/4.53 ms per rigid step. These are development measurements, not phone frame-rate guarantees.

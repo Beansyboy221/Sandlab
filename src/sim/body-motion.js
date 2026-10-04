@@ -1,3 +1,4 @@
+import { airStress } from "./body-stress.js";
 import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
 import { collide, fracture } from "./body-collisions.js";
@@ -99,7 +100,7 @@ export function stepBodies(solver) {
         (x + w.offsetX[i] - p.x) * w.fields.forceY -
         (y + w.offsetY[i] - p.y) * w.fields.forceX;
       const m = materials[w.cells[i]],
-        strength = (m.toughness || 9) * (1.4 - m.brittleness);
+        strength = m.compressiveStrength * (1.4 - m.brittleness);
       if (
         m.brittleness &&
         w.fields.surfaceStress > strength &&
@@ -115,10 +116,7 @@ export function stepBodies(solver) {
         contacts++;
         if (materials[w.cells[j]].category === "liquid")
           liquid += materials[w.cells[j]].density;
-        if (
-          w.cells[i] === M.Plant &&
-          (w.cells[j] === M.Dirt || w.cells[j] === M.Mud)
-        )
+        if (m.rooted && (w.cells[j] === M.Dirt || w.cells[j] === M.Mud))
           rooted = true;
       }
     }
@@ -126,6 +124,7 @@ export function stepBodies(solver) {
       p.vx = p.vy = p.omega = 0;
       continue;
     }
+    airStress(solver, body, p);
     const buoyancy = contacts
         ? liquid / contacts / (body.mass / body.ids.length)
         : 0,

@@ -17,6 +17,8 @@ import {
 } from "./chemistry.js";
 import { changePhase } from "./phase-changes.js";
 import { absorb, absorbFromLiquid } from "./absorption.js";
+import { conducts } from "./oxidation.js";
+import { growMicrobe } from "./microbiology.js";
 import { grow } from "./biology.js";
 import { weather } from "./weather.js";
 import { burnFuel, reactFire } from "./combustion.js";
@@ -27,7 +29,8 @@ const continuousRules = Uint8Array.from(materials, (m) =>
       soluble[m.id] ||
       contactParticipants[m.id] ||
       m.energyRule ||
-      m.oxidizeTo ||
+      m.oxidationRate ||
+      m.flora ||
       m.corrodesOrganic ||
       m.explosive ||
       m.heatSource ||
@@ -102,7 +105,7 @@ export function react(world, i, x, y) {
     changePhase(world, i, x, y, m)
   )
     return;
-  if (m.oxidizeTo) {
+  if (m.oxidationRate) {
     oxidize(world, i, x, y, m);
     if (c[i] !== id) return;
   }
@@ -117,6 +120,10 @@ export function react(world, i, x, y) {
   }
   if (id === M.Lightning || m.weather) {
     weather(world, i, x, y);
+    return;
+  }
+  if (m.flora) {
+    growMicrobe(world, i, x, y, m);
     return;
   }
   if (id === M.Plant || id === M.Seed || id === M.Dirt || id === M.Mud)
@@ -137,11 +144,15 @@ export function react(world, i, x, y) {
 // avoids allocating a closure context for every grain of settled sand or water.
 function conduct(world, i, x, y, m) {
   const { cells: c, temp: t, charge: q, cooldown: cd } = world;
+  if (!conducts(world, i)) {
+    q[i] = 0;
+    return;
+  }
   if (q[i] === 6 && m.conductive) arcGap(world, i, x, y);
   q[i]--;
   t[i] += 1.5;
   const propagate = (j) => {
-    if (materials[c[j]].conductive && !cd[j]) {
+    if (conducts(world, j) && !cd[j]) {
       q[j] = 6;
       cd[j] = 18;
       world.chargedAt[j] = world.tick;
@@ -161,12 +172,12 @@ function reactSpark(world, i, x, y) {
     if (materials[c[j]].waterLike) {
       t[j] += 30;
       wetSpark = true;
-      if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
+      if (!world.residue[i] && conducts(world, j) && !cd[j]) {
         q[j] = 6;
         cd[j] = 18;
         world.chargedAt[j] = world.tick;
       }
-    } else if (!world.residue[i] && materials[c[j]].conductive && !cd[j]) {
+    } else if (!world.residue[i] && conducts(world, j) && !cd[j]) {
       q[j] = 6;
       cd[j] = 18;
       world.chargedAt[j] = world.tick;

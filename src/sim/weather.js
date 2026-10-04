@@ -1,4 +1,5 @@
 import { cloudWeather } from "./cloud-weather.js";
+import { conducts } from "./oxidation.js";
 import { M, materials } from "./materials.js";
 export function strike(w, x, y) {
   // Trace once per tick; painted lightning cannot multiply into an unbounded storm.
@@ -24,7 +25,7 @@ export function strike(w, x, y) {
       for (let dy = 1; dy <= 8; dy++) {
         const i = w.relativeIndex(x, y, dx, dy);
         if (i < 0) continue;
-        if (materials[w.cells[i]].conductive && Math.abs(dx) + dy < best) {
+        if (conducts(w, i) && Math.abs(dx) + dy < best) {
           best = Math.abs(dx) + dy;
           direction = Math.sign(dx);
         }
@@ -66,7 +67,7 @@ export function strike(w, x, y) {
         m.category !== "energy"
       ) {
         w.temp[i] = Math.max(w.temp[i], m.ignite ? m.ignite + 180 : 850);
-        if (m.conductive) {
+        if (conducts(w, i)) {
           w.charge[i] = 6;
           w.cooldown[i] = 18;
           w.chargedAt[i] = w.tick;

@@ -41,7 +41,13 @@ const gate = (name, rule, color) => [
 ];
 // Append-only IDs preserve older worlds; circuit state uses existing life/heading arrays.
 export const deviceMaterials = [
-  ["Wire", "special", "#d4a96a", 3, { ...electronics, conductive: true }],
+  [
+    "Wire",
+    "special",
+    "#d4a96a",
+    3,
+    { deprecated: true, retired: true, replacement: "Copper" },
+  ],
   gate("Battery", "battery", "#b5d68a"),
   gate("AND Gate", "and", "#91b8e9"),
   gate("OR Gate", "or", "#9accc2"),

@@ -29,7 +29,7 @@ function links(w) {
 test("only elastics have springs and every material has one meaningful palette group", () => {
   assert.deepEqual(
     materials.filter((m) => m.elasticity).map((m) => m.name),
-    ["Rubber", "Rope", "Jelly", "Glue"],
+    ["Sponge", "Rubber", "Rope", "Jelly", "Glue"],
   );
   for (const m of materials.filter(
     (m) => m.id && !m.deprecated && !isEntity(m),
@@ -190,7 +190,7 @@ test("bubbles have varied lifetimes and exposed foam drains sooner than submerge
 test("palette has one entry per substance while drawing temperatures resolve alternate phases", async () => {
   const { paletteMaterials, paletteBase, drawingPhase, materialSearchText } =
     await import("../src/sim/material-families.js");
-  assert.equal(paletteMaterials.length, 62);
+  assert.equal(paletteMaterials.length, 71);
   for (const [base, phase, temp] of [
     ["Salt", "Molten Salt", 850],
     ["Water", "Ice", -20],
@@ -318,10 +318,16 @@ test("connected elastic contact preserves momentum; detached pieces still collid
   w.elastic.substep(0);
   w.velocityX[i] = 0.7;
   w.velocityY[i] = 0.4;
+  const particle = w.elasticId[i];
   w.elastic.moveAxis(i, 0.7, true);
-  assert.equal(w.velocityX[i], Math.fround(0.7));
-  assert.equal(w.velocityY[i], Math.fround(0.4));
-  w.elastic.cutBrush(10.5, 10, 0, "circle");
+  const moved = w.elastic.locations.get(particle);
+  assert.equal(w.velocityX[moved], Math.fround(0.7));
+  assert.equal(w.velocityY[moved], Math.fround(0.4));
+  assert.ok(Math.abs((moved % w.width) + w.offsetX[moved] - 10.7) < 1e-6);
+  // A separate pair with no bonds must still resolve real surface contact.
+  w.clear();
+  w.set(i, M.Jelly, 20, 0, false);
+  w.set(j, M.Jelly, 20, 0, false);
   w.elastic.substep(0);
   w.velocityX[i] = 0.7;
   w.elastic.moveAxis(i, 0.7, true);
@@ -371,4 +377,44 @@ test("delayed elastic raster placement survives saves and cannot tunnel through 
   assert.equal(w.cells[i + 2], 0);
   assert.ok(w.velocityX[i] < 0);
   assert.equal(w.count, 2);
+});
+
+test("unsupported deformed Jelly preserves free-flight momentum under all gravity orientations", () => {
+  for (const [gx, gy] of [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ]) {
+    const w = new World(500, 500);
+    w.setGravity(gx, gy);
+    w.seed = 7181;
+    for (let y = 200; y < 225; y++)
+      for (let x = 200; x < 230; x++) {
+        const i = y * w.width + x;
+        w.set(i, M.Jelly);
+        const lateral = (w.random() - 0.5) * 1.5;
+        w.velocityX[i] = gx * 0.6 + gy * lateral;
+        w.velocityY[i] = gy * 0.6 - gx * lateral;
+      }
+    const depth = () =>
+      [...w.elastic.locations.values()].reduce(
+        (sum, i) =>
+          sum +
+          ((i % w.width) + w.offsetX[i]) * gx +
+          (Math.floor(i / w.width) + w.offsetY[i]) * gy,
+        0,
+      ) / w.elastic.locations.size;
+    for (let n = 0; n < 90; n++) w.step();
+    const before = depth();
+    for (let n = 0; n < 50; n++) w.step();
+    assert.ok(
+      depth() - before > 40,
+      `free body stalled at gravity ${gx}, ${gy}`,
+    );
+    assert.equal(w.count, 750);
+    assert.ok(!w.elasticAnchor.some(Boolean));
+    assert.ok(w.offsetX.every((v) => Math.abs(v) <= 1.49 + 1e-6));
+    assert.ok(w.offsetY.every((v) => Math.abs(v) <= 1.49 + 1e-6));
+  }
 });

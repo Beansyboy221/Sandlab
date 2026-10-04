@@ -20,7 +20,7 @@ with sync_playwright() as p:
         page.locator('#level-ambientLight').fill('0');assert page.locator('#level-ambientLight-value').inner_text()=='0%'
         page.locator('#level-submit').click();page.evaluate('sandlab.state.paused=true');assert page.evaluate('sandlab.world.ambientLight')==0
         if touch:page.locator('#palette-toggle').click()
-        page.locator('[data-catalog=entities]').click()
+        page.locator('[data-catalog=materials]').click()
         page.get_by_role('button',name='Lamp',exact=True).click()
         point=page.evaluate('''async()=>{window.M=(await import('./src/sim/materials.js')).M;const w=sandlab.world,r=sandlab.renderer;r.resetView();const p=r.project(w.width*.35,w.height*.45),b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width;return {x:b.x+p.x/d,y:b.y+p.y/d};}''')
         if touch:page.touchscreen.tap(**point)

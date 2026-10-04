@@ -9,6 +9,7 @@ export const groups = {
   ],
   quick: ["settings", "frame-clock", "editor", "materials", "security"],
   collisions: [
+    "material-upgrade",
     "mechanical-mass",
     "rigid-physics",
     "collision-bounds",
@@ -18,6 +19,7 @@ export const groups = {
     "simulation",
   ],
   elastics: [
+    "material-upgrade",
     "mechanical-mass",
     "elasticity",
     "rigid-physics",

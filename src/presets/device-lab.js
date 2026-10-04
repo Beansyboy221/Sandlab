@@ -20,7 +20,7 @@ export function buildDeviceLab(w, id) {
   };
   if (id === "logic") {
     // Three isolated circuits: AND, rising-edge toggle and a 12-tick delay.
-    // Batteries are pulse sources through Wire's shared conductor cooldown.
+    // Batteries are pulse sources through Copper's shared conductor cooldown.
     const start = Math.max(4, Math.floor(across * 0.28));
     for (const [n, name] of [
       "AND Gate",
@@ -29,13 +29,14 @@ export function buildDeviceLab(w, id) {
     ].entries()) {
       const row = Math.floor(down * (0.25 + n * 0.22));
       put(start, row, "Battery");
-      for (let x = 1; x <= 3; x++) put(start + x, row, "Wire");
+      for (let x = 1; x <= 3; x++) put(start + x, row, "Copper");
       put(start + 4, row, name);
-      for (let x = 5; x <= 7; x++) put(start + x, row, "Wire");
+      for (let x = 5; x <= 7; x++) put(start + x, row, "Copper");
       put(start + 8, row, "Signal Lamp");
+      for (const x of [1, 2, 3, 5, 6, 7]) put(start + x, row + 1, "Wall");
       if (n === 0) {
         put(start + 4, row - 2, "Battery", rayHeading(gx, gy));
-        put(start + 4, row - 1, "Wire");
+        put(start + 4, row - 1, "Copper");
       }
     }
   } else {

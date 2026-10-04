@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.25.0",
+    date: "2026-10-04",
+    title: "Flora, fracture and free-falling elastics",
+    changes: [
+      "Crystal replaces Prism, sources move to Materials, and Flora gains moisture-fed Fungus and host-dependent Virus.",
+      "Sponge now stretches and absorbs as an elastic, while deformed spring meshes keep falling without supporting themselves.",
+      "More brittle solids shed weak pieces in the air and crumble on impact, with air and impact stress capped at 64 and 128 samples per tick.",
+      "Saved oxidation levels replace Patina, change Copper’s color and conduction, and migrate old Patina and Wire worlds to Copper.",
+    ],
+  },
+  {
     version: "1.24.0",
     date: "2026-10-04",
     title: "Light, spectra and sound",

@@ -8,6 +8,7 @@ const families = {
   Clay: ["Wet Clay"],
   Glass: ["Molten Glass"],
   Glue: ["Liquid Glue"],
+  Sponge: ["Sponge Crumbs"],
   Rubber: ["Rubber Crumbs"],
   Jelly: ["Jelly Drops"],
   Rope: ["Rope Fibers"],

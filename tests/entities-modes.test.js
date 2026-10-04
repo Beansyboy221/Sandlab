@@ -20,8 +20,8 @@ const run = (w, n) => {
   for (let i = 0; i < n; i++) w.step();
 };
 test("catalogs are separate, complete, and preserve IDs for old creatures and devices", () => {
-  assert.equal(paletteMaterials.length, 62);
-  assert.equal(paletteEntities.length, 32);
+  assert.equal(paletteMaterials.length, 71);
+  assert.equal(paletteEntities.length, 23);
   assert.equal(paletteEntries.length, 94);
   assert.ok(paletteMaterials.every((m) => !isEntity(m)));
   assert.ok(paletteEntities.every(isEntity));
@@ -35,13 +35,23 @@ test("catalogs are separate, complete, and preserve IDs for old creatures and de
   for (const name of [
     "Cat",
     "Player",
-    "Heater",
     "Battery",
     "Drone",
     "Solar Cell",
     "Missile",
   ])
     assert.ok(paletteEntities.includes(materials[M[name]]), name);
+  for (const name of [
+    "Heater",
+    "Cooler",
+    "Fan",
+    "Clone",
+    "Void",
+    "Lamp",
+    "Black Hole",
+    "Repulsor",
+  ])
+    assert.ok(paletteMaterials.includes(materials[M[name]]), name);
 });
 test("laser-guided missiles choose the nearest visible beam before the cursor, then reacquire", () => {
   const w = new World(100, 80);

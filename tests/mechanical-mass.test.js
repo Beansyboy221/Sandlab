@@ -9,13 +9,13 @@ function store(w, i, amount, type = M.Water) {
   w.storedAmount[i] = amount;
   w.storedLiquid[i] = amount ? type : 0;
 }
-function sponge() {
+function porousSolid() {
   const w = new World(32, 32),
     ids = [];
   for (let x = 10; x < 13; x++) {
     const i = 10 * 32 + x;
     ids.push(i);
-    w.set(i, M.Sponge);
+    w.set(i, M.Wood);
   }
   w.rigid.rebuild();
   return { w, body: w.rigid.bodies[0], ids };
@@ -23,15 +23,15 @@ function sponge() {
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-6, `${a} versus ${b}`);
 
 test("reservoir units add liquid mass, shift the center and refresh inertia without topology changes", () => {
-  const { w, body, ids } = sponge(),
+  const { w, body, ids } = porousSolid(),
     graph = body.edges,
     dry = body.mass;
-  store(w, ids[2], 4);
+  store(w, ids[2], 3);
   const pose = w.rigid.pose(body),
-    m = materials[M.Sponge].density;
-  close(body.mass, dry + 4);
-  close(cellMass(w, ids[2]), m + 4);
-  close(pose.x, (10.5 * m + 11.5 * m + 12.5 * (m + 4)) / body.mass);
+    m = materials[M.Wood].density;
+  close(body.mass, dry + 3);
+  close(cellMass(w, ids[2]), m + 3);
+  close(pose.x, (10.5 * m + 11.5 * m + 12.5 * (m + 3)) / body.mass);
   const expectedInertia = ids.reduce(
     (sum, i) =>
       sum +
@@ -53,7 +53,7 @@ test("reservoir units add liquid mass, shift the center and refresh inertia with
   assert.equal(body.radius, body.dryRadius);
 });
 test("redistribution with unchanged total mass and centroid still changes rotational inertia", () => {
-  const { w, body, ids } = sponge();
+  const { w, body, ids } = porousSolid();
   store(w, ids[1], 2);
   w.rigid.pose(body);
   const before = { mass: body.mass, x: body.lx, inertia: body.inertia };
@@ -74,7 +74,7 @@ test("a wet solid responds less to pressure, while empty-space gravity stays mas
     for (let y = 20; y < 23; y++)
       for (let x = 20; x < 23; x++) {
         const i = y * 64 + x;
-        w.set(i, M.Sponge);
+        w.set(i, M.Wood);
         if (wet) store(w, i, 2);
       }
     w.rigid.rebuild();
@@ -112,7 +112,7 @@ test("added pore contents reduce buoyancy without expanding the occupied body vo
     for (let y = 14; y < 17; y++)
       for (let x = 14; x < 17; x++) {
         const i = y * 32 + x;
-        w.set(i, M.Sponge);
+        w.set(i, M.Wood);
         if (wet) store(w, i, 2);
       }
     w.rigid.rebuild();
@@ -124,7 +124,7 @@ test("added pore contents reduce buoyancy without expanding the occupied body vo
   assert.ok(velocity(true) > 0);
 });
 test("wet body rotation, movement and mass resume identically after a save", () => {
-  const { w, body, ids } = sponge();
+  const { w, body, ids } = porousSolid();
   store(w, ids[0], 2, M.Oil);
   store(w, ids[2], 3);
   const p = w.rigid.pose(body);

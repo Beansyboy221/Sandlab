@@ -4,6 +4,7 @@ import { World } from "../src/sim/world.js";
 import { M, materials, canonicalMaterial } from "../src/sim/materials.js";
 import { paletteMaterials } from "../src/sim/material-families.js";
 import { react } from "../src/sim/reactions.js";
+import { conducts } from "../src/sim/oxidation.js";
 import { grow } from "../src/sim/biology.js";
 import { absorb } from "../src/sim/absorption.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
@@ -19,7 +20,7 @@ test("existing material IDs stay stable and every phase/product resolves to a va
   assert.equal(M.Sponge, 51);
   assert.equal(M.Water, 2);
   assert.equal(M.Heater, 38);
-  assert.equal(materials.length, 134);
+  assert.equal(materials.length, 137);
   assert.equal(M["Liquid Nitrogen"], 71);
   for (const m of materials)
     for (const key of [
@@ -42,12 +43,13 @@ test("existing material IDs stay stable and every phase/product resolves to a va
 test("removed materials are unavailable, names use capitals, and renamed substances preserve IDs", () => {
   assert.equal(M.CO2, 61);
   assert.equal(M["Glass Shards"], 79);
-  assert.equal(paletteMaterials.length, 62);
+  assert.equal(paletteMaterials.length, 71);
   const retired = materials.filter((m) => m.retired);
-  assert.equal(retired.length, 14);
+  assert.equal(retired.length, 16);
   for (const m of retired) {
-    if (m.name !== "Storm") assert.equal(M[m.name], undefined);
-    else assert.equal(M.Storm, M.Cloud);
+    if (!["Storm", "Wire", "Patina"].includes(m.name))
+      assert.equal(M[m.name], undefined);
+    else assert.equal(M[m.name], canonicalMaterial(m.id));
     assert.ok(!paletteMaterials.includes(m));
     assert.ok(!materials[canonicalMaterial(m.id)].deprecated);
   }
@@ -159,6 +161,10 @@ test("corrosion requires wet exposed surfaces, salt accelerates it, and copper p
   assert.equal(wet.cells[210], M.Steel);
   wet.set(211, M.Brine);
   react(wet, 210, 10, 10);
+  assert.equal(wet.cells[210], M.Steel);
+  assert.equal(wet.oxidationLevel[210], 16);
+  wet.oxidationLevel[210] = 240;
+  react(wet, 210, 10, 10);
   assert.equal(wet.cells[210], M.Rust);
   const submerged = sample("Steel", "Water");
   for (const i of [209, 190, 230]) submerged.set(i, M.Water);
@@ -168,13 +174,17 @@ test("corrosion requires wet exposed surfaces, salt accelerates it, and copper p
   const copper = sample("Copper", "Water");
   copper.random = () => 0;
   react(copper, 210, 10, 10);
-  assert.equal(copper.cells[210], M.Patina);
+  assert.equal(copper.cells[210], M.Copper);
+  assert.equal(copper.oxidationLevel[210], 16);
+  copper.oxidationLevel[210] = 255;
   assert.equal(materials[M.Copper].conductive, true);
-  assert.ok(!materials[M.Patina].conductive);
+  assert.ok(!conducts(copper, 210));
   copper.set(211, M.Acid);
   react(copper, 211, 11, 10);
   assert.equal(copper.cells[210], M.Copper);
   assert.equal(copper.cells[211], M.Water);
+  assert.equal(copper.oxidationLevel[210], 223);
+  assert.ok(conducts(copper, 210));
 });
 test("lye consumes organic matter but leaves mineral vessels, metal, and glass intact", () => {
   for (const target of [

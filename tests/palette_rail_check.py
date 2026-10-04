@@ -67,7 +67,7 @@ with sync_playwright() as p:
         assert page.locator('#categories button').last.get_attribute('id')=='groups-btn'
         page.locator('#categories [data-group="liquid"]').click()
         assert page.locator('.material').count()>0
-        page.locator('#entities-tab').click();assert page.locator('.material').count()==32
+        page.locator('#entities-tab').click();assert page.locator('.material').count()==23
         assert not errors,errors
         page.screenshot(path=str(ROOT/'tests/artifacts'/f'palette-rail-{width}.png'))
         print(f'Palette rail, groups and mixtures: {width}x{height} passed')

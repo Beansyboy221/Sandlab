@@ -37,6 +37,8 @@ export class RigidBodies {
       massUpdates: 0,
       limitedPlans: 0,
       limitedContacts: 0,
+      airStressSamples: 0,
+      impactStressSamples: 0,
     };
     this.parents = new Int32Array(world.length);
     this.edgeCounts = new Uint8Array(world.length);

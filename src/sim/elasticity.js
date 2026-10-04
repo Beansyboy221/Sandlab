@@ -1,3 +1,4 @@
+import { ElasticMomentum } from "./elastic-momentum.js";
 import { brushFootprint } from "../brush-geometry.js";
 import {
   elasticX,
@@ -58,6 +59,7 @@ export class Elasticity {
     this.forceX = new Float32Array(world.length);
     this.forceY = new Float32Array(world.length);
     this.delta = new Float64Array(2);
+    this.momentum = new ElasticMomentum(this);
   }
   allocate() {
     while (
@@ -316,6 +318,7 @@ export class Elasticity {
       }
       this.topologyDirty = false;
     }
+    this.momentum.capture(indices, this.nodeIds, count, dt);
     // All forces are computed before any grid cell moves, avoiding scan bias.
     for (let n = 0; n < count; n++) {
       const i = indices[n];
@@ -343,6 +346,7 @@ export class Elasticity {
           if (j < 0 || !this.support(j)) w.elasticAnchor[i] &= ~(1 << d);
         }
       if (w.elasticAnchor[i]) {
+        this.momentum.blocked[this.momentum.nodeSlots[n]] = 3;
         w.velocityX[i] = w.velocityY[i] = w.offsetX[i] = w.offsetY[i] = 0;
         fx[i] = fy[i] = 0;
         continue;
@@ -367,28 +371,25 @@ export class Elasticity {
       w.environment.sample(x, y);
       const localX = w.environment.x,
         localY = w.environment.y;
-      w.velocityX[i] = limit(
-        (w.velocityX[i] +
-          (fx[i] * inverseMass +
-            gravity * localX +
-            pressureX * 0.015 * m.density * inverseMass) *
-            dt) *
+      const vx =
+          (w.velocityX[i] +
+            (fx[i] * inverseMass +
+              gravity * localX +
+              pressureX * 0.015 * m.density * inverseMass) *
+              dt) *
           0.999,
-        0.95,
-      );
-      w.velocityY[i] = limit(
-        (w.velocityY[i] +
-          (fy[i] * inverseMass +
-            gravity * localY +
-            pressureY * 0.015 * m.density * inverseMass) *
-            dt) *
-          0.999,
-        0.95,
-      );
-      // Force buffers can become predicted offsets once all spring forces exist.
-      fx[i] = w.offsetX[i] + w.velocityX[i] * dt;
-      fy[i] = w.offsetY[i] + w.velocityY[i] * dt;
+        vy =
+          (w.velocityY[i] +
+            (fy[i] * inverseMass +
+              gravity * localY +
+              pressureY * 0.015 * m.density * inverseMass) *
+              dt) *
+          0.999;
+      w.velocityX[i] = limit(vx, 0.95);
+      w.velocityY[i] = limit(vy, 0.95);
+      this.momentum.record(n, i, vx, vy);
     }
+    this.momentum.predict(indices);
     // Move each leading edge first. An entire connected body can then translate
     // without its own occupied cells becoming artificial walls or losing momentum.
     for (const horizontal of [true, false]) {
@@ -399,9 +400,35 @@ export class Elasticity {
             offset = offsets[indices[order]];
           if (offset >= 0 !== positive) continue;
           const i = locations.get(this.nodeIds[order]);
-          if (i !== undefined) this.moveAxis(i, offset, horizontal);
+          if (i !== undefined) {
+            const initial = indices[order],
+              origin = horizontal
+                ? initial % w.width
+                : Math.floor(initial / w.width),
+              current = horizontal ? i % w.width : Math.floor(i / w.width);
+            let correction = origin - current;
+            if (w.border === "looping") {
+              const span = horizontal ? w.width : w.height;
+              correction -= Math.round(correction / span) * span;
+            }
+            this.moveAxis(i, offset + correction, horizontal);
+          }
         }
     }
+    this.momentum.project();
+  }
+
+  passableReservation(j, i) {
+    const w = this.world,
+      m = materials[w.cells[j]];
+    return (
+      !m.id ||
+      m.gas ||
+      m.category === "liquid" ||
+      (m.elasticity &&
+        !w.elasticAnchor[j] &&
+        this.components[i] === this.components[j])
+    );
   }
 
   moveAxis(i, offset, horizontal) {
@@ -440,6 +467,7 @@ export class Elasticity {
         }
       }
     if (j < 0 && w.border === "void") {
+      this.momentum.contact(i, horizontal);
       w.set(i, 0);
       return -1;
     }
@@ -453,17 +481,38 @@ export class Elasticity {
       offsets[j] = offset - shift;
       return j;
     }
-    // Continuous positions may briefly lead their occupied raster cell while a
-    // connected neighbor vacates it. Retaining that displacement avoids losing
-    // motion on every grid reservation; internal springs handle compression.
-    if (
-      target?.elasticity &&
-      this.components[i] &&
-      this.components[i] === this.components[j]
-    ) {
-      offsets[i] = limit(offset, 1.49);
-      return i;
+    // The raster is a reservation, not the physical position. Exchange slots
+    // within one spring component while preserving the displaced node's pose;
+    // otherwise a folded mesh can deadlock on its own occupied cells in midair.
+    if (target?.elasticity && !w.elasticAnchor[j]) {
+      const internal =
+          this.components[i] && this.components[i] === this.components[j],
+        separation = horizontal
+          ? Math.hypot(
+              elasticX(w, i) + offset - w.offsetX[i] - elasticX(w, j),
+              elasticY(w, i) - elasticY(w, j),
+            )
+          : Math.hypot(
+              elasticX(w, i) - elasticX(w, j),
+              elasticY(w, i) + offset - w.offsetY[i] - elasticY(w, j),
+            );
+      const displaced = offsets[j] + shift;
+      if (
+        (internal || separation >= 0.9) &&
+        Math.abs(shift) === 1 &&
+        Math.abs(displaced) <= 1.49
+      ) {
+        w.swap(i, j);
+        offsets[j] = offset - shift;
+        offsets[i] = displaced;
+        return j;
+      }
+      if (internal) {
+        offsets[i] = limit(offset, 1.49);
+        return i;
+      }
     }
+    this.momentum.contact(i, horizontal);
     offsets[i] = limit(offset, 0.49);
     velocity[i] *= -0.18;
     if (!horizontal) w.velocityX[i] *= 0.8;

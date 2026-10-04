@@ -73,6 +73,7 @@ export class World {
     this.moisture = new Uint8Array(this.length);
     this.nutrition = new Uint8Array(this.length);
     this.growth = new Uint8Array(this.length);
+    this.oxidationLevel = new Uint8Array(this.length);
     this.storedLiquid = new Uint8Array(this.length);
     this.storedAmount = new Uint8Array(this.length);
     this.dissolvedId = new Uint8Array(this.length);
@@ -142,6 +143,7 @@ export class World {
     lifetime = materials[id].lifetime || 0,
     connectElastic = true,
   ) {
+    const oldId = id;
     const legacyId = canonicalMaterial(id);
     id = mixtureBase[legacyId];
     if (!Number.isInteger(i) || i < 0 || i >= this.length) return;
@@ -207,6 +209,7 @@ export class World {
     this.moisture[i] = id === M.Mud ? 220 : id === M.Plant ? 80 : 0;
     this.nutrition[i] = materials[id].nutrition || 0;
     this.growth[i] = 0;
+    this.oxidationLevel[i] = oldId === 54 ? 255 : 0;
     const water = id === M.Mud ? 2 : id === M["Wet Clay"] ? 1 : 0;
     this.storedLiquid[i] = water ? M.Water : 0;
     this.storedAmount[i] = water;
@@ -324,6 +327,7 @@ export class World {
       "moisture",
       "nutrition",
       "growth",
+      "oxidationLevel",
       "storedLiquid",
       "storedAmount",
       "dissolvedId",

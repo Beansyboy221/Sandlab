@@ -1,5 +1,6 @@
 import { canDissolve, addDissolved } from "./mixtures.js";
 import { releaseForChange } from "./absorption.js";
+import { addOxide } from "./oxidation.js";
 import { M, materials } from "./materials.js";
 // Indexed symmetric contact rules run only for participating substances.
 // Each reaction consumes its two reactants once and carries their heat forward.
@@ -27,13 +28,13 @@ for (const acid of materials.filter((m) => m.acidic && !m.deprecated)) {
     heat: 12,
   });
   pair(acid.id, M.Rust, M.Water, 0, { chance: 0.12 });
-  pair(acid.id, M.Patina, M.Water, M.Copper, { chance: 0.06 });
+  pair(acid.id, M.Copper, M.Water, M.Copper, { chance: 0.06, oxide: -32 });
 }
 for (const sodium of materials.filter((m) => m.reactsWithWater))
   for (const water of materials.filter((m) => m.aqueous))
     pair(sodium.id, water.id, M.Lye, M.Hydrogen, { heat: 600, pressure: 2 });
 pair(M.Chlorine, M.Steel, 0, M.Rust, { chance: 0.04 });
-pair(M.Chlorine, M.Copper, 0, M.Patina, { chance: 0.04 });
+pair(M.Chlorine, M.Copper, 0, M.Copper, { chance: 0.04, oxide: 48 });
 pair(M.Rust, M.Coal, M.Steel, M["CO2"], {
   minimumTemperature: 700,
   chance: 0.04,
@@ -58,6 +59,15 @@ function contact(w, i, j, row, x, y) {
   )
     return false;
   const forward = w.cells[i] === rule.a;
+  if (rule.oxide) {
+    const coating = forward ? j : i,
+      reagent = forward ? i : j;
+    if (rule.oxide < 0 && !w.oxidationLevel[coating]) return false;
+    addOxide(w, coating, rule.oxide);
+    w.transform(reagent, rule.resultA, w.temp[reagent]);
+    w.fields.add(x, y, rule.resultA ? 0 : -0.2);
+    return true;
+  }
   if (rule.dissolve) {
     const host = forward ? i : j,
       source = forward ? j : i;
@@ -144,8 +154,16 @@ export function oxidize(w, i, x, y, material) {
     if (!id || id === M.Oxygen) oxygen = true;
     if (id === M.Salt || w.dissolvedId[j] === M.Salt) salty = true;
   });
-  if (wet && oxygen && w.random() < material.oxidationRate * (salty ? 4 : 1))
-    w.transform(i, material.oxidizeTo, w.temp[i]);
+  const passivation =
+    material.oxidizeTo === undefined
+      ? 1 - (w.oxidationLevel[i] / 255) * 0.9
+      : 1;
+  if (
+    wet &&
+    oxygen &&
+    w.random() < material.oxidationRate * (salty ? 4 : 1) * passivation
+  )
+    addOxide(w, i, 16);
 }
 export function dissolveOrganic(w, i, x, y) {
   if (w.random() >= 0.06) return;

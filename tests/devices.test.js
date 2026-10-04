@@ -21,9 +21,9 @@ function circuit(rule, heading = 0) {
   const a = w.index(20 - dx, 20 - dy),
     b = w.index(20 + dy, 20 - dx),
     out = w.index(20 + dx, 20 + dy);
-  w.set(a, M.Wire);
-  w.set(b, M.Wire);
-  w.set(out, M.Wire);
+  w.set(a, M.Copper);
+  w.set(b, M.Copper);
+  w.set(out, M.Copper);
   return { w, i, a, b, out };
 }
 
@@ -93,11 +93,12 @@ test("toggle uses rising edges, delay shifts exactly 12 ticks, and gate chains r
   reverse.circuits.step();
   assert.equal(reverse.life[b], 0);
 });
-test("sparks drive gates, batteries power wires, lamp emits only when signaled, and a fan cannot push through walls", () => {
+test("sparks drive gates, batteries power copper, lamp emits only when signaled, and a fan cannot push through walls", () => {
   const w = new World(48, 32);
   w.set(at(w, 8, 10), M.Battery);
-  for (let x = 9; x < 20; x++) w.set(at(w, x, 10), M.Wire);
+  for (let x = 9; x < 20; x++) w.set(at(w, x, 10), M.Copper);
   w.set(at(w, 20, 10), M["Signal Lamp"]);
+  for (let x = 9; x < 20; x++) w.set(at(w, x, 11), M.Wall);
   run(w, 80);
   assert.ok(w.cells.slice(at(w, 8, 10), at(w, 21, 10)).every((id) => id));
   let lit = false;

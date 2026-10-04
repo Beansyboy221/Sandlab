@@ -3,6 +3,8 @@ import {
   porous,
   springy,
   combustible,
+  conductor,
+  oxidizable,
 } from "./material-authoring.js";
 import { fragmentMaterials } from "./fragment-materials.js";
 import { deviceMaterials } from "./device-materials.js";
@@ -514,27 +516,24 @@ export const materialDefinitions = [
   ],
   defineMaterial({
     name: "Sponge",
-    category: "solid",
+    category: "elastic",
     color: "#e6c06c",
     density: 0.7,
-    traits: [porous(48, 0.9, 0.995), combustible(260, 150, "Ash")],
+    traits: [
+      porous(48, 0.9, 0.995),
+      springy(0.12, 0.93, 5),
+      combustible(260, 150, "Ash"),
+    ],
     properties: { conductivity: 0.02, resistance: 0.15, brittleness: 0.1 },
   }),
-  [
-    "Copper",
-    "solid",
-    "#d39165",
-    8.9,
-    {
-      conductive: true,
-      conductivity: 0.62,
-      resistance: 0.93,
-      melt: 1085,
-      meltTo: "Molten Copper",
-      oxidizeTo: "Patina",
-      oxidationRate: 0.0008,
-    },
-  ],
+  defineMaterial({
+    name: "Copper",
+    category: "solid",
+    color: "#d39165",
+    density: 8.9,
+    traits: [conductor(0.62), oxidizable(0.0008, "#58b5a0")],
+    properties: { resistance: 0.93, melt: 1085, meltTo: "Molten Copper" },
+  }),
   [
     "Molten Copper",
     "liquid",
@@ -551,15 +550,10 @@ export const materialDefinitions = [
   ],
   [
     "Patina",
-    "solid",
+    "none",
     "#58b5a0",
     5,
-    {
-      conductivity: 0.02,
-      resistance: 0.75,
-      melt: 1085,
-      meltTo: "Molten Copper",
-    },
+    { deprecated: true, retired: true, replacement: "Copper" },
   ],
   [
     "Rust",
@@ -953,7 +947,7 @@ materialDefinitions.push(
     },
   ],
   [
-    "Prism",
+    "Crystal",
     "solid",
     "#b9d2e6",
     2.5,
@@ -966,6 +960,52 @@ materialDefinitions.push(
       brittleness: 0.95,
       melt: 1400,
       meltTo: "Molten Glass",
+    },
+  ],
+);
+
+// New slots are append-only so existing world files retain their identities.
+materialDefinitions.push(
+  defineMaterial({
+    name: "Fungus",
+    category: "solid",
+    color: "#d2a3cb",
+    density: 0.65,
+    traits: [porous(3, 0.15, 0.98), combustible(180, 80, "Ash")],
+    properties: {
+      flora: "fungus",
+      rooted: true,
+      brittleness: 0.2,
+      organic: true,
+      waterOnly: true,
+      nutrition: 32,
+      conductivity: 0.025,
+      resistance: 0.08,
+    },
+  }),
+  [
+    "Virus",
+    "powder",
+    "#c98cd9",
+    0.2,
+    { flora: "virus", lifetime: 180, conductivity: 0.015, resistance: 0.05 },
+  ],
+  [
+    "Sponge Crumbs",
+    "powder",
+    "#d8bd62",
+    0.7,
+    {
+      porosity: 48,
+      permeability: 0.9,
+      retention: 0.995,
+      organic: true,
+      ignite: 260,
+      burn: 150,
+      residue: "Ash",
+      brittleness: 0.1,
+      conductivity: 0.02,
+      resistance: 0.15,
     },
   ],
 );

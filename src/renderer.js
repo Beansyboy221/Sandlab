@@ -15,6 +15,7 @@ import { drawElasticBodies, drawBubbles } from "./sim/elastic-renderer.js";
 import { drawGesturePreview } from "./drawing-gesture.js";
 import { SelectionOverlay } from "./selection-overlay.js";
 import { Bloom } from "./bloom.js";
+import { oxideColors } from "./sim/oxidation.js";
 import { materials, M } from "./sim/materials.js";
 const colors = materials.map((m) => [
   parseInt(m.color.slice(1, 3), 16),
@@ -244,6 +245,12 @@ export class Renderer {
         g = base[1] + shade;
         b = base[2] + shade;
         if (!thermal) {
+          const oxide = this.world.oxidationLevel[i] / 255;
+          if (oxide) {
+            r += (oxideColors[id][0] + shade - r) * oxide;
+            g += (oxideColors[id][1] + shade - g) * oxide;
+            b += (oxideColors[id][2] + shade - b) * oxide;
+          }
           const pigment = this.world.pigment[i],
             opacity = (pigment >>> 24) / 255;
           if (opacity) {

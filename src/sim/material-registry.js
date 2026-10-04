@@ -38,6 +38,7 @@ const positive = [
   "viscosity",
   "elasticity",
   "toughness",
+  "compressiveStrength",
   "burn",
   "lifetime",
   "lightEmission",
@@ -77,6 +78,11 @@ function validate(m) {
     (m.refractiveIndex < 1 || m.refractiveIndex > 4)
   )
     throw Error(`Invalid refractive index for ${m.name}`);
+  if (
+    m.oxidationColor !== undefined &&
+    !/^#[0-9a-f]{6}$/i.test(m.oxidationColor)
+  )
+    throw Error(`Invalid oxidation color for ${m.name}`);
   if (!categories.has(m.category))
     throw Error(`Unknown category for ${m.name}`);
   if (!/^#[0-9a-f]{6}$/i.test(m.color))
@@ -169,18 +175,20 @@ export function compileMaterials(
         retention: 0.7,
         brittleness:
           category === "solid"
-            ? 0.5
+            ? 0.65
             : category === "powder"
               ? 0.7
               : category === "elastic"
                 ? 0.1
                 : 0,
         conductivity: 0.04,
+        oxidationRate: 0,
         resistance: 0,
         viscosity: 1,
         temperature: 20,
         movable: !["static", "special"].includes(category),
         rigid: category === "solid",
+        compressiveStrength: category === "solid" ? 12 : 0,
         friction: 0.4,
         restitution: 0.08,
         gas: category === "gas" || category === "energy",
@@ -240,6 +248,7 @@ export function compileMaterials(
     "permeability",
     "retention",
     "brittleness",
+    "oxidationRate",
     "friction",
     "restitution",
     "lightAbsorption",

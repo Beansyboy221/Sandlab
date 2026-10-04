@@ -6,6 +6,7 @@ import {
   springy,
   combustible,
   conductor,
+  oxidizable,
 } from "../src/sim/material-authoring.js";
 import { compileMaterials, capability } from "../src/sim/material-registry.js";
 import { materials, materialTables } from "../src/sim/materials.js";
@@ -99,4 +100,24 @@ test("compiled property and pair tables reproduce every existing heat coefficien
         Math.min(0.24, (a.conductivity + b.conductivity) * 0.25),
       );
   }
+});
+
+test("oxidation traits compile a finite rate and surface color without particle state in definitions", () => {
+  const definition = defineMaterial({
+    name: "Test Metal",
+    representation: "rigid",
+    color: "#998877",
+    density: 4,
+    traits: [conductor(0.2), oxidizable(0.002, "#779988")],
+  });
+  const registry = compileMaterials([empty, definition]);
+  assert.equal(registry.materials[1].oxidationRate, 0.002);
+  assert.equal(registry.tables.oxidationRate[1], 0.002);
+  assert.equal(registry.materials[1].oxidationColor, "#779988");
+  assert.equal(registry.materials[1].oxidationLevel, undefined);
+  assert.ok(registry.tables.oxidationRate.every(Number.isFinite));
+  assert.throws(
+    () => compileMaterials([empty, custom({ oxidationColor: "invalid" })]),
+    /oxidation color/,
+  );
 });

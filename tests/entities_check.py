@@ -25,17 +25,17 @@ with sync_playwright() as p:
         if not page.evaluate('sandlab.state.paused'):page.locator('#play-btn').click()
         page.evaluate("async()=>{window.M=(await import('./src/sim/materials.js')).M;sandlab.world.clear();}")
         open_palette(page,mobile)
-        assert page.locator('#catalog-total').inner_text()=='62'
-        assert page.locator('#materials .material').count()==62
+        assert page.locator('#catalog-total').inner_text()=='71'
+        assert page.locator('#materials .material').count()==71
         names=set(page.locator('.material-name').all_text_contents())
         assert {'Fuel','Metal Dust','Sawdust','Glue','Cloud'}<=names
         assert not {'Kerosene','Steel Powder','Wood Chips','Storm','Liquid Glue'}&names
-        assert not set(page.locator('.material-name').all_text_contents()) & {'Player','Cat','Drone','Heater','Battery'}
+        assert not set(page.locator('.material-name').all_text_contents()) & {'Player','Cat','Drone','Battery'}
         page.locator('#entities-tab').click()
         assert page.locator('#entities-tab').get_attribute('aria-selected')=='true'
         assert page.locator('#materials').get_attribute('aria-labelledby')=='entities-tab'
         assert page.locator('#catalog-title').inner_text()=='Entities'
-        assert page.locator('#materials .material').count()==32
+        assert page.locator('#materials .material').count()==23
         assert not set(page.locator('.material-name').all_text_contents()) & {'Sand','Water','Wood','Rope'}
         page.locator('[data-group=missiles]').click()
         assert set(page.locator('.material-name').all_text_contents())=={'Seeking Missile','Guided Missile','Missile'}

@@ -24,7 +24,7 @@ def cell(page,x,y):
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox','--disable-dev-shm-usage'])
     context,page,errors=init(browser,1440,900)
-    assert page.locator('.material').count()==62
+    assert page.locator('.material').count()==71
     page.locator('#tool-picker-toggle').focus();page.keyboard.press('Space')
     assert page.evaluate('sandlab.state.paused')
     assert page.locator('#tool-picker-menu [role=option]').count()==14
@@ -40,8 +40,8 @@ with sync_playwright() as p:
     page.locator('#tool-picker-toggle').click();page.keyboard.press('b');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='wind'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()
-    page.locator('#entities-tab').click()
-    page.locator('#categories').get_by_role('button',name='Sources',exact=True).click()
+    page.locator('#materials-tab').click()
+    page.locator('#categories').get_by_role('button',name='Static',exact=True).click()
     assert page.get_by_role('button',name='Black Hole',exact=True).is_visible()
     assert page.get_by_role('button',name='Repulsor',exact=True).is_visible()
     page.locator('#materials-tab').click()
@@ -91,7 +91,7 @@ with sync_playwright() as p:
     page.screenshot(path=str(ARTIFACTS/'tool-icons-mobile.png'))
     page.locator('[data-tool-option=eyedropper]').tap();assert page.evaluate('sandlab.state.tool')=='eyedropper'
     page.locator('#tool-picker-toggle').tap();page.locator('[data-tool-option=paint]').tap()
-    page.locator('#palette-toggle').tap();page.locator('#entities-tab').tap();page.locator('#categories').get_by_role('button',name='Sources',exact=True).tap()
+    page.locator('#palette-toggle').tap();page.locator('#materials-tab').tap();page.locator('#categories').get_by_role('button',name='Static',exact=True).tap()
     assert page.get_by_role('button',name='Black Hole',exact=True).is_visible()
     assert page.get_by_role('button',name='Repulsor',exact=True).is_visible()
     page.locator('#materials-tab').tap();page.locator('#categories').get_by_role('button',name='Energy',exact=True).tap()

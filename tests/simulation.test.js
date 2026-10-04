@@ -694,8 +694,8 @@ test("tool strength scales heating and force, and particle-only erase preserves 
   assert.equal(w.temp[i], 56);
   applyTool(w, "pressure", 8, 8, 0, "circle", 1, 0, 3);
   assert.ok(Math.abs(w.fields.pressure[w.fields.index(8, 8)] - 9.9) < 0.001);
-  w.set(i + 1, M.Sponge);
+  w.set(i + 1, M.Wood);
   applyTool(w, "erase-mobile", 8, 8, 2);
   assert.equal(w.cells[i], 0);
-  assert.equal(w.cells[i + 1], M.Sponge);
+  assert.equal(w.cells[i + 1], M.Wood);
 });

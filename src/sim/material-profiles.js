@@ -16,6 +16,7 @@ export function applyMaterialProfiles(materials, M) {
     materials[M[name]].density = density;
     materials[M[name]].buoyancy = density > 0.0012 ? 1 : -1;
   }
+  materials[M.Plant].rooted = true;
   materials[M.Cloud].buoyancy = 0;
   materials[M.Cloud].dispersion = 0.025;
   materials[M.Mirror].density = materials[M.Glass].density;
@@ -34,7 +35,7 @@ export function applyMaterialProfiles(materials, M) {
   for (const m of materials)
     m.paletteCategory = m.device
       ? "devices"
-      : ["Plant", "Seed"].includes(m.name)
+      : m.flora || ["Plant", "Seed"].includes(m.name)
         ? "life"
         : m.category === "special"
           ? "static"
@@ -46,6 +47,7 @@ export function applyMaterialProfiles(materials, M) {
     Object.assign(materials[M[name]], {
       oxidizeTo: M.Rust,
       oxidationRate: 0.0015,
+      oxidationColor: "#bf714d",
     });
   for (const name of ["Water", "Brine"])
     Object.assign(materials[M[name]], {
@@ -99,15 +101,15 @@ export function applyMaterialProfiles(materials, M) {
     ["Glass Shards", 1, 0.75, 0.2, 0.95],
     ["Sawdust", 4, 0.3, 0.94, 0.65],
     ["Coal", 2, 0.35, 0.8, 0.7],
-    ["Wood", 3, 0.04, 0.95, 0.35],
-    ["Stone", 1, 0.001, 0.97, 0.65],
-    ["Concrete", 1, 0.004, 0.96, 0.65],
-    ["Brick", 2, 0.03, 0.96, 0.75],
-    ["Ceramic", 1, 0.002, 0.98, 0.85],
+    ["Wood", 3, 0.04, 0.95, 0.5],
+    ["Stone", 1, 0.001, 0.97, 0.8],
+    ["Concrete", 1, 0.004, 0.96, 0.8],
+    ["Brick", 2, 0.03, 0.96, 0.9],
+    ["Ceramic", 1, 0.002, 0.98, 0.95],
     ["Glass", 0, 0, 0, 0.95],
     ["Ice", 0, 0, 0, 0.8],
-    ["Steel", 0, 0, 0, 0.08],
-    ["Copper", 0, 0, 0, 0.08],
+    ["Steel", 0, 0, 0, 0.15],
+    ["Copper", 0, 0, 0, 0.15],
     ["Jelly", 1, 0.001, 0.98, 0.02],
     ["Rope", 3, 0.2, 0.9, 0.08],
     ["Plant", 2, 0.35, 0.99, 0.2],
@@ -126,19 +128,26 @@ export function applyMaterialProfiles(materials, M) {
   // Toughness is impact energy per exposed cell, separate from chemical resistance.
   for (const m of materials)
     if (m.rigid) {
-      m.toughness = m.conductive ? 26 : 9;
+      m.toughness = m.conductive ? 26 : 6;
+      m.compressiveStrength = m.conductive ? 60 : 12;
       if ([M.Stone, M.Concrete, M.Brick, M.Ceramic].includes(m.id))
         m.breakInto = M.Rubble;
-      if (m.id === M.Glass || m.id === M.Prism) {
+      if (m.id === M.Brick || m.id === M.Ceramic) {
+        m.toughness = m.id === M.Brick ? 2.5 : 2;
+        m.breakInto = M["Brick Rubble"];
+      }
+      if (m.id === M.Glass || m.id === M.Crystal) {
         m.toughness = 1.8;
+        m.compressiveStrength = 3;
         m.breakInto = M["Glass Shards"];
       }
       if (m.id === M.Ice) {
         m.toughness = 3;
+        m.compressiveStrength = 4;
         m.breakInto = M.Snow;
       }
       if (m.id === M.Wood) {
-        m.toughness = 10;
+        m.toughness = 8;
         m.breakInto = M["Sawdust"];
       }
       if (m.id === M.Steel) m.breakInto = M["Metal Dust"];
@@ -164,7 +173,8 @@ export function applyFragmentProfiles(materials, M) {
     Steel: "Metal Dust",
     Copper: "Copper Granules",
     Glass: "Glass Shards",
-    Prism: "Glass Shards",
+    Crystal: "Glass Shards",
+    Sponge: "Sponge Crumbs",
     Mirror: "Glass Shards",
     Ice: "Snow",
     Rubber: "Rubber Crumbs",

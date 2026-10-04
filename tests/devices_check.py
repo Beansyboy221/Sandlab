@@ -38,14 +38,13 @@ with sync_playwright() as p:
         page.locator('#entities-tab').click()
         page.locator('[data-group="devices"]').click()
         names=page.locator('#materials .material-name').all_text_contents()
-        assert set(['Battery','Wire','AND Gate','OR Gate','NOT Gate','XOR Gate','Toggle Gate','Delay Gate','Signal Lamp','Electric Fan','Solar Cell'])==set(names)
+        assert set(['Battery','AND Gate','OR Gate','NOT Gate','XOR Gate','Toggle Gate','Delay Gate','Signal Lamp','Electric Fan','Solar Cell'])==set(names)
         assert 'Heater' not in names and 'Repulsor' not in names
-        page.locator('[data-group="sources"]').click()
-        assert {'Heater','Cooler','Fan','Clone','Void','Repulsor','Black Hole','Lamp'}==set(page.locator('#materials .material-name').all_text_contents())
+        assert not page.locator('[data-group="sources"]').count()
         page.locator('#materials-tab').click()
         page.locator('[data-group="static"]').click()
-        assert 'Wall' in page.locator('#materials .material-name').all_text_contents()
-        assert not {'Heater','Battery','Cat'} & set(page.locator('#materials .material-name').all_text_contents())
+        assert {'Wall','Heater','Cooler','Fan','Clone','Void','Repulsor','Black Hole','Lamp'} <= set(page.locator('#materials .material-name').all_text_contents())
+        assert not {'Battery','Cat'} & set(page.locator('#materials .material-name').all_text_contents())
         page.locator('#groups-btn').click();page.locator('#group-name').fill('My Lab')
         for name in ['Sand','Water']:page.locator('#group-materials').get_by_role('button',name=name,exact=True).click()
         assert page.locator('#group-count').inner_text()=='2 selected'

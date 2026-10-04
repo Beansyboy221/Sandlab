@@ -1,3 +1,4 @@
+import { impactStress } from "./body-stress.js";
 import { materials, M } from "./materials.js";
 import { emitSpark } from "./sparks.js";
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
@@ -265,8 +266,8 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
         Math.max(1, Math.sqrt(body.ids.length)),
     );
     if (solver.solving) {
-      solver.queueFracture(j, energy);
-      solver.queueFracture(i, energy * 0.35);
+      impactStress(solver, j, energy);
+      impactStress(solver, i, energy);
     } else {
       fracture(solver, j, energy);
       fracture(solver, i, energy * 0.35);

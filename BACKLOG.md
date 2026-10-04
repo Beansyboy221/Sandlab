@@ -26,4 +26,6 @@
 
 - Extend per-cell dissolved ingredients beyond one additive slot only when useful reactions justify the extra memory; add solubility curves and precipitation thresholds without losing component mass.
 
-- Calibrate Prism caustics and beam surface normals on complex moving silhouettes; refine bounded interior glow before increasing spectral casts or optical cache budgets.
+- Calibrate Crystal caustics and beam surface normals on complex moving silhouettes; refine bounded interior glow before increasing spectral casts or optical cache budgets.
+
+- Calibrate oxide passivation against wet/salty exposure and add finite fungal substrate nutrition when richer ecosystems justify it; retain the 32-birth cap.

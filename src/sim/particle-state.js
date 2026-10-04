@@ -18,6 +18,7 @@ export const particleStateFields = [
   "moisture",
   "nutrition",
   "growth",
+  "oxidationLevel",
   "storedLiquid",
   "storedAmount",
   ...mixtureFields,

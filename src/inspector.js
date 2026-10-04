@@ -233,6 +233,8 @@ export function cellProperties(world, point) {
       ["Porosity", `${m.porosity} liquid pixels`],
       ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
       ["Retention", `${Math.round(m.retention * 100)}%`],
+      ["Oxidation", `${Math.round((world.oxidationLevel[i] / 255) * 100)}%`],
+      ["Oxidation Rate", `${m.oxidationRate || 0} / tick`],
       ["Brittleness", `${Math.round(m.brittleness * 100)}%`],
       ["Occludes Light", m.occludesLight ? "Yes" : "No"],
       ["Light Absorption", `${Math.round(m.lightAbsorption * 100)}%`],

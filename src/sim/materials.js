@@ -13,6 +13,9 @@ export const {
   materialDefinitions,
   applyMaterialProfiles,
   {
+    Prism: "Crystal",
+    Wire: "Copper",
+    Patina: "Copper",
     Rocket: "Missile",
     Kerosene: "Fuel",
     "Steel Powder": "Metal Dust",
@@ -45,7 +48,7 @@ export const categoryLabels = {
   solid: "Solids",
   static: "Static",
   elastic: "Elastics",
-  life: "Plants",
+  life: "Flora",
   energy: "Energy",
   devices: "Devices",
 };

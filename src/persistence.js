@@ -108,6 +108,7 @@ export function validateSnapshot(data) {
         "moisture",
         "nutrition",
         "growth",
+        "oxidationLevel",
         "storedLiquid",
         "storedAmount",
         "dissolvedId",
@@ -314,6 +315,7 @@ export function restore(world, data) {
       world[key][i] = canonicalMaterial(world[key][i]);
   for (let i = 0; i < world.length; i++) {
     const old = data.arrays.cells[i];
+    if (old === 54) world.oxidationLevel[i] = 255;
     // Older soil hydration used an implicit water amount, not pore storage.
     if (!data.porousModel && !world.storedAmount[i]) {
       const amount =
@@ -411,6 +413,7 @@ export function unpack(data) {
         "moisture",
         "nutrition",
         "growth",
+        "oxidationLevel",
         "storedLiquid",
         "storedAmount",
         "dissolvedId",
