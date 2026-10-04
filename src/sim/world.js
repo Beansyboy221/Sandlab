@@ -578,6 +578,29 @@ export class World {
     // Suspended condensate follows airflow with slow diffusion, rather than
     // racing to the ceiling like a hot gas.
     if (gas && fall === 0 && this.random() > (m.dispersion ?? 1)) return;
+    // Buoyant plumes spread while rising even when the cell directly above is
+    // empty; diagonal motion used to occur only after that straight move failed.
+    if (
+      this.cells[i] === M.Fire &&
+      this.random() < 0.55 / (1 + windSpeed * 3)
+    ) {
+      const side = this.index(x + acrossX * direction, y + acrossY * direction),
+        up = this.index(x + downX * fall, y + downY * fall);
+      const openUp =
+          up >= 0 ? this.canMove(i, up, fall) : this.border === "void",
+        openSide =
+          side >= 0 ? this.canMove(i, side, fall) : this.border === "void";
+      if (
+        (openUp || openSide) &&
+        this.tryMove(
+          i,
+          x + downX * fall + acrossX * direction,
+          y + downY * fall + acrossY * direction,
+          fall,
+        )
+      )
+        return;
+    }
     const nx = x + downX * fall,
       ny = y + downY * fall;
     if (this.tryMove(i, nx, ny, fall)) return;
@@ -590,6 +613,17 @@ export class World {
       return;
     for (let side = 0; side < 2; side++) {
       const sign = side ? -direction : direction;
+      if (this.cells[i] === M.Fire) {
+        const up = this.index(nx, ny),
+          beside = this.index(x + acrossX * sign, y + acrossY * sign);
+        if (
+          up >= 0 &&
+          beside >= 0 &&
+          !this.canMove(i, up, fall) &&
+          !this.canMove(i, beside, fall)
+        )
+          continue;
+      }
       if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
         return;
     }

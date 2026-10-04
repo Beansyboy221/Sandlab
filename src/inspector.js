@@ -1,3 +1,4 @@
+import { wavelengths } from "./optical-transport.js";
 import { circuitDirection, circuitOutput } from "./sim/circuits.js";
 import { actorProfile } from "./sim/creature-profiles.js";
 import { materials, M } from "./sim/materials.js";
@@ -233,6 +234,14 @@ export function cellProperties(world, point) {
       ["Permeability", `${(m.permeability * 100).toFixed(1)}%`],
       ["Retention", `${Math.round(m.retention * 100)}%`],
       ["Brittleness", `${Math.round(m.brittleness * 100)}%`],
+      ["Occludes Light", m.occludesLight ? "Yes" : "No"],
+      ["Light Absorption", `${Math.round(m.lightAbsorption * 100)}%`],
+      ["Light Reflectiveness", `${Math.round(m.lightReflectivity * 100)}%`],
+      ["Refractive Index", m.refractiveIndex.toFixed(2)],
+      ["Spectral Dispersion", `${Math.round(m.opticalDispersion * 100)}%`],
+      ["Sound Absorption", `${Math.round(m.soundAbsorption * 100)}%`],
+      ["Sound Dispersion", `${Math.round(m.soundDispersion * 100)}%`],
+      ["Sound Transmission", `${Math.round(m.soundTransmission * 100)}%`],
     );
   if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
   if (world.moisture[i] || [M.Plant, M.Seed, M.Dirt, M.Mud].includes(m.id))
@@ -277,11 +286,20 @@ export function cellProperties(world, point) {
     );
   }
   if (m.static) rows.push(["Fixed", "Indestructible"]);
-  if (m.ray)
+  if (m.ray) {
     rows.push([
       "Direction",
       ["E", "SE", "S", "SW", "W", "NW", "N", "NE"][world.heading[i]],
     ]);
+    const band = world.growth[i] || (m.ray === "laser" ? 1 : 0);
+    rows.push(
+      ["Wavelength", band ? `${wavelengths[band]} nm` : "White Spectrum"],
+      [
+        "Light Intensity",
+        `${Math.round(((world.moisture[i] || 255) / 255) * 100)}%`,
+      ],
+    );
+  }
   if (world.clone[i] && m.id === M.Clone)
     rows.push(["Clones", materials[world.clone[i]].name]);
   if (m.id === M.Ice && world.residue[i])

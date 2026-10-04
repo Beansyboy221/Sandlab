@@ -1,3 +1,4 @@
+import { AudioOutput } from "./audio-output.js";
 import { physicalVoice, synthesizeVoice } from "./audio-voices.js";
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 export function soundPosition(event, renderer, player = null) {
@@ -13,7 +14,7 @@ export function soundPosition(event, renderer, player = null) {
       (1 +
         Math.pow(
           Math.hypot(source.x - listener.x, source.y - listener.y) /
-            Math.max(1, width * 0.28),
+            Math.max(1, Math.max(width, renderer.canvas.height) * 0.28),
           2,
         )),
   };
@@ -39,6 +40,8 @@ export class GameAudio {
     });
     settings.subscribe((keys) => {
       if (keys.includes("sound") && !settings.get("sound")) this.silence();
+      if (keys.includes("audioOutput"))
+        this.output?.configure(settings.get("audioOutput"));
       if (this.master)
         this.master.gain.setTargetAtTime(
           settings.get("sound") ? settings.get("volume") : 0,
@@ -55,12 +58,16 @@ export class GameAudio {
         const c = (this.context = new Context());
         this.master = c.createGain();
         this.master.gain.value = this.settings.get("volume");
-        const limiter = c.createDynamicsCompressor();
-        limiter.threshold.value = -15;
-        limiter.knee.value = 15;
-        limiter.ratio.value = 8;
-        this.master.connect(limiter);
-        limiter.connect(c.destination);
+        this.output = new AudioOutput(
+          c,
+          this.master,
+          this.settings.get("audioOutput"),
+        );
+        // Safari's playback route uses the media speaker rather than an ambient
+        // session; feature-detect it without relying on a browser/user-agent name.
+        try {
+          if (navigator.audioSession) navigator.audioSession.type = "playback";
+        } catch {}
         this.buffers = new Map();
       } catch {
         this.context = null;

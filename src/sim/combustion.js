@@ -22,7 +22,9 @@ export function burnFuel(world, i, x, y, material) {
       world.border === "void" &&
       (x === 0 || y === 0 || x === world.width - 1 || y === world.height - 1),
     wet = -1;
-  world.eachNeighbor(x, y, (j) => {
+  for (const [dx, dy] of neighbors) {
+    const j = world.index(x + dx, y + dy);
+    if (j < 0) continue;
     if (oxidizer(cells[j])) air = true;
     if (
       materials[cells[j]].waterLike &&
@@ -30,7 +32,7 @@ export function burnFuel(world, i, x, y, material) {
       (material.category !== "liquid" || j !== world.relativeIndex(x, y, 0, 1))
     )
       wet = j;
-  });
+  }
   if (wet !== -1) {
     life[i] = 0;
     temp[i] = Math.min(temp[i], 100);
@@ -89,9 +91,11 @@ export function burnFuel(world, i, x, y, material) {
       world.transform(above, material.combustionGas || M.Smoke, 180);
   }
   // Heat travels along contiguous fuel, while the exposed-face test controls ignition.
-  world.eachNeighbor(x, y, (j) => {
+  for (const [dx, dy] of neighbors) {
+    const j = world.index(x + dx, y + dy);
+    if (j < 0) continue;
     if (materials[cells[j]].ignite) temp[j] += 12;
-  });
+  }
 }
 function plumePassage(id) {
   return !id || id === M.Fire || id === M.Smoke || id === M.Oxygen;
@@ -116,7 +120,9 @@ export function reactFire(world, i, x, y) {
   const { cells, temp, life } = world;
   let quenched = false,
     smothered = 0;
-  world.eachNeighbor(x, y, (j) => {
+  for (const [dx, dy] of neighbors) {
+    const j = world.index(x + dx, y + dy);
+    if (j < 0) continue;
     if (materials[cells[j]].suppressesFlame) smothered++;
     if (materials[cells[j]].waterLike) {
       // A cold splash absorbs heat without every drop instantly becoming steam.
@@ -133,7 +139,7 @@ export function reactFire(world, i, x, y) {
       }
       quenched = true;
     }
-  });
+  }
   if (quenched) {
     world.transform(i, M.Smoke, 100);
     return;
@@ -157,12 +163,14 @@ export function reactFire(world, i, x, y) {
       pressure: 0.04,
       heat: 70,
     });
-  world.eachNeighbor(x, y, (j) => {
+  for (const [dx, dy] of neighbors) {
+    const j = world.index(x + dx, y + dy);
+    if (j < 0) continue;
     if (cells[j] === M.Oxygen) {
       world.transform(j, M.Fire, 900, 25);
       life[i] = Math.min(80, life[i] + 4);
     } else if (materials[cells[j]].ignite) temp[j] += 70;
-  });
+  }
   // Radiant heat reaches the next exposed cell on a fuel surface, not through walls.
   for (const dx of [-1, 1]) {
     const across = world.relativeIndex(x, y, dx, 0),

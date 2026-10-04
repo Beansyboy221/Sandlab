@@ -37,7 +37,7 @@ with sync_playwright() as p:
     assert page.evaluate('sandlab.state.tool')=='warm'
     assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Warm'
     page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click();assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Draw'
-    page.locator('#tool-picker-toggle').click();page.keyboard.press('w');page.keyboard.press('w');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='wind'
+    page.locator('#tool-picker-toggle').click();page.keyboard.press('b');page.keyboard.press('Enter');assert page.evaluate('sandlab.state.tool')=='wind'
     page.locator('#tool-picker-toggle').click();page.keyboard.press('Escape');assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#tool-picker-toggle').click();page.locator('#world-name').click();assert not page.locator('#tool-picker-menu').is_visible()
     page.locator('#entities-tab').click()

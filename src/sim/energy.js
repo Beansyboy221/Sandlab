@@ -1,3 +1,4 @@
+import { moveOpticalRay } from "./optical-rays.js";
 import { M, materials } from "./materials.js";
 
 export const rayDirections = [
@@ -59,84 +60,4 @@ export function reactEnergy(w, i, x, y, m) {
     }
   }
 }
-function reflect(w, i, x, y, dx, dy) {
-  // The first blocked axis estimates the surface normal for diagonal impacts.
-  if (dx && dy) {
-    const side = w.index(x + dx, y);
-    if (side < 0 || w.cells[side]) dx = -dx;
-    else dy = -dy;
-  } else {
-    dx = -dx;
-    dy = -dy;
-  }
-  w.heading[i] = rayHeading(dx, dy);
-}
-export function moveRay(w, i, x, y, m) {
-  const [dx, dy] = rayDirections[w.heading[i]];
-  let moved = 0,
-    traversed = 0;
-  // Transparent matter occupies the same grid as rays. Skip its cells without
-  // overwriting it; cap penetration work even in entirely filled looping worlds.
-  while (moved < m.speed && traversed++ < m.speed + 16) {
-    const nx = x + dx,
-      ny = y + dy,
-      j = w.index(nx, ny);
-    if (j < 0) {
-      w.transform(i, 0);
-      return;
-    }
-    if (j === i) return;
-    const target = materials[w.cells[j]];
-    if (target.id === M.Portal) {
-      w.teleport(i, j, dx, dy);
-      return;
-    }
-    if (!target.id) {
-      w.swap(i, j);
-      i = j;
-      x = j % w.width;
-      y = Math.floor(j / w.width);
-      moved++;
-      continue;
-    }
-    if (
-      target.absorbMatter ||
-      target.id === M.Void ||
-      target.category === "special"
-    ) {
-      w.transform(i, 0);
-      return;
-    }
-    if (target.reflectLight) {
-      reflect(w, i, x, y, dx, dy);
-      return;
-    }
-    if (target.photoelectric) {
-      w.charge[j] = 6;
-      w.cooldown[j] = 18;
-      w.chargedAt[j] = w.tick;
-      w.temp[j] = Math.min(6000, w.temp[j] + (m.absorptionHeat || 1));
-      w.transform(i, 0);
-      return;
-    }
-    const transparent =
-      target.id === M.Glass ||
-      target.category === "gas" ||
-      target.waterLike ||
-      target.category === "energy";
-    w.temp[j] = Math.min(
-      6000,
-      w.temp[j] + (m.absorptionHeat || 1) * (transparent ? 0.08 : 1),
-    );
-    if (!transparent) {
-      w.transform(i, 0);
-      return;
-    }
-    if (w.life[i] > 1) w.life[i]--;
-
-    x = j % w.width;
-    y = Math.floor(j / w.width);
-  }
-  // A completely filled transparent volume has no cell available to represent a ray.
-  if (!moved) w.transform(i, 0);
-}
+export const moveRay = moveOpticalRay;

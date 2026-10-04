@@ -933,3 +933,39 @@ materialDefinitions.push(
     },
   ],
 );
+
+materialDefinitions.push(
+  [
+    "Photon",
+    "energy",
+    "#f7f6e9",
+    0,
+    {
+      ray: "photon",
+      directed: true,
+      energyRule: "ray",
+      speed: 4,
+      lifetime: 120,
+      glow: 0.8,
+      lightEmission: 0.6,
+      conductivity: 0,
+      absorptionHeat: 0.8,
+    },
+  ],
+  [
+    "Prism",
+    "solid",
+    "#b9d2e6",
+    2.5,
+    {
+      lightAbsorption: 0.006,
+      lightReflectivity: 0.04,
+      refractiveIndex: 1.52,
+      opticalDispersion: 0.12,
+      conductivity: 0.05,
+      brittleness: 0.95,
+      melt: 1400,
+      meltTo: "Molten Glass",
+    },
+  ],
+);

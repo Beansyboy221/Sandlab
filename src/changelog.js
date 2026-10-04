@@ -1,5 +1,18 @@
 export const changelog = [
   {
+    version: "1.24.0",
+    date: "2026-10-04",
+    title: "Light, spectra and sound",
+    changes: [
+      "Shared absorption, reflectiveness, refraction and dispersion now drive shadows, recast lighting, Lasers and rainbow Photon packets through Prism.",
+      "Lamps no longer shadow themselves, and illumination reaches a shallow layer inside opaque surfaces.",
+      "Cached-light fire benchmarks fell from 26.3 to 10.4 ms per frame, while paired moving-plume rendering fell from 20.9 to 18.1 ms.",
+      "Flames rise diagonally without crossing closed corners, and combustion avoids per-cell callback allocations.",
+      "Material sound transmission, absorption and dispersion now shape Echolocation, muffling and finite echoes.",
+      "Automatic phone-speaker output improves audibility, portrait distance falloff matches landscape, and group-name inputs avoid automatic mobile zoom.",
+    ],
+  },
+  {
     version: "1.23.0",
     date: "2026-10-04",
     title: "Cloud weather and sticky elastics",

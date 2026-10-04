@@ -72,3 +72,28 @@ export const conductor = (conductivity) => ({
 export const surface = (friction, restitution, brittleness) => ({
   properties: { friction, restitution, brittleness },
 });
+
+export const optical = (
+  lightAbsorption,
+  lightReflectivity,
+  refractiveIndex = 1,
+  opticalDispersion = 0,
+) => ({
+  properties: {
+    lightAbsorption,
+    lightReflectivity,
+    refractiveIndex,
+    opticalDispersion,
+  },
+});
+export const acoustic = (
+  soundAbsorption,
+  soundDispersion,
+  soundTransmission,
+) => ({
+  properties: {
+    soundAbsorption,
+    soundDispersion,
+    ...(soundTransmission === undefined ? {} : { soundTransmission }),
+  },
+});

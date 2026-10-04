@@ -337,14 +337,65 @@ Brush Size is the full diameter in canvas pixels (1–61), including even sizes.
 
 This does not yet calibrate physical kilograms, gas density, heat capacity, latent heat or intake/outflow momentum. These remain explicit next stages in `ENGINE_PLAN.md`. `node tests/mechanical-mass.test.js` checks weighted centers, redistributed inertia, pressure response, buoyancy, spring momentum and deterministic save continuation. `python3 tests/brush_diameter_check.py` checks actual mouse/touch diameters; `node tests/brush-geometry.test.js` covers every supported size and shared tool footprints.
 
-
 Material categories form a vertical rail to the right of the grid; its arrow toggles icons or icons with names, with independent scrolling and saved expansion. Custom groups keep their members when legacy mixture entries merge into base materials.
 
 **Mixtures** use two Uint8 arrays (`dissolvedId`, `dissolvedAmount`) alongside the existing pore reservoirs and nutrition state. A Water cell carries one soluble ingredient type and up to four whole source pixels; neighboring cells can carry different ingredients. Soluble material traits set viscosity increase and freezing depression, while mass and displaced volume set density. Salt accelerates wet corrosion; dissolved Soap enables foam without consuming its carrier. Pores carry and release those ingredients with liquid, evaporation leaves them behind, and freezing retains them. Dirt and Clay stay the base materials when wet, with higher bulk density and cohesion. Old Brine, Soapy Water, Mud and Wet Clay IDs are import aliases; they never appear in the catalog or survive as runtime particle types. Stable registry slots remain to read old worlds.
 
 Movement deposits momentum into the existing coarse air faces, respecting barriers, pores, looping borders and the pressure toggle. Each tile accepts at most 0.05 added air speed per tick; pressure follows the solver’s existing divergence rule. Rigid exposure follows persistent bonds, so loading a moving body preserves its aerodynamic response. Gases use positive physical density and a separate buoyancy sign against implicit ambient air; energy particles retain their abstract motion conventions.
 
-
 **Weather** uses suspended Cloud condensate and staggered 5×5 density samples every 16 ticks. Cool, dense cloud edges build coalescence and convert one existing cell into Water or Snow; warm or sparse clouds do not rain. Mixed frozen condensate (below −8°C) and liquid droplets (above −3°C), plus upward airflow, accumulate electrical charge for the shared bounded lightning tracer. Growth and moisture arrays preserve weather progress in saves. This is a finite, local weather abstraction rather than a calibrated humidity or electrostatic solver; the storm example starts with a mature charged core.
 
 **Glue** shares the spring solver and existing anchor bits, adhering to static surfaces after contact and releasing when softened or pulled under tension. Heating melts it into a viscous liquid phase; cooling restores the elastic material. Sawdust is lower-density, more porous, and burns faster than solid Wood, including as Wood’s fine debris. Fuel and Metal Dust retain the old Kerosene and Steel Powder IDs, and historical Wood Chips and Storm slots migrate to Sawdust and Cloud.
+
+## Optical and acoustic components (1.24.0)
+
+Materials compose `optical(absorption, reflectivity, refractiveIndex, dispersion)` and
+`acoustic(absorption, dispersion, transmission)` traits, with fractions from zero
+to one. Optical absorption plus reflectivity cannot exceed one; the remainder is
+transmission, and zero transmission derives occlusion. Refraction uses Snell’s
+law and total internal reflection. Its angle depends on the incident direction
+and the local surface normal; the index is not a fixed rotation in degrees.
+The same scalar coefficients drive scene light and mechanical beams, and Inspect
+shows percentages, refractive index, packet intensity and wavelength.
+
+Draw Photon to place a white broadband packet, or Laser for a red monochromatic
+beam. Prism separates white packets into seven visible bands; ordinary Glass
+and clear liquids bend beams with gentler dispersion. Smooth mirrors preserve
+laser direction, while rough opaque surfaces scatter their reflected fraction
+as weaker photon packets. Absorption heats surfaces; Solar Cell converts absorbed
+light to a signal. Packets retain subpixel directions, color, intensity and
+lifetime in existing saved arrays. They never replace transparent host matter,
+and spectral/reflected births share a maximum of 64 new packets per tick.
+This is a geometric-optics gameplay abstraction, not quantum photon transport.
+
+The CPU lighting path uses angular shadow maps, an empty-region acceleration
+grid, cached geometry-dependent visibility and silhouette-aware reconstruction,
+following established techniques discussed in [Red Blob Games’ 2D visibility
+article](https://www.redblobgames.com/articles/visibility/). The shadow cache is
+capped at 8 MiB, with uncached scratch buffers for crowded scenes. Filtered-light
+samples use radiance-grid spacing; thin walls and shadow edges retain exact
+particle checks. At most 64 secondary casts with 256 steps and four interfaces
+produce approximate directional reflections and spectral caustics, without
+recursive source multiplication. A two-pixel rendering-only skin lights opaque
+interiors without transmitting light into space behind a wall. Lamps transmit
+light so clusters do not occlude themselves.
+
+`npm run bench:fire` measures complete rendering with changing brightness and
+fixed geometry; `--live` also moves smoke and renews flames. For an optical-only
+comparison on identical moving states, run `python3 tests/fire-paired-benchmark.py
+/path/to/baseline`. On the development host, fixed-geometry dense fire/smoke
+averaged 26.3 ms before and 10.4 ms after caching; alternating old/new renderers
+on the same moving plume averaged 20.9 versus 18.1 ms. Moving dense smoke was
+approximately unchanged (23.0 versus 22.8 ms); burning wood was 26.4 versus
+28.3 ms with the added interior glow. These are scene measurements, not a
+universal frame-rate guarantee or physical-phone measurements.
+
+Sound uses separate acoustic face transmission, so Glass can pass muffled
+sound even while it blocks airflow. Porous absorption and surface dispersion
+attenuate the same finite wave field used by Echolocation and player-listener
+muffling/echoes. Settings → Audio → Output offers Automatic, Balanced / Headphones
+and Phone Speakers. Automatic selects a bounded speaker equalizer/compressor on
+coarse-pointer devices; headphones can retain balanced output. The Safari media
+route is feature-detected, and mobile distance attenuation uses the longer screen
+dimension so rotating does not change loudness merely because the width changes.
+Actual phone-speaker timbre still requires physical-device listening tests.

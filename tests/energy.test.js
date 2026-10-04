@@ -52,8 +52,15 @@ test("lasers heat absorbing surfaces, solar cells turn light into circuit charge
   const laser = packet("Laser");
   laser.set(251, M.Wood);
   move(laser);
-  assert.equal(laser.temp[251], 85);
-  assert.equal(laser.cells[250], 0);
+  assert.ok(
+    Math.abs(laser.temp[251] - (20 + 65 * materials[M.Wood].lightAbsorption)) <
+      1e-4,
+  );
+  assert.equal(laser.cells[250], M.Photon);
+  assert.equal(
+    laser.moisture[250],
+    Math.floor(255 * materials[M.Wood].lightReflectivity),
+  );
   const solar = packet("Laser");
   solar.set(251, M["Solar Cell"]);
   solar.set(252, M.Steel);

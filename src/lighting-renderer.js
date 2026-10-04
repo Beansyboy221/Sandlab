@@ -1,9 +1,11 @@
+import { LightSkin } from "./light-skin.js";
 import { Lighting } from "./lighting.js";
 import { LightReconstruction } from "./light-reconstruction.js";
 export class LightOverlay {
   constructor() {
     this.field = new Lighting();
     this.reconstruction = new LightReconstruction();
+    this.skin = new LightSkin();
     this.mask = document.createElement("canvas");
     this.glow = document.createElement("canvas");
     this.maskContext = this.mask.getContext("2d", { alpha: false });
@@ -76,6 +78,7 @@ export class LightOverlay {
         this.shade.data[i * 4 + 3] = this.halo.data[i * 4 + 3] = 255;
       }
     }
+    this.skin.apply(f, this.shade, ambient + flash);
     this.maskContext.putImageData(this.shade, 0, 0);
     this.glowContext.putImageData(this.halo, 0, 0);
   }

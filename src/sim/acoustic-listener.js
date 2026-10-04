@@ -37,7 +37,7 @@ export class AcousticListener {
     this.push(origin);
     this.visited = 0;
     const loop = w.border === "looping",
-      f = w.fields;
+      f = s;
     while (this.size && this.visited < 8192) {
       const i = this.pop(),
         px = i % width,
@@ -211,7 +211,9 @@ export class AcousticListener {
                 (flat / 5) *
                 0.15 *
                 Math.exp(-path / 180) *
-                Math.max(0, 1 - surfaceLoss * 3),
+                Math.max(0, 1 - surfaceLoss * 3) *
+                (1 -
+                  Math.max(s.dispersion[i], j < 0 ? 0 : s.dispersion[j]) * 0.7),
             });
           }
           break;

@@ -72,7 +72,7 @@ export const groups = {
     "security",
     "frame-clock",
   ],
-  lighting: ["lighting", "energy", "inspection"],
+  lighting: ["lighting", "energy", "inspection", "perception"],
 };
 export const browserChecks = {
   portals: ["portals_check"],

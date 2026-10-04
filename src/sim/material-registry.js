@@ -1,3 +1,4 @@
+import { applyPerceptionProfiles } from "./material-perception.js";
 const referenceFields = [
   "meltTo",
   "freezeTo",
@@ -24,6 +25,13 @@ const fractions = [
   "lifetimeVariation",
   "damping",
   "adhesion",
+  "lightTransmission",
+  "lightAbsorption",
+  "lightReflectivity",
+  "opticalDispersion",
+  "soundAbsorption",
+  "soundDispersion",
+  "soundTransmission",
 ];
 const positive = [
   "conductivity",
@@ -34,6 +42,7 @@ const positive = [
   "lifetime",
   "lightEmission",
   "glow",
+  "refractiveIndex",
 ];
 const categories = new Set([
   "none",
@@ -58,6 +67,16 @@ export const capability = {
   phase: 128,
 };
 function validate(m) {
+  for (const key of ["occludesLight", "reflectsLight", "refractsLight"])
+    if (m[key] !== undefined && typeof m[key] !== "boolean")
+      throw Error(`Invalid ${key} for ${m.name}`);
+  if ((m.lightAbsorption ?? 0) + (m.lightReflectivity ?? 0) > 1 + 1e-8)
+    throw Error(`Optical energy exceeds 100% for ${m.name}`);
+  if (
+    m.refractiveIndex !== undefined &&
+    (m.refractiveIndex < 1 || m.refractiveIndex > 4)
+  )
+    throw Error(`Invalid refractive index for ${m.name}`);
   if (!categories.has(m.category))
     throw Error(`Unknown category for ${m.name}`);
   if (!/^#[0-9a-f]{6}$/i.test(m.color))
@@ -179,6 +198,7 @@ export function compileMaterials(
   }
   for (const m of materials) resolve(m, M, materials);
   configure(materials, M);
+  applyPerceptionProfiles(materials, M);
   for (const m of materials) {
     resolve(m, M, materials);
     validate(m);
@@ -206,6 +226,7 @@ export function compileMaterials(
       });
     }
   finalize(materials, M);
+  applyPerceptionProfiles(materials, M);
   for (const m of materials) {
     resolve(m, M, materials);
     validate(m);
@@ -221,6 +242,14 @@ export function compileMaterials(
     "brittleness",
     "friction",
     "restitution",
+    "lightAbsorption",
+    "lightReflectivity",
+    "lightTransmission",
+    "refractiveIndex",
+    "opticalDispersion",
+    "soundAbsorption",
+    "soundDispersion",
+    "soundTransmission",
   ])
     tables[key] = Float64Array.from(materials, (m) => m[key]);
   for (const m of materials)
@@ -235,6 +264,12 @@ export function compileMaterials(
       (m.phaseMinimum !== -Infinity || m.phaseMaximum !== Infinity
         ? capability.phase
         : 0);
+  tables.occludesLight = Uint8Array.from(materials, (m) =>
+    Number(m.occludesLight),
+  );
+  tables.reflectsLight = Uint8Array.from(materials, (m) =>
+    Number(m.reflectsLight),
+  );
   tables.heatTransfer = new Float64Array(materials.length * materials.length);
   for (let a = 0; a < materials.length; a++)
     for (let b = 0; b < materials.length; b++)

@@ -13,14 +13,27 @@ export function acousticTraits(m) {
     viscosity: Math.max(1, m.viscosity || 1),
     softness,
     ring: clamp((m.conductivity || 0) * (1 - pores) * (1 - softness), 0, 1),
-    loss: clamp(
-      0.012 +
-        pores * 0.5 * (0.3 + (m.permeability || 0) * 0.7) +
-        softness * 0.07,
-      0.012,
-      0.5,
-    ),
+    loss:
+      m.soundAbsorption ??
+      clamp(
+        0.012 +
+          pores * 0.5 * (0.3 + (m.permeability || 0) * 0.7) +
+          softness * 0.07,
+        0.012,
+        0.5,
+      ),
+    dispersion: m.soundDispersion ?? 0,
+    transmission: m.soundTransmission ?? 1,
   };
 }
 export const acousticMaterials = materials.map(acousticTraits);
 export const absorption = Float32Array.from(acousticMaterials, (m) => m.loss);
+
+export const dispersion = Float32Array.from(
+  acousticMaterials,
+  (m) => m.dispersion,
+);
+export const transmission = Float32Array.from(
+  acousticMaterials,
+  (m) => m.transmission,
+);

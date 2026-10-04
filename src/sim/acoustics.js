@@ -1,5 +1,10 @@
 import { AcousticListener } from "./acoustic-listener.js";
-import { AIR_DAMPING, absorption } from "./acoustic-properties.js";
+import {
+  AIR_DAMPING,
+  absorption,
+  dispersion,
+  transmission,
+} from "./acoustic-properties.js";
 export const soundKinds = [
   "grain",
   "impact",
@@ -23,6 +28,9 @@ export class Acoustics {
     this.previous = new Float32Array(length);
     this.next = new Float32Array(length);
     this.damping = new Float32Array(length).fill(AIR_DAMPING);
+    this.dispersion = new Float32Array(length);
+    this.horizontal = new Float32Array(length).fill(1);
+    this.vertical = new Float32Array(length).fill(1);
     this.tilesWide = Math.ceil(width / 16);
     this.tilesHigh = Math.ceil(height / 16);
     this.last = new Int32Array(
@@ -116,21 +124,42 @@ export class Acoustics {
     for (let fy = 0; fy < this.height; fy++)
       for (let fx = 0; fx < this.width; fx++) {
         let loss = 0,
+          scatter = 0,
           count = 0;
         for (let dy = 0; dy < 4; dy++)
           for (let dx = 0; dx < 4; dx++) {
             const x = fx * 4 + dx,
               y = fy * 4 + dy;
             if (x < w.width && y < w.height) {
-              loss += absorption[w.cells[y * w.width + x]];
+              const id = w.cells[y * w.width + x];
+              loss += absorption[id];
+              scatter += dispersion[id];
               count++;
             }
           }
+        const tile = fy * this.width + fx;
+        this.dispersion[tile] = scatter / Math.max(1, count);
+        this.horizontal[tile] = this.faceTransmission(w, fx, fy, true);
+        this.vertical[tile] = this.faceTransmission(w, fx, fy, false);
         this.damping[fy * this.width + fx] = Math.max(
           0.4,
           AIR_DAMPING - loss / Math.max(1, count),
         );
       }
+  }
+  faceTransmission(w, fx, fy, horizontal) {
+    let sum = 0;
+    for (let lane = 0; lane < 4; lane++) {
+      let open = 1;
+      for (let d = 0; d <= 4; d++) {
+        const x = fx * 4 + (horizontal ? 2 + d : lane),
+          y = fy * 4 + (horizontal ? lane : 2 + d),
+          i = w.index(x, y);
+        if (i >= 0) open = Math.min(open, transmission[w.cells[i]]);
+      }
+      sum += open;
+    }
+    return sum * 0.25;
   }
   step(w) {
     this.tick = w.tick;
@@ -148,7 +177,12 @@ export class Acoustics {
       }
     }
     if (!this.active) return;
-    if (w.tick % 6 === 0) this.rebuildAbsorption(w);
+    if (
+      this.absorptionTick === undefined ||
+      this.absorptionTick < 0 ||
+      w.tick % 6 === 0
+    )
+      this.rebuildAbsorption(w);
     const {
       width: width,
       height: height,
@@ -156,7 +190,7 @@ export class Acoustics {
       previous: prev,
       next: n,
     } = this;
-    const f = w.fields,
+    const f = this,
       loop = w.border === "looping",
       solid = w.border === "solid";
     let peak = 0;
@@ -180,7 +214,11 @@ export class Acoustics {
         else if (!solid) flux -= p[i];
         n[i] = Math.max(
           -4,
-          Math.min(4, (2 * p[i] - prev[i] + flux * 0.22) * this.damping[i]),
+          Math.min(
+            4,
+            (2 * p[i] - prev[i] + flux * (0.22 - this.dispersion[i] * 0.035)) *
+              this.damping[i],
+          ),
         );
         peak = Math.max(peak, Math.abs(n[i]), Math.abs(p[i]));
       }

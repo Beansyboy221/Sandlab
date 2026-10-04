@@ -39,6 +39,7 @@ with sync_playwright() as p:
         assert page.locator('#categories button').last.get_attribute('id')=='groups-btn'
         before=page.locator('#categories [data-group]').count()
         page.locator('#groups-btn').click()
+        if mobile: assert float(page.locator('#group-name').evaluate("e=>parseFloat(getComputedStyle(e).fontSize)"))>=16
         page.locator('#group-name').fill('Favorites')
         page.locator('#group-materials').get_by_role('button',name='Sand',exact=True).click()
         page.locator('#group-save').click()

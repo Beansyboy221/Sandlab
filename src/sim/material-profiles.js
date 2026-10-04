@@ -129,7 +129,7 @@ export function applyMaterialProfiles(materials, M) {
       m.toughness = m.conductive ? 26 : 9;
       if ([M.Stone, M.Concrete, M.Brick, M.Ceramic].includes(m.id))
         m.breakInto = M.Rubble;
-      if (m.id === M.Glass) {
+      if (m.id === M.Glass || m.id === M.Prism) {
         m.toughness = 1.8;
         m.breakInto = M["Glass Shards"];
       }
@@ -164,6 +164,7 @@ export function applyFragmentProfiles(materials, M) {
     Steel: "Metal Dust",
     Copper: "Copper Granules",
     Glass: "Glass Shards",
+    Prism: "Glass Shards",
     Mirror: "Glass Shards",
     Ice: "Snow",
     Rubber: "Rubber Crumbs",

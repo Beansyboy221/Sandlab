@@ -1,3 +1,5 @@
+import { LightRecast } from "./light-recast.js";
+import { spectrum } from "./optical-transport.js";
 import { traceParticles } from "./light-visibility.js";
 import { LightShadows } from "./light-shadows.js";
 import { materials, M } from "./sim/materials.js";
@@ -8,18 +10,11 @@ const hues = materials.map((m) => {
   const brightest = Math.max(...rgb, 1);
   return rgb.map((v) => v / brightest);
 });
-const transparency = materials.map((m) =>
-  !m.id || m.gas
-    ? m.id === M.Smoke
-      ? 0.97
-      : 1
-    : m.id === M.Glass
-      ? 0.88
-      : m.category === "liquid" && m.id !== M.Mercury && m.id !== M.Lava
-        ? m.waterLike
-          ? 0.97
-          : 0.88
-        : 0,
+const transparency = Float32Array.from(materials, (m) =>
+  m.occludesLight ? 0 : m.lightTransmission,
+);
+const opticalIds = Uint8Array.from(materials, (m) =>
+  m.refractsLight || m.lightReflectivity >= 0.5 ? m.id : 0,
 );
 export function emissionStrength(m, temperature, life, charge) {
   return Math.max(
@@ -49,11 +44,16 @@ export class Lighting {
     this.length = this.width * this.height;
     this.direct = new Float32Array(this.length * 3);
     this.reflected = new Float32Array(this.length * 3);
+    this.recast = new Float32Array(this.length * 3);
+    this.secondary = new LightRecast();
+    this.interfaces = new Uint32Array(w.length);
+    this.opticalMaterials = new Uint8Array(w.length);
     this.scratch = new Float32Array(this.length * 3);
     this.light = new Float32Array(this.length * 3);
     this.opacity = new Float32Array(this.length);
     this.surface = new Float32Array(this.length * 3);
     this.scatter = new Float32Array(this.length);
+    this.reflective = new Float32Array(this.length);
     this.emit = new Float32Array(this.length);
     this.exposed = new Uint8Array(this.length);
     this.origins = new Uint32Array(this.length);
@@ -61,7 +61,13 @@ export class Lighting {
     this.emitX = new Float32Array(this.length);
     this.emitY = new Float32Array(this.length);
     this.transmission = new Float32Array(w.length);
+    this.opticalColumns = Math.ceil(w.width / 8);
+    this.opticalBlocks = new Uint8Array(
+      this.opticalColumns * Math.ceil(w.height / 8),
+    );
+    this.opticalRevision = 0;
     this.particleEmission = new Float32Array(w.length);
+    this.opaqueIndices = new Uint32Array(w.length);
     this.occluders = new Uint32Array((w.width + 1) * (w.height + 1));
     this.opaqueOccluders = new Uint32Array(this.occluders.length);
     this.silhouette = new Uint8Array(w.length);
@@ -77,6 +83,8 @@ export class Lighting {
     this.worldHeight = w.height;
     this.inputs = [
       this.transmission,
+      this.reflective,
+      this.opticalMaterials,
       this.particleEmission,
       this.surface,
       this.scatter,
@@ -86,7 +94,7 @@ export class Lighting {
       this.emitY,
       this.sources,
     ];
-    this.previous = this.inputs.map((a) => new Float32Array(a.length));
+    this.previous = this.inputs.map((a) => new a.constructor(a.length));
     this.previousBounces = undefined;
   }
   index(x, y) {
@@ -115,15 +123,19 @@ export class Lighting {
   }
   gather(w) {
     this.flash = 0;
+    this.interfaceCount = 0;
     this.opacity.fill(0);
     this.particleEmission.fill(0);
     this.opaqueCount = 0;
     this.hasFilters = false;
     this.surface.fill(0);
     this.scatter.fill(0);
+    this.reflective.fill(0);
     this.emit.fill(0);
     this.emitColor.fill(0);
     this.exposed.fill(0);
+    this.opticalBlocks.fill(0);
+    let opticalChanged = false;
     for (let i = 0; i < w.length; i++) {
       const id = w.cells[i];
       const solid = transparency[id] === 0 ? 1 : 0;
@@ -144,24 +156,34 @@ export class Lighting {
           )
             this.dirtySilhouette[cy * this.silhouetteColumns + cx] = 1;
       }
-      this.transmission[i] = transparency[id];
+      const transmission = transparency[id];
+      if (this.transmission[i] !== transmission) opticalChanged = true;
+      this.transmission[i] = transmission;
+      const opticalId = opticalIds[id];
+      if (this.opticalMaterials[i] !== opticalId) opticalChanged = true;
+      this.opticalMaterials[i] = opticalId;
       if (!id) continue;
       const m = materials[id],
         x = i % w.width,
         y = Math.floor(i / w.width);
+      if (transmission < 1)
+        this.opticalBlocks[(y >> 3) * this.opticalColumns + (x >> 3)] = 1;
+      if (opticalId && exposedCell(w, x, y))
+        this.interfaces[this.interfaceCount++] = i;
       const t =
         Math.floor(y / this.cellSize) * this.width +
         Math.floor(x / this.cellSize);
       const opaque = 1 - transparency[id];
       if (id === M.Smoke)
         this.scatter[t] += 1 / (this.cellSize * this.cellSize);
-      if (opaque === 1) this.opaqueCount++;
+      if (opaque === 1) this.opaqueIndices[this.opaqueCount++] = i;
       else if (opaque > 0) this.hasFilters = true;
       this.opacity[t] = Math.min(
         1,
         this.opacity[t] + (opaque === 1 ? 1 : opaque / this.cellSize),
       );
-      if (opaque === 1) {
+      if (m.reflectsLight) {
+        this.reflective[t] = Math.max(this.reflective[t], m.lightReflectivity);
         // Pigment changes reflected color without changing the underlying matter.
         const paint = w.pigment[i],
           a = (paint >>> 24) / 255;
@@ -170,7 +192,9 @@ export class Lighting {
           this.surface[t * 3 + c] = hues[id][c] * (1 - a) + (painted / 255) * a;
         }
       }
-      const energy = emissionStrength(m, w.temp[i], w.life[i], w.charge[i]);
+      const energy =
+        emissionStrength(m, w.temp[i], w.life[i], w.charge[i]) *
+        (m.ray ? (w.moisture[i] || 255) / 255 : 1);
       this.particleEmission[i] = energy;
       // A bolt is one scene-wide flash, not a shadow-casting source per segment.
       // Its existing lifetime supplies the fade; no extra saved particle state.
@@ -190,17 +214,21 @@ export class Lighting {
       if (energy) {
         const thermal =
           w.temp[i] > 500 && !m.lightEmission && !m.gas && !w.charge[i];
+        const rayColor = m.ray
+          ? spectrum[w.growth[i] || (m.ray === "laser" ? 1 : 0)]
+          : null;
         this.addEmitter(
           x,
           y,
           energy,
-          thermal ? 1 : hues[id][0],
-          thermal ? 0.45 : hues[id][1],
-          thermal ? 0.17 : hues[id][2],
+          rayColor ? rayColor[0] / 255 : thermal ? 1 : hues[id][0],
+          rayColor ? rayColor[1] / 255 : thermal ? 0.45 : hues[id][1],
+          rayColor ? rayColor[2] / 255 : thermal ? 0.17 : hues[id][2],
           m.gas || exposedCell(w, x, y),
         );
       }
     }
+    if (opticalChanged) this.opticalRevision++;
     // A summed-area occupancy table skips ray traversal across empty space.
     // This matters for many emitters: an unobstructed ray takes constant work.
     const stride = w.width + 1;
@@ -277,6 +305,12 @@ export class Lighting {
         this.sources[n] = this.emitX[origin];
         this.sources[n + 1] = this.emitY[origin];
       }
+      // Subpixel brightness changes do not relocate shadow origins; preserve a
+      // particle-center origin while radiance and colour remain continuous.
+      this.sources[n] =
+        (Math.floor(this.sources[n] * this.cellSize) + 0.5) / this.cellSize;
+      this.sources[n + 1] =
+        (Math.floor(this.sources[n + 1] * this.cellSize) + 0.5) / this.cellSize;
       for (let c = 0; c < 3; c++)
         this.sources[n + 2 + c] = this.groups[o + 3 + c] / sum;
       this.sources[n + 5] = Math.min(
@@ -322,6 +356,7 @@ export class Lighting {
         sx * this.cellSize,
         sy * this.cellSize,
         radius * this.cellSize,
+        n,
       );
       const left = this.looping ? 0 : Math.max(0, Math.floor(sx - radius));
       const right = this.looping
@@ -350,6 +385,7 @@ export class Lighting {
               (sy + dy) * this.cellSize,
               Math.sqrt(d2) * this.cellSize,
               this.cellSize,
+              y * this.width + x,
             );
           const target = (y * this.width + x) * 3;
           for (let c = 0; c < 3; c++)
@@ -386,7 +422,7 @@ export class Lighting {
         }
       }
       if (
-        this.opacity[i] < 1 ||
+        !this.reflective[i] ||
         !(
           this.direct[i * 3] ||
           this.direct[i * 3 + 1] ||
@@ -411,7 +447,10 @@ export class Lighting {
         for (let c = 0; c < 3; c++)
           this.reflected[j * 3 + c] = Math.max(
             this.reflected[j * 3 + c],
-            this.direct[i * 3 + c] * this.surface[i * 3 + c] * amount,
+            this.direct[i * 3 + c] *
+              this.surface[i * 3 + c] *
+              amount *
+              this.reflective[i],
           );
       }
     }
@@ -468,6 +507,7 @@ export class Lighting {
     this.gather(w);
     // Drawing while paused must invalidate lighting just as simulation does.
     if (!this.inputsChanged(bounces)) return false;
+    this.recast.fill(0);
     if (!this.sourceCount) {
       this.direct.fill(0);
       this.reflected.fill(0);
@@ -477,9 +517,14 @@ export class Lighting {
       return true;
     }
     this.illuminate();
-    this.bounce(Math.max(0, Math.min(0.25, bounces)));
+    const bounce = Math.max(0, Math.min(0.25, bounces));
+    this.bounce(bounce);
+    this.secondary.update(this, w, bounce);
     for (let i = 0; i < this.light.length; i++)
-      this.light[i] = Math.min(3, this.direct[i] + this.reflected[i]);
+      this.light[i] = Math.min(
+        3,
+        this.direct[i] + this.reflected[i] + this.recast[i],
+      );
     return true;
   }
 }
