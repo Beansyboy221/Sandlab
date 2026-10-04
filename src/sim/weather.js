@@ -3,7 +3,10 @@ export function strike(w, x, y) {
   // Trace once per tick; painted lightning cannot multiply into an unbounded storm.
   if (w.lastStrikeTick === w.tick) return;
   w.lastStrikeTick = w.tick;
-  w.sound.emit("explosion", x, y, 1.2, 12);
+  w.sound.emit("explosion", x, y, 1.2, 12, M.Lightning, {
+    pressure: 4,
+    heat: 2500,
+  });
   const loop = w.border === "looping";
   // Follow gravity for at most one world span, including wrapped edges.
   const gx = w.gravityX,

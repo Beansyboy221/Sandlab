@@ -14,7 +14,8 @@ export const soundKinds = [
   "swoosh",
 ];
 export class Acoustics {
-  constructor(width, height) {
+  constructor(width, height, world = null) {
+    this.world = world;
     this.width = Math.ceil(width / 4);
     this.height = Math.ceil(height / 4);
     const length = this.width * this.height;
@@ -47,7 +48,15 @@ export class Acoustics {
     this.absorptionTick = -1000;
     this.revision++;
   }
-  emit(kind, x, y, strength = 0.2, mass = 1) {
+  emit(
+    kind,
+    x,
+    y,
+    strength = 0.2,
+    mass = 1,
+    material = undefined,
+    effects = null,
+  ) {
     const type = soundKinds.indexOf(kind);
     if (
       type < 0 ||
@@ -77,7 +86,20 @@ export class Acoustics {
     this.active = true;
     this.emitted++;
     this.lastEmission = this.tick;
-    const event = { kind, x, y, strength, mass, tick: this.tick };
+    const id =
+      material ??
+      this.world?.cells[Math.floor(y) * this.world.width + Math.floor(x)] ??
+      0;
+    const event = {
+      kind,
+      x,
+      y,
+      strength,
+      mass,
+      material: id,
+      tick: this.tick,
+      ...effects,
+    };
     if (this.events.length < 64) this.events.push(event);
     else {
       let quietest = 0;

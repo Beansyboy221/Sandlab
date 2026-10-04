@@ -83,7 +83,19 @@ function contact(w, i, j, row, x, y) {
   const productGases =
     Number(materials[rule.resultA].category === "gas") +
     Number(materials[rule.resultB].category === "gas");
-  if (productGases > reactantGases) w.sound.emit("fizz", x, y, 0.28);
+  const pressure =
+    (rule.pressure ?? (productGases - reactantGases) * 0.8) +
+    (rule.heat || 0) * 0.002;
+  if (productGases !== reactantGases || rule.heat)
+    w.sound.emit(
+      "fizz",
+      x,
+      y,
+      Math.min(1.2, 0.08 + Math.abs(pressure) * 0.07),
+      materials[rule.a].density,
+      rule.a,
+      { pressure, heat: rule.heat || 0, gas: productGases - reactantGases },
+    );
   // Gas production expands the local atmosphere; gas absorption reduces it.
   // Heat-driven pressure uses the same field, instead of an explosion-only rule.
   w.fields.add(

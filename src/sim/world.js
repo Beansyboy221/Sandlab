@@ -103,7 +103,7 @@ export class World {
     this.fields = new Fields(width, height);
     this.environment = new CanvasEnvironment(this);
     this.stickmen = new Stickmen(this);
-    this.sound = new Acoustics(width, height);
+    this.sound = new Acoustics(width, height, this);
     this.missiles = new Missiles(this);
     this.circuits = new Circuits(this);
     this.fallDistance = new Uint8Array(this.length);
@@ -709,7 +709,15 @@ export class World {
   }
   explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);
-    this.sound.emit("explosion", x, y, Math.min(1.5, radius * 0.15), radius);
+    this.sound.emit(
+      "explosion",
+      x,
+      y,
+      Math.min(1.5, radius * 0.15),
+      radius,
+      0,
+      { pressure: radius * 2, heat: 500 },
+    );
     const r2 = radius * radius;
     const loop = this.border === "looping",
       left = loop ? -Math.min(radius, Math.floor(this.width / 2)) : -radius,

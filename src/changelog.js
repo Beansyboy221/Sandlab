@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.21.0",
+    date: "2026-10-04",
+    title: "Material-driven sound",
+    changes: [
+      "Impacts use mass, brittleness, friction, conductivity and elastic softness, with porous surfaces damping sound.",
+      "Liquid flow responds to viscosity and density, while reaction sounds follow their pressure, heat and gas production.",
+      "Shared procedural voices retain spatial muffling and echoes with a bounded 96-buffer cache.",
+    ],
+  },
+  {
     version: "1.20.0",
     date: "2026-10-03",
     title: "Natural sound and room acoustics",

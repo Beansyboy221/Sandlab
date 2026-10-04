@@ -27,7 +27,11 @@ export function changePhase(w, i, x, y, m) {
       if (dissolved) w.nutrition[i] = nutrition;
       if (vent >= 0) w.transform(vent, M.Steam, Math.max(120, temperature));
       w.fields.add(x, y, 1.5);
-      w.sound.emit("boil", x, y, 0.18);
+      w.sound.emit("boil", x, y, 0.18, m.density, m.id, {
+        pressure: 1.5,
+        gas: 1,
+        heat: Math.max(0, temperature - 100),
+      });
       return true;
     }
     if (dissolved) return false;
@@ -59,10 +63,15 @@ export function changePhase(w, i, x, y, m) {
     m.category !== "liquid" &&
     !m.gas
   )
-    w.sound.emit("melt", x, y, 0.2, m.density);
+    w.sound.emit("melt", x, y, 0.2, m.density, target);
   else if (materials[target].category === "liquid" && m.gas)
-    w.sound.emit("splash", x, y, 0.08);
-  else if (materials[target].gas && !m.gas) w.sound.emit("boil", x, y, 0.2);
+    w.sound.emit("splash", x, y, 0.08, materials[target].density, target);
+  else if (materials[target].gas && !m.gas)
+    w.sound.emit("boil", x, y, 0.2, m.density, m.id, {
+      pressure: 1.5,
+      gas: 1,
+      heat: Math.max(0, temperature - (m.boil || 100)),
+    });
   if (!w.transform(i, target, temperature)) return false;
   w.nutrition[i] = nutrition;
   if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;

@@ -1,4 +1,4 @@
-import { voiceProfiles, synthesizeVoice } from "./audio-voices.js";
+import { physicalVoice, synthesizeVoice } from "./audio-voices.js";
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 export function soundPosition(event, renderer, player = null) {
   const source = renderer.project(event.x, event.y);
@@ -127,23 +127,28 @@ export class GameAudio {
     transport = { cutoff: 16000, clarity: 1, reflections: [] },
   ) {
     const c = this.context,
-      v = voiceProfiles[e.kind];
+      v = physicalVoice(e);
     if (!v) return;
     const start = c.currentTime;
     const variant = this.played % 3,
-      key = e.kind + variant;
+      key = v.key + ":" + variant;
     let buffer = this.buffers.get(key);
     if (!buffer) {
-      const samples = synthesizeVoice(e.kind, c.sampleRate, variant);
+      const samples = synthesizeVoice(v, c.sampleRate, variant);
       buffer = c.createBuffer(
         1,
         samples.length + Math.ceil(c.sampleRate * 0.42),
         c.sampleRate,
       );
       buffer.getChannelData(0).set(samples);
+      if (this.buffers.size >= 96)
+        this.buffers.delete(this.buffers.keys().next().value);
       this.buffers.set(key, buffer);
     }
-    const rate = clamp(1 / Math.pow(Math.max(0.5, e.mass), 0.14), 0.55, 1.15);
+    const rate =
+      v.family === "vocal"
+        ? 1
+        : clamp(v.frequency / (v.family === "impact" ? 900 : 700), 0.3, 2);
     const duration = v.duration / rate;
     const gain = c.createGain(),
       pan = c.createStereoPanner(),
@@ -190,7 +195,7 @@ export class GameAudio {
       kind: e.kind,
       pan: position.pan,
       mass: e.mass,
-      frequency: v.frequency * rate,
+      frequency: v.frequency,
       gain: peak,
       cutoff: transport.cutoff,
       clarity: transport.clarity,

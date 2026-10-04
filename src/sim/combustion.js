@@ -45,7 +45,7 @@ export function burnFuel(world, i, x, y, material) {
       Math.round(material.burn * (0.85 + world.random() * 0.3)),
     );
   }
-  if ((world.tick + i) % 18 === 0) world.sound.emit("crackle", x, y, 0.1);
+
   temp[i] = Math.max(650, temp[i]);
   if (--life[i] === 0) {
     world.transform(
@@ -59,6 +59,12 @@ export function burnFuel(world, i, x, y, material) {
   // Heating and combustion generate pressure even for non-explosive fuels.
   world.fields.add(x, y, 0.025);
   if (material.burnPressure) world.fields.add(x, y, material.burnPressure);
+  if ((world.tick + i) % 18 === 0)
+    world.sound.emit("crackle", x, y, 0.1, material.density, material.id, {
+      pressure: 0.025 + (material.burnPressure || 0),
+      heat: 70,
+      gas: 1,
+    });
   if (material.sparkChance && world.random() < material.sparkChance)
     emitSpark(world, i, x, y, material.residue || M.Ash);
 
@@ -107,7 +113,6 @@ function emitFlame(world, fuel, j, probability) {
 }
 
 export function reactFire(world, i, x, y) {
-  if ((world.tick + i) % 20 === 0) world.sound.emit("crackle", x, y, 0.08);
   const { cells, temp, life } = world;
   let quenched = false,
     smothered = 0;
@@ -147,6 +152,11 @@ export function reactFire(world, i, x, y) {
   }
   temp[i] = Math.max(temp[i], 550);
   world.fields.add(x, y, 0.04);
+  if ((world.tick + i) % 20 === 0)
+    world.sound.emit("crackle", x, y, 0.08, 1, M.Fire, {
+      pressure: 0.04,
+      heat: 70,
+    });
   world.eachNeighbor(x, y, (j) => {
     if (cells[j] === M.Oxygen) {
       world.transform(j, M.Fire, 900, 25);

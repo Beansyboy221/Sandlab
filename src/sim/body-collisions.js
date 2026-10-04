@@ -254,6 +254,8 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
       cy,
       Math.min(1.2, closing * Math.sqrt(body.mass) * 0.04),
       body.mass,
+      w.cells[i],
+      { contact: surface.id },
     );
   if (closing > 0.7) {
     const energy = Math.min(

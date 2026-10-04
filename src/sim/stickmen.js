@@ -226,6 +226,8 @@ export class Stickmen {
           a.y[5],
           0.06,
           materials[a.material].density,
+          w.cells[w.index(Math.round(a.x[5]), Math.round(a.y[5]))] ||
+            a.material,
         );
       if (
         a.alive &&
