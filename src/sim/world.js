@@ -6,7 +6,6 @@ import {
   canDissolve,
   addDissolved,
   effectiveDensity,
-  effectiveViscosity,
 } from "./mixtures.js";
 import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 import {
@@ -16,7 +15,6 @@ import {
 import { releaseForChange } from "./absorption.js";
 import { CanvasEnvironment } from "./canvas-modes.js";
 import { PorousFlow, poreExchange } from "./porous-flow.js";
-import { moveKinetic } from "./particle-kinetics.js";
 import { Fragments } from "./fragments.js";
 import { Circuits } from "./circuits.js";
 import { Missiles } from "./missiles.js";
@@ -26,18 +24,14 @@ import { RigidBodies, rigidFields } from "./rigid-bodies.js";
 import { Stickmen } from "./stickmen.js";
 import { drawingPhase } from "./material-families.js";
 import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
-import { moveRay, rayHeading } from "./energy.js";
+import { rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
-import {
-  materials,
-  M,
-  canonicalMaterial,
-  materialTables,
-} from "./materials.js";
+import { materials, M, canonicalMaterial } from "./materials.js";
 import { Fields } from "./fields.js";
-import { react } from "./reactions.js";
-import { moveSurfaceFlame } from "./combustion.js";
+import { moveParticle } from "./solvers/particle-motion.js";
+import { transferHeat } from "./solvers/thermodynamics.js";
+import { advanceSimulation } from "./solvers/pipeline.js";
 import { Portals, portalFields } from "./portals.js";
 import { transportParticle } from "./portal-transport.js";
 
@@ -542,291 +536,13 @@ export class World {
     return false;
   }
   move(i, x, y) {
-    const m = materials[this.cells[i]],
-      cat = m.category;
-    if (!m.movable || m.elasticity || m.rigid) return;
-    if (m.ray) {
-      moveRay(this, i, x, y, m);
-      return;
-    }
-    if (moveKinetic(this, i, x, y)) return;
-    const gas = m.gas,
-      fall = gas ? (m.buoyancy ?? (m.density > 0 ? 1 : -1)) : 1,
-      downX = this.gravityX,
-      downY = this.gravityY,
-      acrossX = downY,
-      acrossY = -downX;
-    const direction = this.random() < 0.5 ? -1 : 1;
-    if (!this.inParticlePass) this.fields.beginForceSample();
-    const fi = this.fields.forceGradient(x, y),
-      gx = this.fields.gradientX[fi],
-      gy = this.fields.gradientY[fi];
-    this.fields.airflow.sample(this.fields, x, y);
-    const windX = this.fields.airflow.x,
-      windY = this.fields.airflow.y;
-    const windSpeed = Math.max(Math.abs(windX), Math.abs(windY));
-    // Surface contact retains weak plumes; a strong vent jet can lift them away.
-    if (
-      this.cells[i] === M.Fire &&
-      windSpeed < 0.35 &&
-      moveSurfaceFlame(this, i, x, y)
-    )
-      return;
-    const drag = gas
-      ? 1
-      : cat === "powder"
-        ? 0.08 / Math.sqrt(m.density)
-        : 0.03;
-    if (windSpeed > 0.01 && this.random() < Math.min(1, windSpeed * drag)) {
-      const horizontal = Math.abs(windX) >= Math.abs(windY);
-      const dx = horizontal ? Math.sign(windX) : 0,
-        dy = horizontal ? 0 : Math.sign(windY);
-      if (this.tryMove(i, x + dx, y + dy, dx * downX + dy * downY)) return;
-    }
-    if (
-      !gas &&
-      (Math.abs(gx) > 1 || Math.abs(gy) > 1) &&
-      this.random() < 0.6 &&
-      this.tryMove(
-        i,
-        x + Math.sign(gx),
-        y + Math.sign(gy),
-        Math.sign(gx) * downX + Math.sign(gy) * downY,
-      )
-    )
-      return;
-    if (
-      this.cells[i] === M.Fire &&
-      windSpeed >= 0.35 &&
-      moveSurfaceFlame(this, i, x, y)
-    )
-      return;
-    // Suspended condensate follows airflow with slow diffusion, rather than
-    // racing to the ceiling like a hot gas.
-    if (gas && fall === 0 && this.random() > (m.dispersion ?? 1)) return;
-    // Buoyant plumes spread while rising even when the cell directly above is
-    // empty; diagonal motion used to occur only after that straight move failed.
-    if (
-      this.cells[i] === M.Fire &&
-      this.random() < 0.55 / (1 + windSpeed * 3)
-    ) {
-      const side = this.index(x + acrossX * direction, y + acrossY * direction),
-        up = this.index(x + downX * fall, y + downY * fall);
-      const openUp =
-          up >= 0 ? this.canMove(i, up, fall) : this.border === "void",
-        openSide =
-          side >= 0 ? this.canMove(i, side, fall) : this.border === "void";
-      if (
-        (openUp || openSide) &&
-        this.tryMove(
-          i,
-          x + downX * fall + acrossX * direction,
-          y + downY * fall + acrossY * direction,
-          fall,
-        )
-      )
-        return;
-    }
-    const nx = x + downX * fall,
-      ny = y + downY * fall;
-    if (this.tryMove(i, nx, ny, fall)) return;
-    if (
-      cat === "powder" &&
-      this.storedAmount[i] &&
-      materials[this.storedLiquid[i]].waterLike &&
-      this.random() < (0.4 * this.storedAmount[i]) / Math.max(1, m.porosity)
-    )
-      return;
-    for (let side = 0; side < 2; side++) {
-      const sign = side ? -direction : direction;
-      if (this.cells[i] === M.Fire) {
-        const up = this.index(nx, ny),
-          beside = this.index(x + acrossX * sign, y + acrossY * sign);
-        if (
-          up >= 0 &&
-          beside >= 0 &&
-          !this.canMove(i, up, fall) &&
-          !this.canMove(i, beside, fall)
-        )
-          continue;
-      }
-      if (this.tryMove(i, nx + acrossX * sign, ny + acrossY * sign, fall))
-        return;
-    }
-    if (cat === "liquid" && this.porousFlow.seep(this, i, x, y)) return;
-    if (cat === "liquid" && this.fallDistance[i] > 2) {
-      this.sound.emit(
-        "splash",
-        x,
-        y,
-        Math.min(0.35, this.fallDistance[i] * 0.015),
-        m.density,
-      );
-      this.fallDistance[i] = 0;
-    }
-    if (cat === "powder" && this.fallDistance[i] > 1) {
-      this.sound.emit(
-        "grain",
-        x,
-        y,
-        Math.min(0.6, this.fallDistance[i] * 0.015 * Math.sqrt(m.density)),
-        m.density,
-      );
-      this.fallDistance[i] = 0;
-    }
-    if (cat === "liquid" || gas) {
-      if (this.random() > 1 / effectiveViscosity(this, i)) return;
-      const reach = gas ? 1 : 4;
-      for (let side = 0; side < 2; side++) {
-        const sign = side ? -direction : direction;
-        let target = -1;
-        for (let d = 1; d <= reach; d++) {
-          const nx = x + acrossX * sign * d,
-            ny = y + acrossY * sign * d;
-          const j = this.index(nx, ny);
-          if (j < 0) {
-            if (this.border === "void") {
-              this.set(i, 0);
-              return;
-            }
-            break;
-          }
-          if (this.cells[j] === M.Portal) {
-            if (this.tryMove(i, nx, ny, 0)) return;
-            break;
-          }
-          if (!this.canMove(i, j, 0)) break;
-          target = j;
-        }
-        if (target !== -1) {
-          this.swap(i, target);
-          return;
-        }
-      }
-    }
+    moveParticle(this, i, x, y);
   }
   transferHeat(i, j) {
-    if (this.mechanics.temperatureSimulation === false || !this.cells[j])
-      return;
-    const transfer =
-      (this.temp[i] - this.temp[j]) *
-      materialTables.heatTransfer[
-        this.cells[i] * materials.length + this.cells[j]
-      ];
-    this.temp[i] -= transfer;
-    this.temp[j] += transfer;
+    transferHeat(this, i, j);
   }
   step() {
-    const profile = this.profile;
-    profile.begin();
-    this.portals.world = this;
-    this.elastic.world = this;
-    this.rigid.world = this;
-    this.tick++;
-    this.sound.tick = this.tick;
-    this.fields.configure(this.mechanics);
-    this.environment.world = this;
-    this.environment.update(true);
-    this.fields.border = this.border;
-    this.fields.update(this);
-    this.fields.beginForceSample();
-    profile.mark(0);
-    this.circuits.world = this;
-    this.circuits.step();
-    profile.mark(1);
-    this.inParticlePass = true;
-    const w = this.width,
-      h = this.height,
-      reverse = this.gravityX ? (this.gravityX > 0 ? 1 : 0) : this.tick % 2;
-    // Skip empty 16-cell blocks; a tick stamp prevents moved cells from updating twice.
-    for (let row = 0; row < h; row++) {
-      // Along gravity, process downstream first. Across horizontal gravity,
-      // alternate row order as we do columns for vertical gravity.
-      const y =
-        this.gravityY < 0 || (!this.gravityY && this.tick % 2)
-          ? row
-          : h - 1 - row;
-      for (let k = 0; k < this.chunkWidth; k++) {
-        const cx = reverse ? this.chunkWidth - 1 - k : k;
-        if (!this.chunks[(y >> 4) * this.chunkWidth + cx]) continue;
-        const start = cx * 16,
-          end = Math.min(w, start + 16);
-        for (let offset = 0; offset < end - start; offset++) {
-          const x = reverse ? end - 1 - offset : start + offset,
-            i = y * w + x;
-          if (!this.cells[i] || this.updated[i] === this.tick) continue;
-          this.updated[i] = this.tick;
-          if (this.portalCooldown[i]) this.portalCooldown[i]--;
-          if (
-            this.mechanics.temperatureSimulation !== false &&
-            (i + this.tick) % 3 === 0
-          ) {
-            const right = this.index(x + 1, y),
-              below = this.index(x, y + 1);
-            if (right >= 0) this.transferHeat(i, right);
-            if (below >= 0) this.transferHeat(i, below);
-            if (materials[this.cells[i]].rigid)
-              for (let d = 0; d < 2; d++) {
-                const j = this.rigid.locations.get(this["bond" + d][i]);
-                // Cardinal rest links remain physical neighbors after rotation.
-                // Grid-adjacent pairs already exchange heat through the normal pass.
-                if (
-                  j !== undefined &&
-                  Math.abs((i % w) - (j % w)) +
-                    Math.abs(Math.floor(i / w) - Math.floor(j / w)) !==
-                    1
-                )
-                  this.transferHeat(i, j);
-              }
-            this.fields.exchange(this, i, x, y);
-          }
-          react(this, i, x, y);
-          if (
-            this.cells[i] === M.Fan &&
-            this.mechanics.pressureSimulation !== false
-          ) {
-            for (let d = 2; d < 15; d++) {
-              const nx = x + d;
-              const j = this.index(nx, y);
-              if (j < 0) break;
-              if (this.fields.blocks(this.cells[j])) break;
-              this.fields.airflow.impulse(this.fields, nx, y, 1, 0, 0.4);
-            }
-          } else if (this.cells[i]) {
-            // Only movement sleeps. Heat and chemistry continue in settled chunks.
-            const chunk = (y >> 4) * this.chunkWidth + cx,
-              air = this.fields.index(x, y);
-            if (
-              this.environment.kinetic ||
-              materials[this.cells[i]].ray ||
-              this.tick + 1 - this.motionStamp[chunk] < 30 ||
-              this.tick % 8 === 0 ||
-              Math.abs(this.fields.pressure[air]) > 1 ||
-              Math.abs(this.fields.airflow.velocityX[air]) > 0.1 ||
-              Math.abs(this.fields.airflow.velocityY[air]) > 0.1
-            )
-              this.move(i, x, y);
-          }
-        }
-      }
-    }
-    this.inParticlePass = false;
-    profile.mark(2);
-    this.rigid.step();
-    profile.mark(3);
-    this.elastic.step();
-    profile.mark(4);
-    this.stickmen.world = this;
-    this.stickmen.step();
-    profile.mark(5);
-    this.missiles.world = this;
-    this.missiles.step();
-    profile.mark(6);
-    this.fragments.world = this;
-    this.fragments.step();
-    profile.mark(7);
-    this.sound.step(this);
-    profile.mark(8);
+    advanceSimulation(this);
   }
   explode(x, y, radius, product = 0) {
     this.fields.add(x, y, radius * 2);

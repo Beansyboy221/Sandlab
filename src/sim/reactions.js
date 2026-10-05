@@ -1,3 +1,4 @@
+import { applyHeatSource } from "./solvers/thermodynamics.js";
 import {
   mixContact,
   diffuseDissolved,
@@ -6,7 +7,6 @@ import {
 } from "./mixtures.js";
 import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
-import { arcGap } from "./sparks.js";
 import { reactExplosive } from "./ignition.js";
 import { M, materials } from "./materials.js";
 import {
@@ -17,7 +17,7 @@ import {
 } from "./chemistry.js";
 import { changePhase } from "./phase-changes.js";
 import { absorb, absorbFromLiquid } from "./absorption.js";
-import { conducts } from "./oxidation.js";
+import { conductCharge, reactSpark } from "./solvers/electrodynamics.js";
 import { growMicrobe } from "./microbiology.js";
 import { grow } from "./biology.js";
 import { weather } from "./weather.js";
@@ -62,7 +62,8 @@ export function react(world, i, x, y) {
   const id = c[i],
     m = materials[id];
   if (cd[i]) cd[i]--;
-  if (q[i] && world.chargedAt[i] !== world.tick) conduct(world, i, x, y, m);
+  if (q[i] && world.chargedAt[i] !== world.tick)
+    conductCharge(world, i, x, y, m);
   // Stable grains and fluids still exchange heat in World.step. They need a
   // chemistry handler only on a phase threshold, live burn/lifetime, or charge.
   if (
@@ -132,68 +133,13 @@ export function react(world, i, x, y) {
   if (id === M.Spark) {
     if (reactSpark(world, i, x, y)) return;
   } else if (m.lifetime && l[i] && --l[i] === 0) world.transform(i, 0);
-  if (m.heatSource) heatSource(world, i, x, y, m);
+  if (m.heatSource) applyHeatSource(world, i, x, y, m);
   else if (m.acidity || m.alkalinity) etch(world, i, x, y, m);
   else if (id === M.Void || id === M.Clone) device(world, i, x, y, id);
 }
 
 // Keep neighbor callbacks in the uncommon handlers. The main dispatcher then
 // avoids allocating a closure context for every grain of settled sand or water.
-function conduct(world, i, x, y, m) {
-  const { cells: c, temp: t, charge: q, cooldown: cd } = world;
-  if (!conducts(world, i)) {
-    q[i] = 0;
-    return;
-  }
-  if (q[i] === 6 && m.conductive) arcGap(world, i, x, y);
-  q[i]--;
-  t[i] += 1.5;
-  const propagate = (j) => {
-    if (conducts(world, j) && !cd[j]) {
-      q[j] = 6;
-      cd[j] = 18;
-      world.chargedAt[j] = world.tick;
-    }
-  };
-  world.eachNeighbor(x, y, propagate);
-  if (m.rigid) world.rigid.connections.each(i, propagate);
-}
-function reactSpark(world, i, x, y) {
-  const { cells: c, temp: t, life: l, charge: q, cooldown: cd } = world;
-  if (!l[i] || --l[i] === 0) {
-    world.transform(i, world.residue[i] || 0, 120);
-    return true;
-  }
-  let wetSpark = false;
-  world.eachNeighbor(x, y, (j) => {
-    if (materials[c[j]].waterLike) {
-      t[j] += 30;
-      wetSpark = true;
-      if (!world.residue[i] && conducts(world, j) && !cd[j]) {
-        q[j] = 6;
-        cd[j] = 18;
-        world.chargedAt[j] = world.tick;
-      }
-    } else if (!world.residue[i] && conducts(world, j) && !cd[j]) {
-      q[j] = 6;
-      cd[j] = 18;
-      world.chargedAt[j] = world.tick;
-    } else if (materials[c[j]].ignite) t[j] += 30;
-  });
-  if (wetSpark) {
-    world.transform(i, world.residue[i] || 0, 100);
-    return true;
-  }
-
-  return false;
-}
-function heatSource(world, i, x, y, m) {
-  const { cells: c, temp: t } = world;
-  t[i] = m.temperature;
-  world.eachNeighbor(x, y, (j) => {
-    if (c[j]) t[j] += (t[i] - t[j]) * 0.12;
-  });
-}
 function device(world, i, x, y, id) {
   const c = world.cells;
   if (id === M.Void)

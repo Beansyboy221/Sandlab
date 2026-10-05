@@ -1,5 +1,5 @@
-import { circuitOutput } from "./circuits.js";
-import { materials } from "./materials.js";
+import { circuitOutput } from "../sim/circuits.js";
+import { materials } from "../sim/materials.js";
 export function drawCircuits(c, w) {
   for (const i of w.circuits.locations) {
     const m = materials[w.cells[i]],

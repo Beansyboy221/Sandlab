@@ -23,7 +23,7 @@ with sync_playwright() as p:
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto('http://sandlab.test/')
-        page.wait_for_function('!!window.sandlab')
+        page.wait_for_function('() => !!window.sandlab')
         page.evaluate('sandlab.state.paused=true;sandlab.settings.set("autosave",false)')
         page.wait_for_timeout(200)
         start = page.evaluate('''async()=>{

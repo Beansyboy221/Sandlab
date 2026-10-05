@@ -1,3 +1,4 @@
+import { writeElasticPixels } from "./render/elastic-renderer.js";
 import { canvasModes } from "./sim/canvas-modes.js";
 import {
   fittedCanvasSize,
@@ -322,7 +323,7 @@ export class LevelEditor {
       image = context.createImageData(this.world.width, this.world.height);
     image.data.set(this.renderer.data.data);
     for (let i = 0; i < this.world.length; i++)
-      if (!this.world.cells[i] || materials[this.world.cells[i]].elasticity) {
+      if (!this.world.cells[i]) {
         const background = this.world.backgroundPaint[i],
           o = i * 4;
         image.data[o] = (background >>> 16) & 255;
@@ -330,8 +331,9 @@ export class LevelEditor {
         image.data[o + 2] = background & 255;
         image.data[o + 3] = background >>> 24;
       }
+    writeElasticPixels(this.world, image.data, this.renderer.elasticColors);
     context.putImageData(image, 0, 0);
-    this.renderer.drawElastics(context, { x: 0, y: 0, scale: 1 });
+    this.renderer.drawDynamicPixels(context, { x: 0, y: 0, scale: 1 });
   }
   point(event) {
     const box = this.preview.getBoundingClientRect(),

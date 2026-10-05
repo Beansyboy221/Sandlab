@@ -12,12 +12,12 @@ def choose(page,tool,touch=False):
     action='tap' if touch else 'click'
     getattr(page.locator('#tool-picker-toggle'),action)();getattr(page.locator(f'[data-tool-option="{tool}"]'),action)()
 def pixel(page,x,y):
-    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.cursor=null;r.draw();const c=document.createElement('canvas');c.width=sandlab.world.width;c.height=sandlab.world.height;const ctx=c.getContext('2d');ctx.drawImage(r.buffer,0,0);r.drawElastics(ctx,{x:0,y:0,scale:1});return Array.from(ctx.getImageData(x,y,1,1).data.slice(0,3))}''',[x,y])
+    return page.evaluate('''([x,y])=>{const r=sandlab.renderer;r.cursor=null;r.draw();const c=document.createElement('canvas');c.width=sandlab.world.width;c.height=sandlab.world.height;const ctx=c.getContext('2d');ctx.drawImage(r.buffer,0,0);return Array.from(ctx.getImageData(x,y,1,1).data.slice(0,3))}''',[x,y])
 with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
     c=browser.new_context(viewport={'width':1440,'height':900},device_scale_factor=2);c.route('http://sandlab.test/**',serve)
     page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-    page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.locator('#play-btn').click()
+    page.goto('http://sandlab.test/');page.wait_for_function('() => !!window.sandlab');page.locator('#play-btn').click()
     page.evaluate('''async()=>{const{M}=await import('./src/sim/materials.js');window.paintM=M;const w=sandlab.world;w.clear();sandlab.settings.set('autosave',false);for(let x=30;x<70;x++)w.set(40*w.width+x,M.Stone);sandlab.state.setRadius(2);}''')
     choose(page,'recolor');assert page.locator('#palette-toggle').is_hidden();assert page.locator('#paint-color').is_visible()
     page.locator('#paint-color').click();assert page.locator('#color-dialog').is_visible()
@@ -62,7 +62,7 @@ with sync_playwright() as p:
     assert not errors,errors;c.close()
     for width,height in [(390,844),(844,390),(320,640)]:
         c=browser.new_context(viewport={'width':width,'height':height},is_mobile=True,has_touch=True,device_scale_factor=3);c.route('http://sandlab.test/**',serve)
-        page=c.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab')
+        page=c.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('() => !!window.sandlab')
         if page.evaluate('!sandlab.state.paused'):page.locator('#play-btn').tap()
         choose(page,'recolor',True)
         # Tool selection preserves the drawer; open properties explicitly.

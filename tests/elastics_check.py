@@ -13,7 +13,7 @@ with sync_playwright() as p:
     for width,height,touch in [(1440,900,False),(320,740,True),(390,844,True),(844,390,True)]:
         c=browser.new_context(viewport={'width':width,'height':height},has_touch=touch,is_mobile=touch)
         c.route('http://sandlab.test/**',serve);page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
-        page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.locator('#play-btn').click()
+        page.goto('http://sandlab.test/');page.wait_for_function('() => !!window.sandlab');page.locator('#play-btn').click()
         page.evaluate("()=>{sandlab.settings.set('autosave',false);sandlab.world.clear()}")
         if touch:
             page.locator('#controls-toggle').tap();page.wait_for_timeout(300)

@@ -245,7 +245,7 @@ export function integrateBody(
         (a.x[2] +
           gy *
             ((restX[n] - restX[2]) *
-              (profile === humanProfile ? 1 : a.direction) +
+              (profile.appearance.humanoid ? 1 : a.direction) +
               step) +
           gx * ry -
           a.x[n]) *
@@ -254,7 +254,7 @@ export function integrateBody(
         (a.y[2] -
           gx *
             ((restX[n] - restX[2]) *
-              (profile === humanProfile ? 1 : a.direction) +
+              (profile.appearance.humanoid ? 1 : a.direction) +
               step) +
           gy * ry -
           a.y[n]) *

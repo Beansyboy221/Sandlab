@@ -1,6 +1,8 @@
 # Sandlab engine evolution
 
-Status: staged roadmap. v1.26.0 unifies base/state authoring, validates physical
+Status: staged roadmap. v1.27.0 separates solver ownership from world state, compiles
+actor/projectile configuration and unifies body/entity rendering with material
+pixels; see [ARCHITECTURE.md](ARCHITECTURE.md). v1.26.0 unifies base/state authoring, validates physical
 transition identities, preserves fracture/corrosion components and compiles common
 chemical contact rules from material data. See [PHYSICS_MODEL.md](PHYSICS_MODEL.md)
 for the explicit abstraction contract and implemented limits. v1.19.0 added
@@ -118,7 +120,7 @@ v1.19.1 fire-lighting comparison (`npm run bench:fire`, 320×200 world, 1,000×6
 | 2. Make definitions composable  | Validated traits, organized definition files, compiled dispatch/property tables and stable aliases                                            | Recreate a few existing materials through traits with unchanged behavior; a new combined material needs no edits to unrelated solvers; saves/Undo/clipboard remain compatible       |
 | 3. Improve physical consistency | Separate density/buoyancy and electrical/thermal meanings; add contained-liquid mass, heat capacity and latent heat in independent increments | Conservation/error measurements, stable phase cycles, saturated body motion, thermal equilibrium and bounded conduction; calibrate rather than merely add properties                |
 | 4. Open rule authoring          | Declarative contact/environment reactions and small registered special handlers, validated product yields and budgets                         | Prototype a reaction and a combined behavior without adding name branches; finite material/energy accounting and crowded-scene work limits hold                                     |
-| 5. Optimize visible bodies      | Profile-driven rigid albedo caching, elastic topology reuse and appropriate dirty rendering                                                   | Before/after CPU, draw-call/allocation and memory results; screenshots for rotated/cut/heated/lit/painted bodies, wrapping, selection, inspection and mobile input                  |
+| 5. Optimize visible bodies      | Shared collision-aligned pixel presentation, elastic topology reuse and appropriate dirty rendering                                           | Before/after CPU, draw-call/allocation and memory results; screenshots for rotated/cut/heated/lit/painted bodies, wrapping, selection, inspection and mobile input                  |
 | 6. Add authoring tools          | Material editor with live previews, validation and local/import/export definition packs                                                       | Editing is transactional/undoable; invalid changes cannot damage a world; a portable pack reproduces its saved experiment                                                           |
 | 7. Separate modes from physics  | Data-driven goals, spawn/checkpoint rules, sensors, allowed tools, input policies, scripted triggers and presentation                         | One chemistry puzzle and one platformer run on the same engine; seeded tests cover success/failure/reset/save; modes do not fork material physics                                   |
 

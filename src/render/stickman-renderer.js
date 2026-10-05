@@ -1,4 +1,4 @@
-import { actorProfile, humanProfile } from "./creature-profiles.js";
+import { actorProfile } from "../sim/creature-profiles.js";
 function ellipseBetween(c, a, u, v, thickness) {
   const dx = a.x[v] - a.x[u],
     dy = a.y[v] - a.y[u];
@@ -14,7 +14,7 @@ function ellipseBetween(c, a, u, v, thickness) {
   );
   c.fill();
 }
-function ears(c, a, w, rabbit) {
+function ears(c, a, w, length) {
   const gx = w.gravityX,
     gy = w.gravityY;
   for (const side of [-1, 1]) {
@@ -22,7 +22,7 @@ function ears(c, a, w, rabbit) {
       y = a.y[0] - gx * side * 0.65;
     c.beginPath();
     c.moveTo(x - gy * 0.45, y + gx * 0.45);
-    c.lineTo(x - gx * (rabbit ? 3 : 1.7), y - gy * (rabbit ? 3 : 1.7));
+    c.lineTo(x - gx * length, y - gy * length);
     c.lineTo(x + gy * 0.45, y - gx * 0.45);
     c.closePath();
     c.fill();
@@ -38,7 +38,7 @@ export function drawStickmen(context, world, view) {
   const player = world.stickmen.player;
   for (const a of world.stickmen.bodies) {
     const p = actorProfile(a.material),
-      human = p === humanProfile;
+      human = p.appearance.humanoid;
     const hot = a.heat.some((t) => t > 180);
     const color = hot ? "#ef965f" : a.alive ? a.color : "#8f9390";
     context.strokeStyle = context.fillStyle = color;
@@ -52,15 +52,14 @@ export function drawStickmen(context, world, view) {
       }
     context.stroke();
     if (!human && a.bonds[1])
-      ellipseBetween(context, a, 1, 2, p.mode === "swim" ? 1.1 : 1.4);
+      ellipseBetween(context, a, 1, 2, p.appearance.torsoThickness);
     if (!human && a.bonds[0]) ellipseBetween(context, a, 0, 1, 0.7);
     context.beginPath();
     context.arc(a.x[0], a.y[0], p.headRadius + 0.3, 0, Math.PI * 2);
     if (human) context.stroke();
     else context.fill();
-    if (!human && (p.mode === "walk" || p.mode === "hop"))
-      ears(context, a, world, p.mode === "hop");
-    if (p.mode === "swim" && p.prey?.length && a.bonds[1] && a.bonds[2]) {
+    if (!human && p.appearance.ears) ears(context, a, world, p.appearance.ears);
+    if (p.appearance.fin && a.bonds[1] && a.bonds[2]) {
       context.beginPath();
       context.moveTo(a.x[1], a.y[1]);
       context.lineTo(a.x[3], a.y[3]);
@@ -69,7 +68,7 @@ export function drawStickmen(context, world, view) {
       context.fill();
     }
     if (
-      p.mode === "swim" &&
+      p.appearance.tail &&
       a.bonds[4] &&
       a.bonds[5] &&
       a.bonds[6] &&
@@ -82,7 +81,7 @@ export function drawStickmen(context, world, view) {
       context.closePath();
       context.fill();
     }
-    if (p.mode === "fly" && a.bonds[2]) {
+    if (p.appearance.beak && a.bonds[2]) {
       ellipseBetween(context, a, 1, 3, 0.7);
       const gx = world.gravityX,
         gy = world.gravityY;

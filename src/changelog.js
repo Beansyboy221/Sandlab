@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.27.0",
+    date: "2026-10-04",
+    title: "Shared pixel engine",
+    changes: [
+      "Thermal, electrical, atmospheric and particle calculations have separate solver modules, with compiled actor anatomy, appearance and projectile profiles.",
+      "Solids, elastics and animated entities share material-sized pixels, aligning solid contact edges and keeping stretched skins behind other matter.",
+      "Controlled 16,000-cell rendering improves from 3.22 to 1.38 ms for solids and 26.3 to 9.65 ms for elastics, with lighting and bloom disabled.",
+    ],
+  },
+  {
     version: "1.26.1",
     date: "2026-10-04",
     title: "Round planet pools",

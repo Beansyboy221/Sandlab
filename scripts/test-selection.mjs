@@ -7,8 +7,16 @@ export const groups = {
     "security",
     "entities-modes",
   ],
-  quick: ["settings", "frame-clock", "editor", "materials", "security"],
+  quick: [
+    "engine-boundaries",
+    "settings",
+    "frame-clock",
+    "editor",
+    "materials",
+    "security",
+  ],
   collisions: [
+    "engine-boundaries",
     "material-upgrade",
     "mechanical-mass",
     "rigid-physics",
@@ -19,6 +27,7 @@ export const groups = {
     "simulation",
   ],
   elastics: [
+    "engine-boundaries",
     "material-upgrade",
     "mechanical-mass",
     "elasticity",
@@ -80,7 +89,7 @@ export const groups = {
 export const browserChecks = {
   portals: ["portals_check"],
   quick: [],
-  collisions: ["rigid_physics_check"],
+  collisions: ["unified_scene_check", "rigid_physics_check"],
   elastics: ["elastic_contacts_check", "elastics_check"],
   atmosphere: ["airflow_check"],
   actors: ["creatures_audio_check", "audio_occlusion_check", "flocking_check"],

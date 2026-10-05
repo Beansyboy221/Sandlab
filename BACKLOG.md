@@ -32,3 +32,5 @@
 
 - Extend the [physics contract](PHYSICS_MODEL.md): base/state transitions and common chemical components are implemented, but normalized reagent equivalents, partial neutralization, aqueous pH, chemical energy budgets and accurate multi-product quantities still need calibration fixtures.
 - Replace composite concrete/ceramic melt proxies with tested dehydration, sintering and melt-composition data when thermal amount accounting supports it; preserve family identity and finite contents.
+
+- Extend shared-grid presentation benchmarks to moving/cut elastic meshes and mixed crowds on physical phones; refine subpixel contact coverage only where pixel-scale fixtures justify its memory and calculation cost.

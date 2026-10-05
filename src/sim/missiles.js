@@ -1,3 +1,4 @@
+import { projectileProfiles } from "./creature-profiles.js";
 import { LaserGuidance, wrappedDelta } from "./missile-guidance.js";
 import { stepMachine, machineFits } from "./machine-motion.js";
 import { materials, M } from "./materials.js";
@@ -36,16 +37,17 @@ export class Missiles {
     if (w.cells[i] && !materials[w.cells[i]].gas) return false;
     if (materials[material].vehicle && !machineFits(w, x, y)) return false;
     if (this.items.some((a) => Math.hypot(a.x - x, a.y - y) < 5)) return false;
-    const angle = Math.atan2(dy, dx || (!dy ? 1 : 0));
+    const angle = Math.atan2(dy, dx || (!dy ? 1 : 0)),
+      profile = projectileProfiles[material];
     this.items.push({
       id: this.nextId++,
       material,
       x,
       y,
       angle,
-      vx: Math.cos(angle) * 0.65,
-      vy: Math.sin(angle) * 0.65,
-      life: materials[material].vehicle ? 0 : 480,
+      vx: Math.cos(angle) * profile.initialSpeed,
+      vy: Math.sin(angle) * profile.initialSpeed,
+      life: materials[material].vehicle ? 0 : profile.lifetime,
       ...(materials[material].vehicle ? { health: 100 } : {}),
       temperature: 20,
       target: -1,
@@ -179,28 +181,29 @@ export class Missiles {
             );
         }
       }
+      const profile = projectileProfiles[a.material];
       if (a.targetKind !== "none") {
         const desired = Math.atan2(a.targetY - a.y, a.targetX - a.x);
         const turn = Math.atan2(
           Math.sin(desired - a.angle),
           Math.cos(desired - a.angle),
         );
-        a.angle += clamp(turn, -0.065, 0.065);
+        a.angle += clamp(turn, -profile.turnRate, profile.turnRate);
       }
-      w.fields.forceAt(a.x, a.y, 0.015, 0.015);
+      w.fields.forceAt(a.x, a.y, 0.015, profile.airDrag);
       const speed = w.mechanics.missileSpeed;
       a.vx =
-        a.vx * 0.8 +
-        Math.cos(a.angle) * speed * 0.2 +
-        clamp(w.fields.forceX, -0.08, 0.08);
+        a.vx * profile.momentumRetention +
+        Math.cos(a.angle) * speed * profile.thrust +
+        clamp(w.fields.forceX, -profile.forceCap, profile.forceCap);
       a.vy =
-        a.vy * 0.8 +
-        Math.sin(a.angle) * speed * 0.2 +
-        clamp(w.fields.forceY, -0.08, 0.08);
+        a.vy * profile.momentumRetention +
+        Math.sin(a.angle) * speed * profile.thrust +
+        clamp(w.fields.forceY, -profile.forceCap, profile.forceCap);
       if (w.environment.kinetic) {
         w.environment.sample(a.x, a.y);
-        a.vx += w.environment.x * 0.05;
-        a.vy += w.environment.y * 0.05;
+        a.vx += w.environment.x * profile.gravityCoupling;
+        a.vy += w.environment.y * profile.gravityCoupling;
       }
       if (a.temperature < -60) {
         a.vx *= 0.94;

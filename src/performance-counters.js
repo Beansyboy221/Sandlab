@@ -25,7 +25,7 @@ export class PerformanceCounters {
 }
 export const simulationStages = [
   "Air",
-  "Circuits",
+  "Electricity",
   "Particles",
   "Solids",
   "Elastics",
@@ -35,12 +35,11 @@ export const simulationStages = [
   "Sound",
 ];
 export const renderingStages = [
-  "Pixels",
+  "Material pixels",
   "Light field",
-  "Buffer",
-  "Elastics",
-  "Solids",
-  "Entities",
+  "Elastic pixels",
+  "Pixel composition",
+  "Entity pixels",
   "Lighting",
   "Airflow",
   "Bloom",

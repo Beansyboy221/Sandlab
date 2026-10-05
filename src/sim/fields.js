@@ -1,5 +1,7 @@
 import { Airflow } from "./airflow.js";
 import { materials } from "./materials.js";
+import { exchangeWithAir, depositHeat } from "./solvers/thermodynamics.js";
+import { stepAtmosphere } from "./solvers/atmospherics.js";
 const airBlockage = Float32Array.from(materials, (m) =>
   m.static ||
   m.category === "solid" ||
@@ -149,19 +151,7 @@ export class Fields {
     if (this.pressure[i] !== before) this.beginForceSample();
   }
   heat(x, y, amount) {
-    if (
-      !this.temperatureEnabled ||
-      !Number.isFinite(amount) ||
-      x < 0 ||
-      y < 0 ||
-      x >= this.width * 4 ||
-      y >= this.height * 4
-    )
-      return;
-    const i = this.index(x, y),
-      before = this.temperature[i];
-    this.temperature[i] = Math.max(-273, Math.min(6000, before + amount));
-    this.add(x, y, (this.temperature[i] - before) * 0.025);
+    depositHeat(this, x, y, amount);
   }
   // Cache the permeability of each shared edge. Four narrow corridors between
   // tile centers detect thin walls even when they miss a coarse-grid boundary.
@@ -193,121 +183,10 @@ export class Fields {
     return total * 0.25;
   }
   exchange(world, i, x, y) {
-    if (!this.temperatureEnabled) return;
-    const fi = this.index(x, y),
-      m = materials[world.cells[i]],
-      heat =
-        (world.temp[i] - this.temperature[fi]) *
-        (m.heatSource ? 0.08 : m.gas ? 0.015 : 0.003);
-    if (!m.heatSource)
-      world.temp[i] = Math.max(-273, Math.min(6000, world.temp[i] - heat));
-    // One tile contains sixteen air cells; heat is retained locally and diffuses.
-    this.temperature[fi] = Math.max(
-      -273,
-      Math.min(6000, this.temperature[fi] + heat / 16),
-    );
-    this.add(x, y, heat * 0.0005);
+    exchangeWithAir(this, world, i, x, y);
   }
   update(world) {
-    this.stressWrites = 0;
-    if (world) this.configure(world.mechanics);
-    if (this.lastBorder !== this.border) {
-      this.obstaclesDirty = true;
-      this.lastBorder = this.border;
-    }
-    if (world) this.rebuildBarriers(world);
-    this.airflow.step(this, world);
-    const {
-      width: w,
-      height: h,
-      pressure: p,
-      next: n,
-      temperature: t,
-      nextTemperature: nt,
-    } = this;
-    const loop = this.border === "looping",
-      solid = this.border === "solid";
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const i = y * w + x,
-          left = x ? i - 1 : loop ? i + w - 1 : -1,
-          right = x < w - 1 ? i + 1 : loop ? i - x : -1,
-          up = y ? i - w : loop ? i + (h - 1) * w : -1,
-          down = y < h - 1 ? i + w : loop ? x : -1;
-        let pressureFlux = 0,
-          heatFlux = 0,
-          divergence = 0,
-          heatAdvection = 0,
-          incoming = 0;
-        // No per-cell arrays or closures in the diffusion loop.
-        for (let direction = 0; direction < 4; direction++) {
-          const j =
-              direction === 0
-                ? left
-                : direction === 1
-                  ? right
-                  : direction === 2
-                    ? up
-                    : down,
-            permeability =
-              j < 0
-                ? solid
-                  ? 0
-                  : 1
-                : direction === 0
-                  ? this.horizontal[j]
-                  : direction === 1
-                    ? this.horizontal[i]
-                    : direction === 2
-                      ? this.vertical[j]
-                      : this.vertical[i];
-          const flow =
-            direction === 0
-              ? -(left < 0
-                  ? this.airflow.west[y]
-                  : this.airflow.velocityX[left])
-              : direction === 1
-                ? this.airflow.velocityX[i]
-                : direction === 2
-                  ? -(up < 0
-                      ? this.airflow.north[x]
-                      : this.airflow.velocityY[up])
-                  : this.airflow.velocityY[i];
-          divergence += flow;
-          if (flow < 0) {
-            incoming += -flow / 4;
-            heatAdvection +=
-              (-flow / 4) * ((j < 0 ? this.ambientTemperature : t[j]) - t[i]);
-          }
-          pressureFlux += ((j < 0 ? 0 : p[j]) - p[i]) * permeability;
-          heatFlux +=
-            ((j < 0 ? this.ambientTemperature : t[j]) - t[i]) * permeability;
-        }
-        n[i] = this.pressureEnabled
-          ? Math.max(
-              -80,
-              Math.min(
-                80,
-                (p[i] + pressureFlux * 0.025 - divergence * 0.55) * 0.999,
-              ),
-            )
-          : 0;
-        nt[i] = this.temperatureEnabled
-          ? Math.max(
-              -273,
-              Math.min(
-                6000,
-                t[i] +
-                  heatFlux * 0.03 +
-                  heatAdvection * Math.min(0.5, 0.75 / (incoming || 1)),
-              ),
-            )
-          : t[i];
-      }
-    this.pressure = n;
-    this.next = p;
-    this.temperature = nt;
-    this.nextTemperature = t;
+    stepAtmosphere(this, world);
   }
   clear() {
     this.pressure.fill(0);
