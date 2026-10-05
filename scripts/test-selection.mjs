@@ -45,6 +45,7 @@ export const groups = {
     "inspection",
   ],
   levels: [
+    "radial-liquids",
     "level",
     "canvas-view",
     "entities-modes",

@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.26.1",
+    date: "2026-10-04",
+    title: "Round planet pools",
+    changes: [
+      "Planet liquids settle into rounded pools with smooth gravity and bounded pressure flow, while respecting density, viscosity and walls.",
+    ],
+  },
+  {
     version: "1.26.0",
     date: "2026-10-04",
     title: "Material families and shared chemistry",

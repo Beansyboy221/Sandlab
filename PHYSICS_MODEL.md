@@ -86,7 +86,7 @@ claiming quantitative conservation or laboratory accuracy.
 | System            | Resolve                                                                                             | Approximate / current limit                                                                    |
 | ----------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Motion            | Density, gravity, local displacement, friction, contact impulses, rigid rotation and spring tension | Fixed cell occupancy and bounded contact/substep budgets; no continuum stress tensor           |
-| Liquids           | Density displacement, viscosity, pore intake/transfer/drainage, permeability and retention          | Cellular local flow; no full incompressible Navier–Stokes or calibrated surface tension        |
+| Liquids           | Density displacement, viscosity, radial pressure relaxation, pore transport and retention           | Cellular local flow; no full incompressible Navier–Stokes or calibrated surface tension        |
 | Heat              | Local neighbor exchange, air temperature and configured phase thresholds                            | Relative conductivity and thresholds; heat capacity, latent heat and calibrated units are next |
 | Air               | Local pressure, face velocity, barriers, moving-matter momentum, vents and buoyancy                 | Coarse four-pixel tiles with finite force budgets; ambient oxygen remains implicit             |
 | Electricity       | Conductivity, insulation/oxidation, transported pulses, sparks and gates                            | Digital pulse propagation and heating; not a calibrated voltage/current network                |
@@ -103,3 +103,11 @@ fracture, phase, transport or chemical susceptibility are not the extension path
 Keep these models separate from puzzle goals, player controls and level scripting.
 These approximations are deterministic under the same saved seed and tick inputs;
 a neural next-frame guess must not replace authoritative contents or topology.
+
+Planet and moving-center modes sample gravity at physical positions, separate from
+the coarse atmosphere grid. Resting liquids relieve radial hydrostatic pressure
+through connected local cells: at most 128 visits and eight neighboring swaps per
+surface query, staggered over eight ticks. These transfers lower radial potential,
+respect viscosity/density and walls, and preserve contents and particle state; they
+do not prescribe a circular boundary. The finite reach leaves pixel-scale surface
+roughness rather than resolving an incompressible pressure field across a whole pool.

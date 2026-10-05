@@ -14,7 +14,13 @@ export class CanvasEnvironment {
     this.forceX = new Float32Array(world.fields.pressure.length);
     this.forceY = new Float32Array(this.forceX.length);
     this.x = this.y = 0;
+    this.centerX = world.width * 0.5;
+    this.centerY = world.height * 0.5;
     this.light = world.ambientLight;
+  }
+  get radial() {
+    const mode = this.world.canvasMode;
+    return mode === "planet" || mode === "wander" || mode === "vortex";
   }
   get kinetic() {
     const mode = this.world.canvasMode;
@@ -92,12 +98,20 @@ export class CanvasEnvironment {
       this.y = w.gravityY * w.modeStrength;
       return;
     }
-    const i = w.fields.index(
-      Math.max(0, Math.min(w.width - 1, Math.floor(x))),
-      Math.max(0, Math.min(w.height - 1, Math.floor(y))),
-    );
-    this.x = this.forceX[i];
-    this.y = this.forceY[i];
+    if (w.canvasMode === "zero") {
+      this.x = this.y = 0;
+      return;
+    }
+    // Smooth point sampling avoids four-pixel plateaus and four separate
+    // attractors near the core; the atmosphere retains its coarse force grid.
+    const dx = this.centerX - x,
+      dy = this.centerY - y,
+      r2 = dx * dx + dy * dy,
+      scale = r2
+        ? (Math.min(2, 900 / (r2 + 64)) * w.modeStrength) / Math.sqrt(r2)
+        : 0;
+    this.x = dx * scale;
+    this.y = dy * scale;
   }
   seed(i) {
     const w = this.world;
