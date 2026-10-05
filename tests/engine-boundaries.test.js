@@ -16,6 +16,39 @@ import { writeElasticPixels } from "../src/render/elastic-renderer.js";
 import { snapshot } from "../src/persistence.js";
 
 const root = resolve("src");
+test("mechanical scheduling and collision rules have explicit solver ownership", () => {
+  const pipeline = readFileSync("src/sim/solvers/pipeline.js", "utf8"),
+    world = readFileSync("src/sim/world.js", "utf8"),
+    physics = readFileSync("src/sim/solvers/physics.js", "utf8");
+  assert.match(pipeline, /from "\.\/physics\.js"/);
+  assert.doesNotMatch(
+    pipeline,
+    /w\.(?:rigid|elastic|stickmen|missiles|fragments)\.step\(/,
+  );
+  for (const method of [
+    "move",
+    "canMove",
+    "tryMove",
+    "setGravity",
+    "explode",
+  ]) {
+    const body = world.match(
+      new RegExp(`  ${method}\\([^)]*\\) \\{([\\s\\S]*?)\\n  \\}`),
+    );
+    assert.ok(body, method);
+    assert.doesNotMatch(body[1], /\b(?:if|for|while)\b/, method);
+  }
+  assert.match(physics, /from "\.\/particle-motion\.js"/);
+  assert.match(physics, /from "\.\/particle-contacts\.js"/);
+  assert.match(
+    readFileSync("src/sim/acoustics.js", "utf8"),
+    /from "\.\/solvers\/acoustics\.js"/,
+  );
+  assert.match(
+    readFileSync("src/sim/optical-rays.js", "utf8"),
+    /from "\.\/solvers\/optics\.js"/,
+  );
+});
 function files(path) {
   return readdirSync(path, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory()

@@ -1,4 +1,4 @@
-import { moveOpticalRay } from "./optical-rays.js";
+import { moveOpticalRay } from "./solvers/optics.js";
 import { M, materials } from "./materials.js";
 
 export const rayDirections = [

@@ -1,0 +1,78 @@
+flowchart TB
+  subgraph Client[Browser application]
+    UI[Interface / settings / palette]
+    Input[Pointer / touch / keyboard / controller]
+    Tools[Tools / selection / history]
+    Store[Local saves / import / export]
+    Clock[Fixed tick / 60 Hz cap]
+  end
+  subgraph Data[Configuration and authoritative state]
+    Definitions[Material families / states / components
+Actor anatomy / behavior profiles]
+    Registry[Validation / immutable lookup tables]
+    World[World
+Typed cells / fields / poses / joints]
+  end
+  subgraph Engine[Headless simulation]
+    Pipeline[Fixed-order solver pipeline]
+    Physics[Physics
+Gravity / motion / collisions
+Rigid bodies / elastics / fragments
+Agent and device integration]
+    Heat[Thermodynamics
+Heat / phase thresholds]
+    Air[Atmospherics / aerodynamics
+Pressure / wind / transport]
+    Electricity[Electrodynamics
+Charge / circuits / sparks]
+    Chemistry[Chemistry / combustion
+Reagents / pores / oxidation]
+    Biology[Biology / agent behaviors
+Growth / navigation / flocking]
+    Sound[Acoustics
+Waves / absorption / listener paths]
+    Light[Optics
+Photons / lasers / spectral transport]
+    Pass[Fused local particle pass
+Heat → reaction → motion]
+  end
+  subgraph Presentation[Read-only presentation]
+    Pixels[Shared world-resolution pixels
+Materials / bodies / elastics / actors]
+    Lighting[Cached visual lighting / shadows / bloom]
+    Camera[Canvas / camera / overlays / diagnostic views]
+    Audio[Web Audio
+Property-based voices / pan / muffling / echoes]
+  end
+  UI --> Input --> Tools
+  Tools <--> World
+  Store <--> World
+  Definitions --> Registry
+  Registry --> World
+  Registry --> Engine
+  Clock --> Pipeline
+  Pipeline --> Pass
+  Pipeline --> Physics
+  Pipeline --> Air
+  Pipeline --> Electricity
+  Pipeline --> Sound
+  Pass --> Heat
+  Pass --> Chemistry
+  Pass --> Physics
+  Pass --> Light
+  Chemistry --> Biology
+  Physics --> Biology
+  Engine <--> World
+  World --> Pixels --> Lighting --> Camera
+  Registry --> Presentation
+  Sound --> Audio
+  World --> Lighting
+  subgraph Delivery[Validation and delivery]
+    Tests[Node / browser checks / benchmarks]
+    Build[Static build / ES modules / Canvas]
+    Repo[GitHub repository / Actions]
+    Pages[GitHub Pages]
+  end
+  Tests -. verifies .-> Engine
+  Tests --> Build
+  Repo --> Build --> Pages

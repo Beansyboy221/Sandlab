@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.28.1",
+    date: "2026-10-05",
+    title: "Solver boundaries",
+    changes: [
+      "Physics owns movement, gravity, collisions and mechanical integration, alongside separate thermal, atmospheric, electrical, acoustic and optical solvers.",
+    ],
+  },
+  {
     version: "1.28.0",
     date: "2026-10-05",
     title: "Wedges and impact work",

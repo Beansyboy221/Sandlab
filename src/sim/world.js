@@ -5,7 +5,6 @@ import {
   releaseDissolved,
   canDissolve,
   addDissolved,
-  effectiveDensity,
 } from "./mixtures.js";
 import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
 import {
@@ -14,7 +13,7 @@ import {
 } from "../performance-counters.js";
 import { releaseForChange } from "./absorption.js";
 import { CanvasEnvironment } from "./canvas-modes.js";
-import { PorousFlow, poreExchange } from "./porous-flow.js";
+import { PorousFlow } from "./porous-flow.js";
 import { Fragments } from "./fragments.js";
 import { Circuits } from "./circuits.js";
 import { Missiles } from "./missiles.js";
@@ -29,7 +28,13 @@ import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
 import { materials, M, canonicalMaterial } from "./materials.js";
 import { Fields } from "./fields.js";
-import { moveParticle } from "./solvers/particle-motion.js";
+import {
+  moveParticle,
+  canMove,
+  tryMove,
+  setGravity,
+  explode,
+} from "./solvers/physics.js";
 import { transferHeat } from "./solvers/thermodynamics.js";
 import { advanceSimulation } from "./solvers/pipeline.js";
 import { Portals, portalFields } from "./portals.js";
@@ -359,16 +364,7 @@ export class World {
     this.energyBudgetTick = -1;
   }
   setGravity(x, y) {
-    if (
-      !Number.isInteger(x) ||
-      !Number.isInteger(y) ||
-      Math.abs(x) + Math.abs(y) !== 1
-    )
-      return;
-    if (this.gravityX === x && this.gravityY === y) return;
-    this.gravityX = x;
-    this.gravityY = y;
-    this.motionStamp.fill(this.tick + 1);
+    setGravity(this, x, y);
   }
   index(x, y) {
     if (x >= 0 && x < this.width && y >= 0 && y < this.height)
@@ -398,42 +394,7 @@ export class World {
     else if (loop) fn(x);
   }
   tryMove(i, x, y, vertical) {
-    const j = this.index(x, y);
-    this.movedTo = j;
-    if (j < 0) {
-      if (this.border === "void") {
-        this.set(i, 0);
-        return true;
-      }
-      return false;
-    }
-    if (this.cells[j] === M.Portal)
-      return this.teleport(
-        i,
-        j,
-        x - (i % this.width),
-        y - Math.floor(i / this.width),
-      );
-    if (j === i || !this.canMove(i, j, vertical) || !poreExchange(this, i, j))
-      return false;
-    const category = materials[this.cells[i]].category;
-    const falling = category === "powder" || category === "liquid";
-    this.swap(i, j);
-    if (falling && vertical > 0)
-      this.fallDistance[j] = Math.min(24, this.fallDistance[j] + 1);
-    if (
-      category === "liquid" &&
-      (j + this.tick) % 64 === 0 &&
-      this.fallDistance[j] >= 2
-    )
-      this.sound.emit(
-        "slosh",
-        x,
-        y,
-        Math.min(0.22, 0.05 + this.fallDistance[j] * 0.007),
-        materials[this.cells[j]].density,
-      );
-    return true;
+    return tryMove(this, i, x, y, vertical);
   }
   teleport(i, contact, dx, dy) {
     return transportParticle(this, i, contact, dx, dy);
@@ -512,28 +473,7 @@ export class World {
     this.wake(j);
   }
   canMove(i, j, vertical) {
-    const a = materials[this.cells[i]],
-      b = materials[this.cells[j]];
-    if (!b.id) return true;
-    if (
-      b.static ||
-      b.category === "solid" ||
-      b.category === "elastic" ||
-      b.category === "special" ||
-      b.category === "powder"
-    )
-      return false;
-    if (vertical > 0)
-      return (
-        effectiveDensity(this, i) >
-        effectiveDensity(this, j) + (a.gas && b.gas ? 0.00004 : 0.08)
-      );
-    if (vertical < 0)
-      return (
-        effectiveDensity(this, i) <
-        effectiveDensity(this, j) - (a.gas && b.gas ? 0.00002 : 0.04)
-      );
-    return false;
+    return canMove(this, i, j, vertical);
   }
   move(i, x, y) {
     moveParticle(this, i, x, y);
@@ -545,48 +485,7 @@ export class World {
     advanceSimulation(this);
   }
   explode(x, y, radius, product = 0) {
-    this.fields.add(x, y, radius * 2);
-    this.sound.emit(
-      "explosion",
-      x,
-      y,
-      Math.min(1.5, radius * 0.15),
-      radius,
-      0,
-      { pressure: radius * 2, heat: 500 },
-    );
-    const r2 = radius * radius;
-    const loop = this.border === "looping",
-      left = loop ? -Math.min(radius, Math.floor(this.width / 2)) : -radius,
-      right = loop ? Math.min(radius, Math.ceil(this.width / 2) - 1) : radius,
-      top = loop ? -Math.min(radius, Math.floor(this.height / 2)) : -radius,
-      bottom = loop ? Math.min(radius, Math.ceil(this.height / 2) - 1) : radius;
-    for (let dy = top; dy <= bottom; dy++)
-      for (let dx = left; dx <= right; dx++) {
-        const nx = x + dx,
-          ny = y + dy,
-          d2 = dx * dx + dy * dy;
-        const i = this.index(nx, ny);
-        if (i < 0 || d2 > r2) continue;
-        const m = materials[this.cells[i]];
-        if (m.static || m.category === "special" || m.resistance === 1)
-          continue;
-        if (m.explosive && d2 > 1) {
-          this.temp[i] = Math.max(this.temp[i], m.ignite + 100);
-          continue;
-        }
-        if (
-          !m.id ||
-          !["solid", "elastic"].includes(m.category) ||
-          this.random() > (m.resistance || 0.6)
-        ) {
-          this.transform(i, M.Fire, 850, 15 + this.random() * 30);
-          if (product) this.residue[i] = product;
-        } else this.temp[i] += 500 * (1 - d2 / r2);
-      }
-    const center = this.index(x, y);
-    if (this.transform(center, M.Fire, 1100, 50) && product)
-      this.residue[center] = product;
+    explode(this, x, y, radius, product);
   }
   brush(
     x,

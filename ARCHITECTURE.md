@@ -5,16 +5,87 @@ Definitions are plain data; compilation validates and derives lookup tables once
 Solver algorithms implement supported behavior kinds, rather than embedding code
 inside each material or allocating an object for every pixel.
 
+[View the project component diagram](docs/architecture.svg).
+
 ```mermaid
-flowchart LR
-  D[Material and entity definitions] --> C[Validated component tables and profiles]
-  C --> S[Independent solvers]
-  W[World state: typed cells, fields, bodies and joints] <--> S
-  P[Fixed tick pipeline] --> S
-  W --> R[World-resolution pixel renderer]
-  C --> R
-  R --> V[Lighting, bloom, camera and interface]
-  U[Tools, history and persistence] <--> W
+flowchart TB
+  subgraph Client[Browser application]
+    UI[Interface / settings / palette]
+    Input[Pointer / touch / keyboard / controller]
+    Tools[Tools / selection / history]
+    Store[Local saves / import / export]
+    Clock[Fixed tick / 60 Hz cap]
+  end
+  subgraph Data[Configuration and authoritative state]
+    Definitions[Material families / states / components
+Actor anatomy / behavior profiles]
+    Registry[Validation / immutable lookup tables]
+    World[World
+Typed cells / fields / poses / joints]
+  end
+  subgraph Engine[Headless simulation]
+    Pipeline[Fixed-order solver pipeline]
+    Physics[Physics
+Gravity / motion / collisions
+Rigid bodies / elastics / fragments
+Agent and device integration]
+    Heat[Thermodynamics
+Heat / phase thresholds]
+    Air[Atmospherics / aerodynamics
+Pressure / wind / transport]
+    Electricity[Electrodynamics
+Charge / circuits / sparks]
+    Chemistry[Chemistry / combustion
+Reagents / pores / oxidation]
+    Biology[Biology / agent behaviors
+Growth / navigation / flocking]
+    Sound[Acoustics
+Waves / absorption / listener paths]
+    Light[Optics
+Photons / lasers / spectral transport]
+    Pass[Fused local particle pass
+Heat → reaction → motion]
+  end
+  subgraph Presentation[Read-only presentation]
+    Pixels[Shared world-resolution pixels
+Materials / bodies / elastics / actors]
+    Lighting[Cached visual lighting / shadows / bloom]
+    Camera[Canvas / camera / overlays / diagnostic views]
+    Audio[Web Audio
+Property-based voices / pan / muffling / echoes]
+  end
+  UI --> Input --> Tools
+  Tools <--> World
+  Store <--> World
+  Definitions --> Registry
+  Registry --> World
+  Registry --> Engine
+  Clock --> Pipeline
+  Pipeline --> Pass
+  Pipeline --> Physics
+  Pipeline --> Air
+  Pipeline --> Electricity
+  Pipeline --> Sound
+  Pass --> Heat
+  Pass --> Chemistry
+  Pass --> Physics
+  Pass --> Light
+  Chemistry --> Biology
+  Physics --> Biology
+  Engine <--> World
+  World --> Pixels --> Lighting --> Camera
+  Registry --> Presentation
+  Sound --> Audio
+  World --> Lighting
+  subgraph Delivery[Validation and delivery]
+    Tests[Node / browser checks / benchmarks]
+    Build[Static build / ES modules / Canvas]
+    Repo[GitHub repository / Actions]
+    Pages[GitHub Pages]
+  end
+  Tests -. verifies .-> Engine
+  Tests --> Build
+  Repo --> Build --> Pages
 ```
 
 ## Configuration and state
@@ -42,13 +113,20 @@ flowchart LR
 | Thermodynamics             | `sim/solvers/thermodynamics.js`, `sim/phase-changes.js`                                                            | Particle/air temperature, conductivity, phase thresholds and heat sources            |
 | Electrodynamics            | `sim/solvers/electrodynamics.js`, `sim/circuits.js`, `sim/sparks.js`                                               | Conductivity, oxidation/insulation, charge, gate state and heat                      |
 | Atmospherics               | `sim/solvers/atmospherics.js`, `sim/airflow.js`                                                                    | Pressure, face velocity, permeability, moving-matter impulses and vents              |
-| Particle and liquid motion | `sim/solvers/particle-motion.js`, `sim/particle-kinetics.js`, `sim/liquid-equilibrium.js`, `sim/porous-flow.js`    | Gravity, density, viscosity, momentum and occupied cells                             |
+| Physics / mechanics        | `sim/solvers/physics.js`, `particle-motion.js`, `particle-contacts.js`; rigid, elastic and fragment subsolvers    | Gravity, density, viscosity, momentum and occupied cells                             |
 | Chemistry and transport    | `sim/chemistry.js`, `sim/reaction-registry.js`, `sim/mixtures.js`, `sim/absorption.js`, `sim/oxidation.js`         | Compiled contact rules, finite reagents/ingredients, pores, temperature and pressure |
 | Combustion and energy      | `sim/combustion.js`, `sim/ignition.js`, `sim/energy.js`, `sim/weather.js`                                          | Fuel, ignition/exposure, lifetime, heat and atmospheric impulses                     |
 | Bodies and elastics        | `sim/rigid-bodies.js`, `sim/body-*.js`, `sim/elasticity.js`, `sim/elastic-momentum.js`                             | Continuous poses/joints, mass, contacts, bonds, stress and occupied cells            |
 | Biology and agents         | `sim/biology.js`, `sim/microbiology.js`, `sim/stickmen.js`, `sim/creature-*.js`, `sim/boids.js`, `sim/missiles.js` | Compiled behavior/anatomy profiles, paths, habitat, targets and body state           |
-| Acoustics                  | `sim/acoustics.js`, `sim/acoustic-*.js`                                                                            | Bounded events, material barriers, damped wave field and listener sampling           |
-| Optics                     | `sim/optical-rays.js`, `lighting.js`, `light-*.js`                                                                 | Absorption/reflection/refraction, geometric rays, cached radiance and shadows        |
+| Acoustics                  | `sim/solvers/acoustics.js`, `sim/acoustics.js`, `sim/acoustic-*.js`                                                                            | Bounded events, material barriers, damped wave field and listener sampling           |
+| Optics                     | `sim/solvers/optics.js`; read-only visual radiance in `lighting.js`, `light-*.js`                                                                 | Absorption/reflection/refraction, geometric rays, cached radiance and shadows        |
+
+`sim/solvers/physics.js` owns gravity configuration, environment preparation,
+particle movement/contact rules, local blast coupling and the scheduled rigid, elastic, agent/device
+integration and fragment phases. Its subsolvers retain their own bounded scratch
+and algorithms; `World.move`, `canMove`, `tryMove` and `setGravity` are compatibility
+facades. Agent decision-making still runs in the existing behavior modules, which
+share integration passes with anatomy; this is not a new separate AI scheduler.
 
 `sim/solvers/pipeline.js` advances fields, circuits, local particles, rigid bodies,
 elastics, agents, devices, fragments and sound in fixed order. The local pass in
@@ -110,3 +188,9 @@ and 70 samples on the development host: Steel 3.22 → 1.38 ms mean; Rubber
 26.33 → 9.65 ms mean. These measure the new shared renderer against v1.26.1;
 they do not estimate physical-phone FPS. `npm run bench:render -- <checkout>` can
 repeat the fixture with another checkout.
+
+The v1.28.1 solver extraction was compared with v1.28.0 for identical 120-tick
+particle/body saves and acoustic buffers/events across Sandbox, looping/void
+borders, horizontal/inverted gravity, Planet, Whirlpool, Zero Gravity and Day And
+Night. Ownership tests prevent collision rules from returning to World or direct
+mechanical stage advancement from returning to the pipeline.

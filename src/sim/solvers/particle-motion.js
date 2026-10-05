@@ -1,7 +1,7 @@
 import { materials, M } from "../materials.js";
 import { effectiveViscosity } from "../mixtures.js";
 import { moveKinetic } from "../particle-kinetics.js";
-import { moveRay } from "../energy.js";
+import { moveOpticalRay as moveRay } from "./optics.js";
 import { moveSurfaceFlame } from "../combustion.js";
 
 export function moveParticle(w, i, x, y) {

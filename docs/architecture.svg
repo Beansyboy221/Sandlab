@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1620" height="1530" viewBox="0 0 1620 1530" role="img" aria-labelledby="title desc">
+<title id="title">Sandlab component architecture</title><desc id="desc">Browser inputs and compiled definitions feed typed World state. Fixed-order solvers calculate physics, heat, air, electricity, chemistry, biology, acoustics and optics. Read-only presentation draws common pixels and plays audio. History and persistence preserve authoritative state.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8ca9bf"/></marker></defs>
+<rect width="1620" height="1530" fill="#10191f"/>
+<style>text{font-family:system-ui,-apple-system,Segoe UI,sans-serif}.title{fill:#edf4f6;font-size:32px;font-weight:650}.heading{fill:#edf4f6;font-size:22px;font-weight:650}.body{fill:#c3d1da;font-size:18px}.small{fill:#92a8b7;font-size:16px}.label{font-size:17px;font-weight:600;letter-spacing:1px}</style>
+<text x="40" y="55" class="title">Sandlab · Component Architecture</text>
+<text x="40" y="84" class="small">v1.28.1  ·  Configuration → authoritative state → bounded solvers → presentation</text>
+<rect x="40" y="115" width="420" height="153" rx="12" fill="#1b2a34" stroke="#b6a0df" stroke-opacity=".7"/>
+<rect x="58" y="137" width="5" height="23" rx="2" fill="#b6a0df"/>
+<text x="76" y="157" class="heading">Browser interaction</text>
+<text x="60" y="192" class="body">app / settings / palette / input</text>
+<text x="60" y="219" class="body">Mouse · touch · keyboard · controller</text>
+<text x="60" y="246" class="body">Tools · selection · brush operations</text>
+<rect x="500" y="115" width="620" height="153" rx="12" fill="#1b2a34" stroke="#e1bd74" stroke-opacity=".7"/>
+<rect x="518" y="137" width="5" height="23" rx="2" fill="#e1bd74"/>
+<text x="536" y="157" class="heading">Data-driven definitions</text>
+<text x="520" y="192" class="body">Material families, states and physical components</text>
+<text x="520" y="219" class="body">Actor anatomy, behavior and projectile profiles</text>
+<text x="520" y="246" class="body">Registry validation → immutable tables</text>
+<rect x="1160" y="115" width="420" height="153" rx="12" fill="#1b2a34" stroke="#b6a0df" stroke-opacity=".7"/>
+<rect x="1178" y="137" width="5" height="23" rx="2" fill="#b6a0df"/>
+<text x="1196" y="157" class="heading">Clock &amp; application loop</text>
+<text x="1180" y="192" class="body">Fixed simulation ticks · 60 Hz cap</text>
+<text x="1180" y="219" class="body">Render cadence · pause / step / speed</text>
+<text x="1180" y="246" class="body">frame-clock.js · app.js</text>
+<rect x="40" y="315" width="420" height="153" rx="12" fill="#1b2a34" stroke="#e1bd74" stroke-opacity=".7"/>
+<rect x="58" y="337" width="5" height="23" rx="2" fill="#e1bd74"/>
+<text x="76" y="357" class="heading">History &amp; persistence</text>
+<text x="60" y="392" class="body">Undo / redo · autosave · local saves</text>
+<text x="60" y="419" class="body">Import / export · validation / migration</text>
+<text x="60" y="446" class="body">Stores authoritative state; excludes caches</text>
+<rect x="500" y="315" width="620" height="153" rx="12" fill="#1b2a34" stroke="#e1bd74" stroke-opacity=".7"/>
+<rect x="518" y="337" width="5" height="23" rx="2" fill="#e1bd74"/>
+<text x="536" y="357" class="heading">World · shared authoritative state</text>
+<text x="520" y="392" class="body">Typed cells, temperature, charge and contents</text>
+<text x="520" y="419" class="body">Coarse fields · continuous body poses and joints</text>
+<text x="520" y="446" class="body">world.js · transactional set / transform / swap</text>
+<rect x="1160" y="315" width="420" height="153" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="1178" y="337" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="1196" y="357" class="heading">Fixed-order solver pipeline</text>
+<text x="1180" y="392" class="body">Fields → circuits → fused local pass</text>
+<text x="1180" y="419" class="body">Bodies → elastics → agents / devices</text>
+<text x="1180" y="446" class="body">Fragments → acoustic field</text>
+<path d="M 460 191 L 480 191 L 480 354 L 500 354" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M 810 268 L 810 315" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M 460 391 L 500 391" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M 1370 268 L 1370 315" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="40" y="530" width="1540" height="490" rx="16" fill="#15212a" stroke="#65c7c3" stroke-opacity=".35"/>
+<text x="60" y="562" class="label" fill="#65c7c3">HEADLESS SIMULATION · solvers read components and mutate World</text>
+<path d="M 810 468 L 810 530" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+<path d="M 1370 468 L 1370 530" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="835" y="502" class="small">shared state</text>
+<rect x="60" y="582" width="510" height="188" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="78" y="604" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="96" y="624" class="heading">Physics solver</text>
+<text x="80" y="659" class="body">solvers/physics.js · scheduled mechanical phases</text>
+<text x="80" y="686" class="body">Gravity / canvas forces · particle / liquid motion</text>
+<text x="80" y="713" class="body">Contacts · rigid bodies · springs · impact / cutting</text>
+<text x="80" y="740" class="body">Agent / device integration · fragments · blasts</text>
+<rect x="590" y="582" width="310" height="154" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="608" y="604" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="626" y="624" class="heading">Thermodynamics</text>
+<text x="610" y="659" class="body">solvers/thermodynamics.js</text>
+<text x="610" y="686" class="body">Heat exchange / conductivity</text>
+<text x="610" y="713" class="body">Phase-change thresholds</text>
+<rect x="920" y="582" width="310" height="154" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="938" y="604" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="956" y="624" class="heading">Electrodynamics</text>
+<text x="940" y="659" class="body">solvers/electrodynamics.js</text>
+<text x="940" y="686" class="body">Charge / conduction / sparks</text>
+<text x="940" y="713" class="body">Circuits / electrical devices</text>
+<rect x="1250" y="582" width="310" height="154" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="1268" y="604" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="1286" y="624" class="heading">Atmospherics</text>
+<text x="1270" y="659" class="body">solvers/atmospherics.js</text>
+<text x="1270" y="686" class="body">Airflow / pressure / vents</text>
+<text x="1270" y="713" class="body">Permeability / advection</text>
+<rect x="60" y="790" width="510" height="175" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="78" y="812" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="96" y="832" class="heading">Optics solver</text>
+<text x="80" y="867" class="body">solvers/optics.js · optical packet transport</text>
+<text x="80" y="894" class="body">Photons / lasers · reflection / refraction / spectra</text>
+<text x="80" y="921" class="body">Shared optical properties; visual radiance is separate</text>
+<rect x="590" y="766" width="310" height="177" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="608" y="788" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="626" y="808" class="heading">Chemistry &amp; energy</text>
+<text x="610" y="843" class="body">chemistry / reaction-registry</text>
+<text x="610" y="870" class="body">Combustion / phase changes</text>
+<text x="610" y="897" class="body">Pores / mixtures / oxidation</text>
+<text x="610" y="924" class="body">Finite products / local sources</text>
+<rect x="920" y="766" width="310" height="177" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="938" y="788" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="956" y="808" class="heading">Biology &amp; behaviors</text>
+<text x="940" y="843" class="body">biology / actor modules</text>
+<text x="940" y="870" class="body">Growth / microbes / life</text>
+<text x="940" y="897" class="body">Navigation / flocking / targets</text>
+<text x="940" y="924" class="body">Decisions share integration</text>
+<rect x="1250" y="766" width="310" height="177" rx="12" fill="#1b2a34" stroke="#65c7c3" stroke-opacity=".7"/>
+<rect x="1268" y="788" width="5" height="23" rx="2" fill="#65c7c3"/>
+<text x="1286" y="808" class="heading">Acoustics solver</text>
+<text x="1270" y="843" class="body">solvers/acoustics.js</text>
+<text x="1270" y="870" class="body">Damped wave transport</text>
+<text x="1270" y="897" class="body">Absorption / barriers / echoes</text>
+<text x="1270" y="924" class="body">Listener paths / sound events</text>
+<text x="590" y="989" class="small">Fused local pass: heat → reaction → motion. No extra full-grid pass per component.</text>
+<rect x="40" y="1095" width="1540" height="203" rx="16" fill="#15212a" stroke="#b6a0df" stroke-opacity=".35"/>
+<text x="60" y="1127" class="label" fill="#b6a0df">PRESENTATION · reads World; never advances simulation</text>
+<path d="M 1120 415 L 1140 415 L 1140 490 L 1600 490 L 1600 1060 L 810 1060 L 810 1095" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="970" y="1052" class="small">world state + acoustic events</text>
+<rect x="60" y="1148" width="510" height="128" rx="12" fill="#1b2a34" stroke="#b6a0df" stroke-opacity=".7"/>
+<rect x="78" y="1170" width="5" height="23" rx="2" fill="#b6a0df"/>
+<text x="96" y="1190" class="heading">Shared pixel renderer</text>
+<text x="80" y="1225" class="body">Materials · rigid footprints · elastic skins · actors</text>
+<text x="80" y="1252" class="body">Camera / views / overlays → Canvas output</text>
+<rect x="590" y="1148" width="440" height="128" rx="12" fill="#1b2a34" stroke="#b6a0df" stroke-opacity=".7"/>
+<rect x="608" y="1170" width="5" height="23" rx="2" fill="#b6a0df"/>
+<text x="626" y="1190" class="heading">Visual light &amp; bloom</text>
+<text x="610" y="1225" class="body">Cached radiance / shadows / diffuse bounces</text>
+<text x="610" y="1252" class="body">lighting.js · light-*.js · bloom.js</text>
+<rect x="1050" y="1148" width="510" height="128" rx="12" fill="#1b2a34" stroke="#b6a0df" stroke-opacity=".7"/>
+<rect x="1068" y="1170" width="5" height="23" rx="2" fill="#b6a0df"/>
+<text x="1086" y="1190" class="heading">Audio output</text>
+<text x="1070" y="1225" class="body">Property-based voices · panning · muffling / echoes</text>
+<text x="1070" y="1252" class="body">Web Audio consumes solver events and paths</text>
+<text x="40" y="1337" class="small">World mutations preserve particle state. Solver scratch is bounded and unsaved. All actors share the same pixel presentation.</text>
+<text x="40" y="1379" class="label" fill="#92a8b7">VALIDATION &amp; DELIVERY</text>
+<rect x="40" y="1395" width="480" height="110" rx="12" fill="#1b2a34" stroke="#647f90" stroke-opacity=".7"/>
+<rect x="58" y="1417" width="5" height="23" rx="2" fill="#647f90"/>
+<text x="76" y="1437" class="heading">Checks &amp; profiling</text>
+<text x="60" y="1472" class="body">Node / browser checks · fixtures · benchmarks</text>
+<rect x="570" y="1395" width="480" height="110" rx="12" fill="#1b2a34" stroke="#647f90" stroke-opacity=".7"/>
+<rect x="588" y="1417" width="5" height="23" rx="2" fill="#647f90"/>
+<text x="606" y="1437" class="heading">Static build</text>
+<text x="590" y="1472" class="body">ES modules + Canvas · no runtime dependencies</text>
+<rect x="1100" y="1395" width="480" height="110" rx="12" fill="#1b2a34" stroke="#647f90" stroke-opacity=".7"/>
+<rect x="1118" y="1417" width="5" height="23" rx="2" fill="#647f90"/>
+<text x="1136" y="1437" class="heading">GitHub Pages</text>
+<text x="1120" y="1472" class="body">Repository → GitHub Actions → Pages</text>
+<path d="M 520 1450 L 570 1450" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M 1050 1450 L 1100 1450" fill="none" stroke="#8ca9bf" stroke-width="2" marker-end="url(#arrow)"/>
+</svg>

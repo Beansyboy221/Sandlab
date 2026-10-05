@@ -1,18 +1,22 @@
 import { stepParticles } from "./particle-pass.js";
+import {
+  preparePhysics,
+  stepRigidBodies,
+  stepElastics,
+  stepAgents,
+  stepDevices,
+  stepFragments,
+} from "./physics.js";
 
 // Fixed order: field transport, signal propagation, local contacts, mechanics,
 // agents, fragmentation, then sound. Renderers never advance these systems.
 export function advanceSimulation(w) {
   const profile = w.profile;
   profile.begin();
-  w.portals.world = w;
-  w.elastic.world = w;
-  w.rigid.world = w;
   w.tick++;
   w.sound.tick = w.tick;
   w.fields.configure(w.mechanics);
-  w.environment.world = w;
-  w.environment.update(true);
+  preparePhysics(w);
   w.fields.border = w.border;
   w.fields.update(w);
   w.fields.beginForceSample();
@@ -22,18 +26,15 @@ export function advanceSimulation(w) {
   profile.mark(1);
   stepParticles(w);
   profile.mark(2);
-  w.rigid.step();
+  stepRigidBodies(w);
   profile.mark(3);
-  w.elastic.step();
+  stepElastics(w);
   profile.mark(4);
-  w.stickmen.world = w;
-  w.stickmen.step();
+  stepAgents(w);
   profile.mark(5);
-  w.missiles.world = w;
-  w.missiles.step();
+  stepDevices(w);
   profile.mark(6);
-  w.fragments.world = w;
-  w.fragments.step();
+  stepFragments(w);
   profile.mark(7);
   w.sound.step(w);
   profile.mark(8);
