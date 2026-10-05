@@ -1,7 +1,7 @@
 import { defaultMechanics } from "./sim/mechanics-options.js";
 import { normalizeBindings } from "./shortcuts.js";
 export const settingsKey = "sandlab.settings.v1";
-export const settingGroups = [
+const allSettingGroups = [
   {
     id: "rendering",
     name: "Rendering",
@@ -126,6 +126,12 @@ export const settingGroups = [
           [1, "1×"],
         ],
         default: 1,
+      },
+      {
+        key: "pauseWhenZooming",
+        label: "Pause when zooming",
+        type: "toggle",
+        default: false,
       },
       {
         key: "startPaused",
@@ -452,6 +458,26 @@ export const settingGroups = [
     name: "Performance",
     fields: [
       {
+        key: "maxCacheMB",
+        label: "Maximum hidden-detail cache",
+        type: "select",
+        options: [
+          [0, "Off"],
+          [4, "4 MiB"],
+          [8, "8 MiB"],
+          [16, "16 MiB"],
+          [32, "32 MiB"],
+          [64, "64 MiB"],
+        ],
+        default: 16,
+      },
+      {
+        key: "predictHidden",
+        label: "Predict unseen entity movement",
+        type: "toggle",
+        default: true,
+      },
+      {
         key: "fragmentParticles",
         label: "Simplify tiny broken pieces",
         type: "toggle",
@@ -477,13 +503,35 @@ export const settingGroups = [
     ],
   },
 ];
+const worldKeys = new Set([...Object.keys(defaultMechanics), "speed"]);
+export const worldSettingGroups = allSettingGroups
+  .map((group) => ({
+    ...group,
+    fields: group.fields
+      .filter((field) => worldKeys.has(field.key))
+      .map((field) => ({
+        ...field,
+        key: field.key === "speed" ? "simulationSpeed" : field.key,
+      })),
+  }))
+  .filter((group) => group.fields.length);
+export const settingGroups = allSettingGroups
+  .map((group) => ({
+    ...group,
+    name: group.id === "simulation" ? "Session" : group.name,
+    fields: group.fields.filter((field) => !worldKeys.has(field.key)),
+  }))
+  .filter((group) => group.fields.length);
+const legacyDefinitions = Object.fromEntries(
+  allSettingGroups.flatMap((g) => g.fields).map((f) => [f.key, f]),
+);
 const definitions = Object.fromEntries(
   settingGroups
     .flatMap((group) => group.fields)
     .map((field) => [field.key, field]),
 );
 function validate(key, value) {
-  const field = definitions[key];
+  const field = legacyDefinitions[key];
   if (!field) return undefined;
   if (field.type === "bindings") return normalizeBindings(value);
   if (field.type === "toggle")
@@ -501,6 +549,10 @@ function validate(key, value) {
 export class Settings {
   constructor(storage) {
     this.listeners = new Set();
+    this.legacyWorld = {
+      mechanics: { ...defaultMechanics },
+      simulationSpeed: 1,
+    };
     this.values = Object.fromEntries(
       Object.entries(definitions).map(([key, field]) => [key, field.default]),
     );
@@ -524,6 +576,13 @@ export class Settings {
             Math.max(1, Math.min(30, Math.round(loaded.brushSize))) * 2 + 1;
         // Both former switches now control a single compressible air system.
         if (loaded.windSimulation === false) loaded.pressureSimulation = false;
+        for (const key of worldKeys) {
+          const value = validate(key, loaded[key]);
+          if (value !== undefined) {
+            if (key === "speed") this.legacyWorld.simulationSpeed = value;
+            else this.legacyWorld.mechanics[key] = value;
+          }
+        }
         for (const key of Object.keys(definitions)) {
           const value = validate(key, loaded[key]);
           if (value !== undefined) this.values[key] = value;
@@ -534,9 +593,15 @@ export class Settings {
     }
   }
   get(key) {
-    return this.values[key];
+    return (
+      this.values[key] ??
+      (key === "speed"
+        ? this.legacyWorld.simulationSpeed
+        : this.legacyWorld.mechanics[key])
+    );
   }
   set(key, value) {
+    if (!definitions[key]) return;
     value = validate(key, value);
     if (value === undefined || this.values[key] === value) return;
     if (

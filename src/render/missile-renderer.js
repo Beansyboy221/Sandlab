@@ -1,3 +1,4 @@
+import { distanceRatio } from "../sim/world-units.js";
 import { projectileAppearance } from "../sim/entity-definitions.js";
 import { drawEntitySprite } from "./entity-sprite.js";
 import { materials } from "../sim/materials.js";
@@ -12,6 +13,7 @@ export function drawMissiles(c, w, view) {
     c.save();
     c.translate(a.x, a.y);
     c.rotate(a.angle);
+    c.scale(distanceRatio(w), distanceRatio(w));
     drawEntitySprite(
       c,
       projectileAppearance,

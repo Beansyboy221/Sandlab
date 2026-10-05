@@ -70,5 +70,5 @@ test("legacy 2× preferences fall back to 1× and cannot bypass the cap", () => 
   settings.set("speed", 2);
   assert.equal(settings.get("speed"), 1);
   settings.set("speed", 0.25);
-  assert.equal(settings.get("speed"), 0.25);
+  assert.equal(settings.get("speed"), 1); // Playback now belongs to a saved world.
 });

@@ -1,10 +1,11 @@
+import { SettingControls } from "./setting-controls.js";
 import { settingGroups } from "./settings.js";
 import { ShortcutPanel } from "./shortcut-panel.js";
-export class SettingsPanel {
+export class SettingsPanel extends SettingControls {
   constructor(dialog, settings) {
+    super(settings);
     this.dialog = dialog;
     this.settings = settings;
-    this.controls = new Map();
     this.tabs = [];
     this.panels = [];
     const nav = dialog.querySelector(".settings-tabs"),
@@ -59,6 +60,13 @@ export class SettingsPanel {
           "Sound starts after your first tap or keypress. Stereo follows the screen, or your player while controlling one. Echolocation also works with sound muted.";
         panel.append(note);
       }
+      if (group.id === "simulation") {
+        const note = document.createElement("p");
+        note.className = "settings-note";
+        note.textContent =
+          "Pause when zooming keeps the world paused until you press Play.";
+        panel.append(note);
+      }
       if (group.id === "brush") {
         const note = document.createElement("p");
         note.className = "settings-note";
@@ -102,51 +110,6 @@ export class SettingsPanel {
     this.select("rendering");
     this.sync();
   }
-  createControl(field) {
-    const label = document.createElement("label"),
-      text = document.createElement("span");
-    label.className = `setting-row setting-${field.type}`;
-    text.textContent = field.label;
-    const input = document.createElement(
-      field.type === "select" ? "select" : "input",
-    );
-    input.id = `setting-${field.key}`;
-    label.htmlFor = input.id;
-    if (field.type === "select")
-      for (const [value, name] of field.options) {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = name;
-        input.append(option);
-      }
-    else if (field.type === "toggle") input.type = "checkbox";
-    else {
-      input.type = "range";
-      input.min = field.min;
-      input.max = field.max;
-      input.step = field.step;
-    }
-    const output =
-      field.type === "range" ? document.createElement("output") : null;
-    if (output) {
-      const control = document.createElement("span");
-      control.className = "setting-range-control";
-      output.htmlFor = input.id;
-      control.append(input, output);
-      label.append(text, control);
-    } else label.append(text, input);
-    input.addEventListener(field.type === "range" ? "input" : "change", () => {
-      const value =
-        field.type === "toggle"
-          ? input.checked
-          : typeof field.default === "number"
-            ? Number(input.value)
-            : input.value;
-      this.settings.set(field.key, value);
-    });
-    this.controls.set(field.key, { field, input, output, label });
-    return label;
-  }
   select(id) {
     this.tabs.forEach((tab, index) => {
       const active = settingGroups[index].id === id;
@@ -156,15 +119,7 @@ export class SettingsPanel {
     });
   }
   sync() {
-    for (const [key, { field, input, output, label }] of this.controls) {
-      const value = this.settings.get(key);
-      if (field.type === "toggle") input.checked = value;
-      else input.value = value;
-      input.disabled = !!field.depends && !this.settings.get(field.depends);
-      label.classList.toggle("setting-disabled", input.disabled);
-      if (output)
-        output.value = `${field.displayScale ? Math.round(value * field.displayScale) : value}${field.suffix || ""}`;
-    }
+    this.syncControls();
     const status = this.dialog.querySelector("#settings-storage-status");
     status.hidden = this.settings.saved;
     status.textContent = this.settings.saved

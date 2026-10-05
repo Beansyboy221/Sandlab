@@ -1,3 +1,4 @@
+import { distanceRatio } from "./world-units.js";
 import { materials, M } from "./materials.js";
 
 import { actorProfile, humanProfile } from "./creature-profiles.js";
@@ -29,7 +30,8 @@ function collide(w, a, n, x, y, maxStep = 0.5) {
   const steps = Math.max(1, Math.ceil(Math.hypot(x - nx, y - ny) / maxStep));
   const dx = (x - nx) / steps,
     dy = (y - ny) / steps;
-  const radius = n === 0 ? actorProfile(a.material).headRadius : 0.4;
+  const radius =
+    n === 0 ? actorProfile(a.material, w).headRadius : 0.4 * distanceRatio(w);
   for (let s = 0; s < steps; s++) {
     if (
       !blocked(w, nx + dx + Math.sign(dx) * radius, ny) &&
@@ -59,7 +61,7 @@ export function integrateBody(
   lift = 0,
 ) {
   transportActor(w, a);
-  const profile = actorProfile(a.material),
+  const profile = actorProfile(a.material, w),
     { links, lengths, x: restX, y: restY } = profile;
   w.environment.sample(a.x[2], a.y[2]);
   const gravityScale = Math.hypot(w.environment.x, w.environment.y);
@@ -366,7 +368,9 @@ function stepFoot(w, a, n, drive, height) {
             w,
             a.x[joint] - gx * up,
             a.y[joint] - gy * up,
-            joint === 0 ? actorProfile(a.material).headRadius : 0.4,
+            joint === 0
+              ? actorProfile(a.material, w).headRadius
+              : 0.4 * distanceRatio(w),
           )
         )
           return;

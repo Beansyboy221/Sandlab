@@ -1,3 +1,4 @@
+import { CELL_METERS } from "./world-units.js";
 import { dissolvedMass } from "./mixtures.js";
 import { materialTables } from "./materials.js";
 
@@ -7,11 +8,22 @@ import { materialTables } from "./materials.js";
 export function containedFluidMass(world, i) {
   const amount = world.storedAmount[i];
   return (
-    (amount
+    ((amount
       ? amount * Math.max(0, materialTables.density[world.storedLiquid[i]])
-      : 0) + dissolvedMass(world, i)
+      : 0) +
+      dissolvedMass(world, i)) *
+    (world.quantity?.[i] ?? 1) *
+    ((world.metersPerPixel ?? CELL_METERS) / CELL_METERS) ** 2
   );
 }
 export function cellMass(world, i) {
-  return materialTables.density[world.cells[i]] + containedFluidMass(world, i);
+  return dryCellMass(world, i) + containedFluidMass(world, i);
+}
+
+export function dryCellMass(world, i) {
+  return (
+    materialTables.density[world.cells[i]] *
+    (world.quantity?.[i] ?? 1) *
+    ((world.metersPerPixel ?? CELL_METERS) / CELL_METERS) ** 2
+  );
 }

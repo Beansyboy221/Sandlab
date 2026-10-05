@@ -1,6 +1,11 @@
+import { CELL_METERS } from "./world-units.js";
 import { collisionLimits } from "./collision-limits.js";
 import { materials, M } from "./materials.js";
-import { containedFluidMass, cellMass } from "./mechanical-mass.js";
+import {
+  containedFluidMass,
+  cellMass,
+  dryCellMass,
+} from "./mechanical-mass.js";
 import { BodyConnections } from "./body-connections.js";
 import { BodyRaster } from "./body-raster.js";
 import { GranularContact } from "./granular-contact.js";
@@ -123,6 +128,7 @@ export class RigidBodies {
       const body = {
         ids: Uint32Array.from(ids),
         mass: 0,
+        volume: 0,
         lx: 0,
         ly: 0,
         inertia: 0,
@@ -136,7 +142,7 @@ export class RigidBodies {
       let hasFluid = false;
       for (const node of ids) {
         const i = this.locations.get(node),
-          mass = materials[w.cells[i]].density;
+          mass = dryCellMass(w, i);
         if (w.storedAmount[i]) hasFluid = true;
         if (rebase) {
           let x = (i % w.width) + w.offsetX[i] + 0.5,
@@ -148,6 +154,8 @@ export class RigidBodies {
           w.restX[i] = x;
           w.restY[i] = y;
         }
+        body.volume +=
+          (w.quantity[i] ?? 1) * (w.metersPerPixel / CELL_METERS) ** 2;
         body.mass += mass;
         body.friction += materials[w.cells[i]].friction * mass;
         body.restitution += materials[w.cells[i]].restitution * mass;
@@ -162,7 +170,7 @@ export class RigidBodies {
       for (const node of ids) {
         const i = this.locations.get(node),
           r2 = (w.restX[i] - body.lx) ** 2 + (w.restY[i] - body.ly) ** 2;
-        body.inertia += materials[w.cells[i]].density * (r2 + 1 / 6);
+        body.inertia += dryCellMass(w, i) * (r2 + 1 / 6);
         body.radius = Math.max(body.radius, Math.sqrt(r2));
       }
       body.edges = Uint32Array.from(
@@ -211,7 +219,7 @@ export class RigidBodies {
       const i = this.locations.get(id);
       if (i === undefined) return null;
       const fluid = containedFluidMass(w, i),
-        m = materials[w.cells[i]].density + fluid;
+        m = dryCellMass(w, i) + fluid;
       if (fluid) {
         const rx = w.restX[i] - body.dryX,
           ry = w.restY[i] - body.dryY;

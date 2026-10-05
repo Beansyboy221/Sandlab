@@ -1,3 +1,4 @@
+import { ViewportNavigation } from "./viewport-navigation.js";
 import { ControllerControls } from "./controller-controls.js";
 import { interactionCount } from "./sim/chemistry.js";
 import {
@@ -9,7 +10,8 @@ import {
 import { MaterialGroups, GroupVisibility } from "./material-groups.js";
 import { MaterialGroupsPanel } from "./material-groups-panel.js";
 import { FrameClock } from "./frame-clock.js";
-import { defaultMechanics } from "./sim/mechanics-options.js";
+import { CELL_METERS } from "./sim/world-units.js";
+import { entityCanSpawn } from "./sim/entity-metrics.js";
 import { GameAudio } from "./audio.js";
 import { ColorPicker } from "./color-picker.js";
 import { DrawingPause } from "./drawing-pause.js";
@@ -84,7 +86,7 @@ const state = {
   deviceFacing: 0,
   replace: false,
   paused: false,
-  speed: settings.get("speed"),
+  speed: world.simulationSpeed,
   setRadius(radius) {
     this.radius = Math.max(0, Math.min(30, Math.round(radius * 2) / 2));
     $("brush").value = this.radius * 2 + 1;
@@ -359,6 +361,10 @@ mobileDock = new MobileDock(
   renderer,
 );
 function selectMaterial(id) {
+  if (!entityCanSpawn(world, id)) {
+    toast("This entity is smaller than one world pixel. Zoom in to place it.");
+    return;
+  }
   id = paletteBase[id];
   state.material = id;
   const entities = isEntity(materials[id]);
@@ -438,6 +444,8 @@ function renderMaterials() {
     b.dataset.category = m.paletteCategory;
     b.style.setProperty("--color", m.color);
     b.setAttribute("aria-pressed", String(state.material === m.id));
+    b.disabled = !entityCanSpawn(world, m.id);
+    if (b.disabled) b.title = "Smaller than one world pixel; zoom in";
     b.innerHTML = `<span class="swatch">${materialIcon(catalogKind === "entities" ? entityCategory(m) : m.paletteCategory)}</span><span class="material-name">${m.name}</span>`;
     b.addEventListener("click", () => {
       selectMaterial(m.id);
@@ -609,10 +617,10 @@ $("brush").addEventListener("input", (e) =>
   state.setRadius((+e.target.value - 1) / 2),
 );
 $("play-btn").addEventListener("click", () => setPaused(!state.paused));
-const mechanicKeys = Object.keys(defaultMechanics);
 function syncMechanics() {
-  for (const key of mechanicKeys) world.mechanics[key] = settings.get(key);
   world.fields.configure(world.mechanics);
+  state.speed = world.simulationSpeed;
+  $("speed").value = state.speed;
 }
 function stepSimulation() {
   syncMechanics();
@@ -623,9 +631,13 @@ function stepSimulation() {
   hasChanged = true;
 }
 $("step-btn").addEventListener("click", stepSimulation);
-$("speed").addEventListener("change", (e) =>
-  settings.set("speed", +e.target.value),
-);
+$("speed").addEventListener("change", (e) => {
+  remember();
+  world.simulationSpeed = +e.target.value;
+  syncMechanics();
+  clock.resetSimulation();
+  hasChanged = true;
+});
 $("view").addEventListener("change", (e) => {
   settings.set("view", e.target.value);
 });
@@ -881,16 +893,39 @@ $("confirm-clear").addEventListener("click", () => {
   toast("World cleared");
 });
 function syncLevelDisplay() {
+  if (renderer.navigation) {
+    renderer.zoom = 0.125 / world.metersPerPixel;
+    renderer.center = { x: world.width / 2, y: world.height / 2 };
+    renderer.updateViewport();
+  }
+  syncMechanics();
+  renderMaterials();
   mobileDock?.layout();
   $("world-name").textContent = world.name;
   document.querySelector(".world-type").textContent =
     ` / ${world.border.toUpperCase()}`;
   renderer.draw();
 }
+const viewportNavigation = new ViewportNavigation(
+  world,
+  renderer,
+  settings,
+  () => {
+    input.cancelDrawing();
+    resetSelection();
+    inspector.point = null;
+    syncLevelDisplay();
+    hasChanged = true;
+  },
+  () => setPaused(true),
+);
 const levelEditor = new LevelEditor($("level-dialog"), world, renderer, {
   open: openDialog,
   close: closeDialog,
   remember,
+  zoomed: () => {
+    if (settings.get("pauseWhenZooming")) setPaused(true);
+  },
   refresh: () => {
     input.cancel();
     resetSelection();
@@ -1176,6 +1211,8 @@ function syncShortcutTitles() {
   }
 }
 const settingEffects = {
+  maxCacheMB: () =>
+    world.viewportState?.cache.setLimit(settings.get("maxCacheMB")),
   lightBounces: () => {
     renderer.lightBounces = settings.get("lightBounces");
   },
@@ -1204,11 +1241,6 @@ const settingEffects = {
     $("view").value = renderer.mode;
     $("view-legend").hidden = renderer.mode !== "heat";
   },
-  speed: () => {
-    state.speed = settings.get("speed");
-    $("speed").value = state.speed;
-    clock.resetSimulation();
-  },
   brushSize: () => state.setRadius((settings.get("brushSize") - 1) / 2),
   brushShape: () => {
     state.shape = settings.get("brushShape");
@@ -1226,7 +1258,6 @@ const settingEffects = {
     $("debug-panel").hidden = !settings.get("debug");
     $("debug-btn").setAttribute("aria-pressed", String(settings.get("debug")));
   },
-  ...Object.fromEntries(mechanicKeys.map((key) => [key, syncMechanics])),
   autosave: updateAutoTimer,
   autosaveInterval: updateAutoTimer,
 };
@@ -1260,6 +1291,10 @@ if (saved) {
   loadPreset(world, "blank");
 }
 selectMaterial(M.Sand);
+if (!saved?.level?.mechanics) {
+  world.mechanics = { ...settings.legacyWorld.mechanics };
+  world.simulationSpeed = settings.legacyWorld.simulationSpeed;
+}
 $("particle-count").textContent = `${world.count.toLocaleString()} particles`;
 syncLevelDisplay();
 if (matchMedia("(pointer: coarse)").matches)
@@ -1307,6 +1342,8 @@ function frame(now) {
   simTime = performance.now() - start;
   audio.update(state.paused);
   renderer.draw();
+  const zoomText = `${Math.round(renderer.zoom * 100)}%`;
+  if ($("zoom-value").value !== zoomText) $("zoom-value").value = zoomText;
 
   inspector.update(now);
   frameCount++;
@@ -1329,7 +1366,7 @@ function frame(now) {
     } else $("hover-info").textContent = "";
     if (!$("debug-panel").hidden)
       $("debug-panel").textContent =
-        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation stages: ${world.profile.describe()}\nRender stages: ${renderer.profile.describe()}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nMissed ticks dropped: ${clock.droppedTicks}\nSolids: ${world.rigid.bodies.length} bodies · ${world.rigid.work.contacts} contacts\nCollision work: ${world.rigid.work.scanned.toLocaleString()} pixel checks · ${world.rigid.work.limitedPlans + world.rigid.work.limitedContacts} limited requests`;
+        `${world.width} × ${world.height} cells\n${world.count.toLocaleString()} particles · tick ${world.tick}\nSimulation stages: ${world.profile.describe()}\nRender stages: ${renderer.profile.describe()}\nSimulation: ${simTime.toFixed(1)} ms/frame · ${tickRate} ticks/s (max 60)\nDisplay: ${fps} FPS · ${state.speed}× speed\nHidden detail: ${((world.viewportState?.cache.bytes ?? 0) / 1048576).toFixed(2)} / ${settings.get("maxCacheMB")} MiB · ${world.viewportState?.cache.evictions ?? 0} evictions\nMissed ticks dropped: ${clock.droppedTicks}\nSolids: ${world.rigid.bodies.length} bodies · ${world.rigid.work.contacts} contacts\nCollision work: ${world.rigid.work.scanned.toLocaleString()} pixel checks · ${world.rigid.work.limitedPlans + world.rigid.work.limitedContacts} limited requests`;
   }
 }
 requestAnimationFrame(frame);
@@ -1345,6 +1382,7 @@ window.sandlab = {
   selection,
   settings,
   levelEditor,
+  viewportNavigation,
   materialGroups,
   mobileDock,
   loadPreset: (id) => {

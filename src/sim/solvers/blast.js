@@ -3,6 +3,17 @@ import { materials, M } from "../materials.js";
 // Keep blast products, pressure, heat and sound coupled in one bounded local
 // transaction; this preserves the existing gameplay blast law and seeded order.
 export function explode(w, x, y, radius, product = 0) {
+  if (w.viewportState) {
+    const events = w.viewportState.overview.events;
+    events.push({
+      sequence: (events.at(-1)?.sequence ?? 0) + 1,
+      tick: w.tick,
+      x: w.viewOriginX + x * w.metersPerPixel,
+      y: w.viewOriginY + y * w.metersPerPixel,
+      radius: radius * w.metersPerPixel,
+    });
+    if (events.length > 32) events.shift();
+  }
   w.fields.add(x, y, radius * 2);
   w.sound.emit("explosion", x, y, Math.min(1.5, radius * 0.15), radius, 0, {
     pressure: radius * 2,

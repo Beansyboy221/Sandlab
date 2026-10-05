@@ -8,6 +8,8 @@ import {
   freezingPoint,
 } from "./sim/mixtures.js";
 import { cellMass } from "./sim/mechanical-mass.js";
+import { MASS_UNIT_KG, CELL_METERS } from "./sim/world-units.js";
+import { entitySizeMeters } from "./sim/entity-metrics.js";
 
 export function cellAt(world, point) {
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y))
@@ -45,7 +47,11 @@ export function cellProperties(world, point) {
             ? `${a.health.toFixed(0)}%`
             : `${a.life} ticks`,
         ],
-        ["Speed", `${Math.hypot(a.vx, a.vy).toFixed(2)} cells/tick`],
+        [
+          "Speed",
+          `${(Math.hypot(a.vx, a.vy) * world.metersPerPixel * 60).toFixed(2)} m/s`,
+        ],
+        ["Physical size", `${entitySizeMeters(a.material).toFixed(2)} m`],
         [
           "Target",
           materials[a.material].vehicle
@@ -71,6 +77,7 @@ export function cellProperties(world, point) {
       ...cell,
       rows: [
         ["Health", `${Math.round(a.health)} / 100`],
+        ["Physical size", `${entitySizeMeters(a.material).toFixed(2)} m`],
         [
           "Role",
           actorProfile(a.material).prey?.length
@@ -167,6 +174,7 @@ export function cellProperties(world, point) {
   }
   world.fields.airflow.sample(world.fields, x, y);
   const rows = [
+    ["Pixel scale", `${world.metersPerPixel} m / pixel`],
     [
       "Temperature",
       `${(m.id ? world.temp[i] : world.fields.temperature[world.fields.index(x, y)]).toFixed(1)}°C`,
@@ -201,9 +209,14 @@ export function cellProperties(world, point) {
     ["Pressure", world.fields.pressure[world.fields.index(x, y)].toFixed(2)],
     [
       "Airflow",
-      `${world.fields.airflow.x.toFixed(2)}, ${world.fields.airflow.y.toFixed(2)} cells/tick`,
+      `${(world.fields.airflow.x * world.metersPerPixel * 60).toFixed(2)}, ${(world.fields.airflow.y * world.metersPerPixel * 60).toFixed(2)} m/s`,
     ],
   ];
+  if (m.id)
+    rows.push([
+      "Pixel mass",
+      `${(cellMass(world, i) * MASS_UNIT_KG).toFixed(2)} kg`,
+    ]);
   rows.push(
     [
       "Air temperature",
@@ -276,11 +289,14 @@ export function cellProperties(world, point) {
       ["Stretch", `${Math.round(stretch * 100)}%`],
       ["Tension", `${tension.toFixed(2)} units`],
       ["Anchored", world.elasticAnchor[i] ? "Yes" : "No"],
-      ["Cell mass", `${cellMass(world, i).toFixed(2)} units`],
+      ["Cell mass", `${(cellMass(world, i) * MASS_UNIT_KG).toFixed(2)} kg`],
     );
   }
   if (m.rigid) {
-    rows.push(["Cell mass", `${cellMass(world, i).toFixed(2)} units`]);
+    rows.push([
+      "Cell mass",
+      `${(cellMass(world, i) * MASS_UNIT_KG).toFixed(2)} kg`,
+    ]);
     const body =
       !world.rigid.dirty && world.rigid.bodyOf.get(world.elasticId[i]);
     if (body) {

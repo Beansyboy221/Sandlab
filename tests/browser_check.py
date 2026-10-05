@@ -66,8 +66,7 @@ with sync_playwright() as p:
     page.locator('#setting-view').select_option('heat')
     assert page.locator('#view').input_value() == 'heat'
     page.locator('#settings-tab-simulation').click()
-    page.locator('#setting-speed').select_option('0.5')
-    assert page.locator('#speed').input_value() == '0.5'
+    assert page.locator('#setting-speed').count() == 0
     page.locator('#setting-startPaused').check()
     page.locator('#settings-tab-brush').click()
     page.locator('#setting-brushSize').evaluate("e=>{e.value=9;e.dispatchEvent(new Event('input',{bubbles:true}));}")

@@ -129,7 +129,7 @@ export function stepBodies(solver) {
     }
     airStress(solver, body, p);
     const buoyancy = contacts
-        ? liquid / contacts / (body.mass / body.ids.length)
+        ? liquid / contacts / (body.mass / body.volume)
         : 0,
       gravity = 0.16 * (1 - buoyancy),
       drag = liquid ? 0.96 : 0.999;

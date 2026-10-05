@@ -100,7 +100,7 @@ export class Renderer {
       this.world.width,
       this.world.height,
       this.rotation,
-      this.zoom,
+      this.navigation ? 1 : this.zoom,
       this.center,
       this.fill,
     );
@@ -115,6 +115,8 @@ export class Renderer {
     );
   }
   zoomAt(factor, clientX, clientY) {
+    if (this.navigation)
+      return this.navigation.zoomAt(factor, clientX, clientY);
     const anchor = this.point(clientX, clientY),
       box = this.canvas.getBoundingClientRect(),
       ratio = this.canvas.width / box.width;
@@ -134,6 +136,7 @@ export class Renderer {
     this.updateViewport();
   }
   panBy(dx, dy) {
+    if (this.navigation) return this.navigation.panBy(dx, dy);
     const box = this.canvas.getBoundingClientRect(),
       ratio = this.canvas.width / box.width,
       point = inversePoint(this.view.matrix, dx * ratio, dy * ratio, true);
@@ -142,6 +145,7 @@ export class Renderer {
     this.updateViewport();
   }
   resetView() {
+    if (this.navigation) return this.navigation.reset();
     this.zoom = 1;
     this.center = { x: this.world.width / 2, y: this.world.height / 2 };
     this.updateViewport();

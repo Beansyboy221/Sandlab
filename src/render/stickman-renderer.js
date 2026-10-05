@@ -1,3 +1,4 @@
+import { distanceRatio } from "../sim/world-units.js";
 import { actorProfile } from "../sim/creature-profiles.js";
 function ellipseBetween(c, a, u, v, thickness) {
   const dx = a.x[v] - a.x[u],
@@ -37,12 +38,12 @@ export function drawStickmen(context, world, view) {
   context.lineJoin = "round";
   const player = world.stickmen.player;
   for (const a of world.stickmen.bodies) {
-    const p = actorProfile(a.material),
+    const p = actorProfile(a.material, world),
       human = p.appearance.humanoid;
     const hot = a.heat.some((t) => t > 180);
     const color = hot ? "#ef965f" : a.alive ? a.color : "#8f9390";
     context.strokeStyle = context.fillStyle = color;
-    context.lineWidth = human ? 1.2 : 0.8;
+    context.lineWidth = (human ? 1.2 : 0.8) * distanceRatio(world);
     context.beginPath();
     for (let k = 0; k < p.links.length; k++)
       if (a.bonds[k]) {
@@ -55,7 +56,13 @@ export function drawStickmen(context, world, view) {
       ellipseBetween(context, a, 1, 2, p.appearance.torsoThickness);
     if (!human && a.bonds[0]) ellipseBetween(context, a, 0, 1, 0.7);
     context.beginPath();
-    context.arc(a.x[0], a.y[0], p.headRadius + 0.3, 0, Math.PI * 2);
+    context.arc(
+      a.x[0],
+      a.y[0],
+      p.headRadius + 0.3 * distanceRatio(world),
+      0,
+      Math.PI * 2,
+    );
     if (human) context.stroke();
     else context.fill();
     if (!human && p.appearance.ears) ears(context, a, world, p.appearance.ears);

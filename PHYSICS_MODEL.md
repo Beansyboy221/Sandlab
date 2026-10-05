@@ -123,3 +123,14 @@ leaves contents in place; this local yield model does not solve a continuum
 soil stress field. Topology changes rebuild outside the active contact pass instead of
 recursively restarting contacts. Grab release velocity comes from timed movement, then respects
 the existing body speed caps.
+
+
+## Viewport fidelity and reconstruction
+
+The spatial unit is meters per displayed pixel, with a fixed one-meter slice depth. The reference pitch is 0.125 m and each zoom step halves or doubles it; the tick remains 60 Hz maximum. A full pixel at twice the pitch has four times the area and dry mass. `quantity` is a saved fractional material amount, so coarsening existing matter averages represented mass instead of treating each merged cell as newly full. Existing thermal and chemical rules remain qualitative pixel models; this unit contract does not add latent heat, exact gas-volume expansion, or calibrated continuum transport.
+
+Only the current viewport is a live `World`. Coarsening merges cells into one representative state and estimates unresolved contacts; it can remove small openings or minor species from the visible coarse geometry. Uniform bulk needs no detailed snapshot. Subpixel boundaries/mixed constituents retain optional sparse detail, addressed by references that move with their coarse host. Changed host composition, erasure or coarse breakage invalidates that reconstruction. Cache eviction falls back to piecewise material reconstruction and bilinear field transfer, never a second running simulation. This is an intentional fidelity tradeoff, not lossless microscopic gameplay.
+
+The detail cache is an LRU with a configurable 0–64 MiB byte budget and conservative record overhead. It is not serialized. A fixed 128 × 128 coarse overview and at most 32 actor/32 device records retain approximate surroundings; exported overview planes use run-length encoding and are validated before load. Saves therefore do not accumulate every viewed level of detail. Revisiting distant or reloaded regions restores estimated geometry and fields, rather than an exact old fine scene.
+
+Subpixel/offscreen entities leave the live integration pool. Before re-entry, velocity and elapsed ticks estimate their positions, with a maximum 3,600-tick prediction horizon, 64 coarse collision samples and 32 timestamped destructive events. Event sequence numbers disambiguate edits while paused. Destruction uses the predicted position at the event's time, so a creature which plausibly escaped is not removed merely because its old area was hit. This does not predict unseen AI decisions, flocking, exact trajectories or missed collisions; behavior resumes when the entity becomes visible.

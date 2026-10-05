@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.29.0",
+    date: "2026-10-05",
+    title: "Adaptive viewports",
+    changes: [
+      "Zoom now changes live simulation detail with fixed-size screen pixels, while world settings own viewport size and simulation rules.",
+      "An optional Pause when zooming setting keeps the world still while you inspect it.",
+      "Unresolved detail uses a configurable cache, and hidden entities predict movement against coarse obstacles and timed destructive events.",
+      "320 × 200 zoom transitions improve from 330–342 to 45–92 ms in empty and mixed scenes, with a 16 MiB detail cap excluded from saves.",
+    ],
+  },
+  {
     version: "1.28.1",
     date: "2026-10-05",
     title: "Solver boundaries",

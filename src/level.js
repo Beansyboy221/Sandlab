@@ -3,7 +3,9 @@ import { particleStateFields } from "./sim/particle-state.js";
 import {
   validateLevelProperties,
   applyLevelMetadata,
+  levelProperties,
 } from "./level-properties.js";
+import { transferWorldFields } from "./world-field-transfer.js";
 export function createLevel(properties) {
   const p = validateLevelProperties(properties),
     world = new World(p.width, p.height);
@@ -13,7 +15,10 @@ export function createLevel(properties) {
 // x/y locate the new canvas origin in the old grid. Negative offsets add space
 // before the old origin; positive offsets crop from its left/top sides.
 export function resizeLevel(world, properties, x, y) {
-  const p = validateLevelProperties(properties);
+  const p = validateLevelProperties({
+    ...levelProperties(world),
+    ...properties,
+  });
   if (
     !Number.isInteger(x) ||
     !Number.isInteger(y) ||
@@ -39,7 +44,11 @@ export function resizeLevel(world, properties, x, y) {
   ) {
     const source = (row + y) * world.width + left + x,
       target = row * p.width + left;
-    for (const name of [...particleStateFields, "backgroundPaint"])
+    for (const name of [
+      ...particleStateFields,
+      "backgroundPaint",
+      "fallDistance",
+    ])
       resized[name].set(
         world[name].subarray(source, source + right - left),
         target,
@@ -89,10 +98,11 @@ export function resizeLevel(world, properties, x, y) {
     world.fields.airflow.sample(world.fields, fx * 4 + 1.5 + x, y - 0.5);
     resized.fields.airflow.north[fx] = world.fields.airflow.y;
   }
+  transferWorldFields(world, resized, x, y);
   resized.elastic.rebuild(resized);
   resized.circuits.rebuild(resized);
   resized.portals.rebuild(resized);
-  resized.mechanics = { ...world.mechanics };
+  resized.mechanics = { ...p.mechanics };
   resized.missiles.restore(
     world.missiles
       .snapshot()

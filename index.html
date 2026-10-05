@@ -52,9 +52,9 @@
         <button
           id="new-canvas-btn"
           class="icon-button"
-          aria-label="New canvas"
+          aria-label="New world"
           aria-haspopup="dialog"
-          title="New canvas"
+          title="New world"
         >
           <span data-icon="plus"></span>
         </button>
@@ -82,6 +82,12 @@
             ><span class="world-type"> / SANDBOX</span>
           </div>
           <div class="topline-right">
+            <output
+              id="zoom-value"
+              title="Zoom · Ctrl/Alt+scroll or pinch"
+              aria-label="Zoom"
+              >100%</output
+            >
             <div class="view-control">
               <span data-icon="layers"></span
               ><select id="view" aria-label="Visualization mode">
@@ -98,9 +104,9 @@
             <button
               id="level-properties-btn"
               class="icon-button small"
-              aria-label="Canvas properties"
+              aria-label="World settings"
               aria-haspopup="dialog"
-              title="Canvas properties"
+              title="World settings"
             >
               <span data-icon="sliders"></span>
             </button>
@@ -736,10 +742,10 @@
       aria-labelledby="level-heading"
     >
       <div class="dialog-heading">
-        <h2 id="level-heading">New canvas</h2>
+        <h2 id="level-heading">New world</h2>
         <button
           class="icon-button dialog-close"
-          aria-label="Close canvas properties"
+          aria-label="Close world settings"
         >
           <span data-icon="close"></span>
         </button>
@@ -754,9 +760,9 @@
               autocomplete="off"
               required
           /></label>
-          <div class="level-dimensions">
+          <div class="level-dimensions" aria-label="Viewport size">
             <label
-              >Width · pixels<input
+              >Viewport width · pixels<input
                 id="level-width"
                 type="number"
                 min="8"
@@ -766,7 +772,7 @@
                 required
             /></label>
             <label
-              >Height · pixels<input
+              >Viewport height · pixels<input
                 id="level-height"
                 type="number"
                 min="8"
@@ -778,10 +784,28 @@
           </div>
           <label id="level-starter-row"
             >Starting world<select id="level-starter">
-              <option value="blank">Empty canvas</option>
+              <option value="blank">Empty world</option>
             </select></label
           >
-          <label>Canvas mode<select id="level-canvasMode"></select></label>
+          <label
+            >Zoom<select id="level-metersPerPixel" aria-label="Zoom">
+              <option value="8">1.5625%</option>
+              <option value="4">3.125%</option>
+              <option value="2">6.25%</option>
+              <option value="1">12.5%</option>
+              <option value="0.5">25%</option>
+              <option value="0.25">50%</option>
+              <option value="0.125">100%</option>
+              <option value="0.0625">200%</option>
+              <option value="0.03125">400%</option>
+            </select></label
+          >
+          <p id="world-scale-summary" class="settings-note"></p>
+          <p class="settings-note">
+            Only the viewport is simulated. Zoom changes detail while pixels
+            keep their screen size. Use Ctrl/Alt+scroll or pinch.
+          </p>
+          <label>World mode<select id="level-canvasMode"></select></label>
           <label
             >Mode strength <output id="level-modeStrength-value">100%</output
             ><input
@@ -827,6 +851,7 @@
           <p class="settings-note">
             At 0%, only local lights illuminate the scene. Lamps are in Devices.
           </p>
+          <div id="world-simulation-fields"></div>
           <p id="level-note" class="settings-note"></p>
         </div>
         <div id="resize-panel" hidden>
@@ -867,7 +892,7 @@
         <div class="confirm-actions">
           <button type="button" class="quiet-button dialog-close">Cancel</button
           ><button id="level-submit" class="primary-button" type="submit">
-            Create canvas
+            Create world
           </button>
         </div>
       </form>

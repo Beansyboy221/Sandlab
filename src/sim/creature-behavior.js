@@ -49,7 +49,7 @@ function flockMotion(w, a, p) {
 // Steering uses the same gravity-relative axes as walking and phone rotation.
 // Looking ahead turns creatures away from walls, cliffs, hot cells and acid.
 export function creatureMotion(w, a) {
-  const p = actorProfile(a.material),
+  const p = actorProfile(a.material, w),
     gx = w.gravityX,
     gy = w.gravityY;
   const social = predatoryMotion(w, a);

@@ -5,6 +5,10 @@ import { portalFields } from "./portals.js";
 // Shared by copying, movement, and persistence: every particle property travels together.
 export const particleStateFields = [
   "cells",
+  "quantity",
+  "detailRef",
+  "detailX",
+  "detailY",
   "temp",
   "life",
   "charge",

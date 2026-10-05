@@ -1,3 +1,4 @@
+import { CELL_METERS } from "./world-units.js";
 import { ElasticMomentum } from "./elastic-momentum.js";
 import { brushFootprint } from "../brush-geometry.js";
 import {
@@ -367,7 +368,13 @@ export class Elasticity {
         inverseMass = 1 / mass;
       const gravity =
         0.12 *
-        (liquidNeighbors ? 1 - liquidDensity / liquidNeighbors / mass : 1);
+        (liquidNeighbors
+          ? 1 -
+            liquidDensity /
+              liquidNeighbors /
+              (mass /
+                ((w.quantity[i] ?? 1) * (w.metersPerPixel / CELL_METERS) ** 2))
+          : 1);
       w.environment.sample(x, y);
       const localX = w.environment.x,
         localY = w.environment.y;

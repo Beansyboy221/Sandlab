@@ -36,3 +36,7 @@
 - Extend shared-grid presentation benchmarks to moving/cut elastic meshes and mixed crowds on physical phones; refine subpixel contact coverage only where pixel-scale fixtures justify its memory and calculation cost.
 
 - Calibrate anchored-contact effective mass, fatigue and temperature-dependent mechanical strength with controlled fixtures; preserve bounded grain/cutting work and avoid a continuum or recursive body rebuild.
+
+- Measure viewport transitions on physical phones before raising grid, cache or prediction budgets; 320 × 200 empty/mixed transitions currently measure 45–92 ms locally.
+- Improve conservative multi-species coarse summaries and partial-tile overview updates before claiming small-channel chemistry or distant geometry is preserved.
+- Calibrate scale-dependent heat/wave transport and physical optical ranges with stable substeps; existing coarse mechanics are qualitative estimates.

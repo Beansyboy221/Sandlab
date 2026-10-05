@@ -62,6 +62,7 @@ export const groups = {
     "inspection",
   ],
   levels: [
+    "world-scale",
     "radial-liquids",
     "level",
     "canvas-view",

@@ -1,3 +1,4 @@
+import { distanceRatio } from "./world-units.js";
 import { materials } from "./materials.js";
 
 export const canvasModes = [
@@ -29,7 +30,8 @@ export class CanvasEnvironment {
       mode === "wander" ||
       mode === "vortex" ||
       mode === "zero" ||
-      this.world.modeStrength !== 1
+      this.world.modeStrength !== 1 ||
+      distanceRatio(this.world) !== 1
     );
   }
   update(advance = false) {
@@ -37,13 +39,14 @@ export class CanvasEnvironment {
       mode = w.canvasMode,
       strength = w.modeStrength;
     const phase = (w.tick / 600) * Math.PI * 2;
+    const home = w.viewportState?.home;
     this.centerX =
-      w.width * 0.5 +
+      (home ? (home.x - w.viewOriginX) / w.metersPerPixel : w.width * 0.5) +
       (mode === "wander" || mode === "vortex"
         ? Math.sin(phase) * w.width * 0.15
         : 0);
     this.centerY =
-      w.height * 0.5 +
+      (home ? (home.y - w.viewOriginY) / w.metersPerPixel : w.height * 0.5) +
       (mode === "wander" || mode === "vortex"
         ? Math.cos(phase * 0.7) * w.height * 0.12
         : 0);
@@ -94,8 +97,8 @@ export class CanvasEnvironment {
   sample(x, y) {
     const w = this.world;
     if (w.canvasMode === "normal" || w.canvasMode === "solar") {
-      this.x = w.gravityX * w.modeStrength;
-      this.y = w.gravityY * w.modeStrength;
+      this.x = w.gravityX * w.modeStrength * distanceRatio(w);
+      this.y = w.gravityY * w.modeStrength * distanceRatio(w);
       return;
     }
     if (w.canvasMode === "zero") {
@@ -110,8 +113,8 @@ export class CanvasEnvironment {
       scale = r2
         ? (Math.min(2, 900 / (r2 + 64)) * w.modeStrength) / Math.sqrt(r2)
         : 0;
-    this.x = dx * scale;
-    this.y = dy * scale;
+    this.x = dx * scale * distanceRatio(w);
+    this.y = dy * scale * distanceRatio(w);
   }
   seed(i) {
     const w = this.world;

@@ -79,12 +79,13 @@ with sync_playwright() as p:
         page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=paint]').click()
         page.locator('#settings-btn').click();page.locator('#settings-tab-keyboard').click()
         assert not page.locator('#settings-panel-keyboard .settings-note').count()
-        page.locator('#settings-tab-simulation').click()
-        for key in ['pressureSimulation','temperatureSimulation']:
-            toggle=page.locator('#setting-'+key);assert toggle.is_checked();toggle.click()
-            assert page.evaluate('key=>sandlab.world.mechanics[key]===false',key)
-            toggle.click();assert page.evaluate('key=>sandlab.world.mechanics[key]===true',key)
         page.locator('#settings-dialog .dialog-close').click()
+        page.locator('#level-properties-btn').click()
+        for key in ['pressureSimulation','temperatureSimulation']:
+            toggle=page.locator('#world-setting-'+key);assert toggle.is_checked();toggle.click()
+            assert page.evaluate('key=>sandlab.levelEditor.rules.settings.get(key)===false',key)
+            toggle.click()
+        page.locator('#level-submit').click()
         page.evaluate("sandlab.world.clear();sandlab.controller.navigation=null;sandlab.controller.position={x:.5,y:.5};sandlab.controller.input.canvas.focus();controlFrame();controlFrame([7]);controlFrame([7],[1,0,0,0]);controlFrame();")
         count=page.evaluate('sandlab.world.count');assert count>0
         page.evaluate('controlFrame([6]);controlFrame();');erased=page.evaluate('sandlab.world.count');assert erased<count

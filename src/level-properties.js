@@ -1,14 +1,36 @@
 import { canvasModes } from "./sim/canvas-modes.js";
+import {
+  CELL_METERS,
+  validateScale,
+  validateGridSize,
+} from "./sim/world-units.js";
+import {
+  defaultMechanics,
+  validateMechanics,
+} from "./sim/mechanics-options.js";
 export const defaultLevel = Object.freeze({
-  name: "Untitled canvas",
+  name: "Untitled world",
   border: "solid",
   background: "#111b20",
   ambientLight: 1,
   canvasMode: "normal",
   modeStrength: 1,
+  metersPerPixel: CELL_METERS,
+  viewOriginX: 0,
+  viewOriginY: 0,
+  simulationSpeed: 1,
+  mechanics: Object.freeze({ ...defaultMechanics }),
 });
 export const borderTypes = ["solid", "looping", "void"];
-export function validateCanvasSize(width, height) {
+export function validateCanvasSize(
+  width,
+  height,
+  metersPerPixel = CELL_METERS,
+) {
+  if (metersPerPixel !== CELL_METERS) {
+    validateGridSize(width, height, metersPerPixel);
+    return;
+  }
   if (
     !Number.isInteger(width) ||
     !Number.isInteger(height) ||
@@ -32,7 +54,7 @@ export function validateLevelMetadata(value) {
     typeof value.background !== "string" ||
     !/^#[0-9a-f]{6}$/i.test(value.background)
   )
-    throw Error("Invalid canvas properties.");
+    throw Error("Invalid world properties.");
   const ambientLight =
     value.ambientLight === undefined
       ? defaultLevel.ambientLight
@@ -55,6 +77,11 @@ export function validateLevelMetadata(value) {
   )
     throw Error("Invalid canvas mode or strength.");
   return {
+    viewOriginX: validateOrigin(value.viewOriginX),
+    viewOriginY: validateOrigin(value.viewOriginY),
+    metersPerPixel: validateScale(value.metersPerPixel),
+    simulationSpeed: validateSimulationSpeed(value.simulationSpeed),
+    mechanics: validateMechanics(value.mechanics),
     canvasMode,
     modeStrength,
     ambientLight,
@@ -73,10 +100,15 @@ export function levelProperties(world) {
     ambientLight: world.ambientLight,
     canvasMode: world.canvasMode,
     modeStrength: world.modeStrength,
+    metersPerPixel: world.metersPerPixel,
+    viewOriginX: world.viewOriginX,
+    viewOriginY: world.viewOriginY,
+    simulationSpeed: world.simulationSpeed,
+    mechanics: { ...world.mechanics },
   };
 }
 export function validateLevelProperties(value) {
-  validateCanvasSize(value.width, value.height);
+  validateCanvasSize(value.width, value.height, value.metersPerPixel);
   return {
     ...validateLevelMetadata(value),
     width: value.width,
@@ -100,5 +132,18 @@ export function applyLevelMetadata(world, metadata) {
       for (let i = 0; i < world.length; i++) world.environment.seed(i);
   }
   world.fields.border = values.border;
+  world.fields.configure(world.mechanics);
   if (changed) world.motionStamp.fill(world.tick + 1);
+}
+
+export function validateSimulationSpeed(value = 1) {
+  if (![0.25, 0.5, 1].includes(value))
+    throw Error("Invalid world playback speed.");
+  return value;
+}
+
+function validateOrigin(value = 0) {
+  if (!Number.isFinite(value) || Math.abs(value) > 1e5)
+    throw Error("Invalid viewport position.");
+  return value;
 }

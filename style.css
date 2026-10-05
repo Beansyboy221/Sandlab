@@ -3049,3 +3049,62 @@ body:not(.mobile-layout) .toolbox :is(.icon-button, .play-button) {
 .palette .groups-removing .category-tabs [disabled] {
   opacity: 0.35;
 }
+
+/* World rules use the same touch targets as browser preferences. */
+.world-setting-group {
+  border: 1px solid var(--border, #30434d);
+  border-radius: 10px;
+  margin: 16px 0;
+  padding: 8px 14px;
+}
+.world-setting-group summary {
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  font-weight: 600;
+}
+.world-rule-fields .setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 46%);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  margin: 0;
+}
+.level-fields .world-rule-fields input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  margin: 0;
+  justify-self: end;
+}
+.level-fields .world-rule-fields input[type="range"] {
+  padding: 0;
+  min-height: 44px;
+}
+.world-rule-fields .setting-range-control {
+  min-width: 0;
+  width: 100%;
+}
+#level-metersPerPixel {
+  font-size: 16px;
+}
+.material:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+@media (max-width: 420px) {
+  .world-rule-fields .setting-row {
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 44%);
+    gap: 12px;
+  }
+}
+
+#zoom-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 12px;
+  min-width: 3.5em;
+  text-align: center;
+}

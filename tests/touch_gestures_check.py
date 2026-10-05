@@ -32,14 +32,14 @@ with sync_playwright() as p:
         x, y = box['x']+box['width']/2, box['y']+box['height']*.4
         # Two simultaneous fingers must never draw, fill, erase, or recolor.
         for tool in ['paint','fill','erase','recolor','warm','cool','wind','grab','select','inspect','eyedropper']:
-            page.evaluate('(tool)=>{sandlab.state.tool=tool;sandlab.renderer.resetView()}', tool)
-            anchor = page.evaluate('([x,y])=>sandlab.renderer.point(x,y)', [x,y])
+            page.evaluate('async (tool)=>{sandlab.state.tool=tool;await (await import("./src/viewport-navigation.js")).zoomWorld(sandlab.world,.125);sandlab.renderer.resetView()}', tool)
+            anchor = page.evaluate('([x,y])=>{const p=sandlab.renderer.point(x,y),w=sandlab.world;return {x:w.viewOriginX+p.x*w.metersPerPixel,y:w.viewOriginY+p.y*w.metersPerPixel}}', [x,y])
             dispatch(session,'Start',[touch(x-40,y,1),touch(x+40,y,2)])
             dispatch(session,'Move',[touch(x-60+16,y+12,1),touch(x+60+16,y+12,2)])
             current = camera(page)
-            assert abs(current['zoom']-1.5)<.01, (tool,current)
-            end_anchor = page.evaluate('([x,y])=>sandlab.renderer.point(x,y)', [x+16,y+12])
-            assert abs(end_anchor['x']-anchor['x'])<.1 and abs(end_anchor['y']-anchor['y'])<.1, (anchor,end_anchor)
+            assert abs(current['zoom']-2)<.01, (tool,current)
+            end_anchor = page.evaluate('([x,y])=>{const p=sandlab.renderer.point(x,y),w=sandlab.world;return {x:w.viewOriginX+p.x*w.metersPerPixel,y:w.viewOriginY+p.y*w.metersPerPixel}}', [x+16,y+12])
+            assert abs(end_anchor['x']-anchor['x'])<.25 and abs(end_anchor['y']-anchor['y'])<.25, (anchor,end_anchor)
             dispatch(session,'End',[touch(x-60+16,y+12,1)])
             dispatch(session,'Move',[touch(x+35,y+30,1)])
             page.wait_for_timeout(120)

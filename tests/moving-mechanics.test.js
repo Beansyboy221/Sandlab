@@ -182,7 +182,7 @@ test("new bodies and missiles survive saves, resizing and tools; malformed missi
     "whole missile rather than particles per brush cell",
   );
 });
-test("new presets work at all gravity orientations and settings persist safely", () => {
+test("new presets work at all gravity orientations and world rules persist safely", () => {
   for (const [gx, gy] of [
     [0, 1],
     [1, 0],
@@ -202,11 +202,14 @@ test("new presets work at all gravity orientations and settings persist safely",
   const s = new Settings(store);
   s.set("joystickSide", "right");
   s.set("joystickSize", 100);
-  s.set("predation", false);
-  s.set("missileHeat", 200);
+  const world = new World(32, 24);
+  world.mechanics.predation = false;
+  world.mechanics.missileHeat = 200;
   const reloaded = new Settings({ getItem: () => store.value, setItem() {} });
   assert.equal(reloaded.get("joystickSide"), "right");
   assert.equal(reloaded.get("joystickSize"), 100);
-  assert.equal(reloaded.get("predation"), false);
-  assert.equal(reloaded.get("missileHeat"), 200);
+  const loaded = new World();
+  restore(loaded, snapshot(world));
+  assert.equal(loaded.mechanics.predation, false);
+  assert.equal(loaded.mechanics.missileHeat, 200);
 });

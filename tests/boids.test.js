@@ -8,7 +8,7 @@ import {
   clearHabitatPath,
 } from "../src/sim/creature-habitat.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
-import { Settings } from "../src/settings.js";
+import { validateMechanics } from "../src/sim/mechanics-options.js";
 import { loadPreset } from "../src/presets.js";
 
 function scene(
@@ -285,26 +285,20 @@ test("physical flocks remain healthy, cohesive and separated, and resume after s
     );
   }
 });
-test("flocking preferences persist and invalid values do not reach the simulation", () => {
-  let saved = null;
-  const storage = {
-    getItem: () => saved,
-    setItem: (key, value) => (saved = value),
-  };
-  const settings = new Settings(storage);
-  assert.equal(settings.get("flocking"), true);
-  assert.equal(settings.get("flockMinimum"), 3);
-  settings.set("flocking", false);
-  settings.set("flockMinimum", 5);
-  settings.set("flockRange", 64);
-  const restored = new Settings(storage);
-  assert.equal(restored.get("flocking"), false);
-  assert.equal(restored.get("flockMinimum"), 5);
-  assert.equal(restored.get("flockRange"), 64);
-  restored.set("flockMinimum", 0);
-  assert.ok(restored.get("flockMinimum") >= 2);
-  restored.set("flockRange", NaN);
-  assert.ok(Number.isFinite(restored.get("flockRange")));
+test("flocking rules persist with the world and reject invalid values", () => {
+  const w = scene();
+  w.mechanics = validateMechanics({
+    flocking: false,
+    flockMinimum: 5,
+    flockRange: 64,
+  });
+  const loaded = new World();
+  restore(loaded, snapshot(w));
+  assert.equal(loaded.mechanics.flocking, false);
+  assert.equal(loaded.mechanics.flockMinimum, 5);
+  assert.equal(loaded.mechanics.flockRange, 64);
+  assert.throws(() => validateMechanics({ flockMinimum: 0 }));
+  assert.throws(() => validateMechanics({ flockRange: NaN }));
 });
 test("the flocking world starts both groups safely across canvas sizes and gravity orientations", () => {
   for (const [width, height] of [

@@ -53,6 +53,11 @@ export class World {
     this.gravityX = 0;
     this.gravityY = 1;
     this.cells = new Uint8Array(this.length);
+    this.quantity = new Float32Array(this.length).fill(1);
+    this.detailRef = new Uint32Array(this.length);
+    this.detailX = new Int16Array(this.length);
+    this.detailY = new Int16Array(this.length);
+    this.viewportState = null;
     this.temp = new Float32Array(this.length);
     this.temp.fill(20);
     this.life = new Uint16Array(this.length);
@@ -121,6 +126,23 @@ export class World {
     this.fallDistance = new Uint8Array(this.length);
     this.particleFields.push(this.fallDistance);
     this.portals = new Portals(this);
+  }
+  rebind() {
+    for (const key of [
+      "portals",
+      "elastic",
+      "rigid",
+      "fragments",
+      "porousFlow",
+      "environment",
+      "stickmen",
+      "sound",
+      "missiles",
+      "circuits",
+    ])
+      if (this[key] && "world" in this[key]) this[key].world = this;
+    this.missiles.guidance.world = this;
+    this.stickmen.planner.world = this;
   }
   random() {
     let s = this.seed | 0;
@@ -192,6 +214,8 @@ export class World {
     )
       this.fields.markObstacle(i, this);
     this.cells[i] = id;
+    this.quantity[i] = 1;
+    this.detailRef[i] = 0;
     this.circuits.register(i, id);
     this.temp[i] = temperature;
     const variation = materials[id].lifetimeVariation || 0;
@@ -241,6 +265,10 @@ export class World {
       next = materials[id];
     const sameSubstance =
       this.cells[i] && id && old.baseMaterial === next.baseMaterial;
+    const quantity = this.quantity[i],
+      detailRef = this.detailRef[i],
+      detailX = this.detailX[i],
+      detailY = this.detailY[i];
     const pigment = this.pigment[i],
       variant = this.variant[i],
       oxide = this.oxidationLevel[i];
@@ -264,6 +292,12 @@ export class World {
     const remainingIngredient = this.dissolvedId[i],
       remainingUnits = this.dissolvedAmount[i];
     this.set(i, id, ...state);
+    if (sameSubstance) {
+      this.quantity[i] = quantity;
+      this.detailRef[i] = detailRef;
+      this.detailX[i] = detailX;
+      this.detailY[i] = detailY;
+    }
     this.dissolvedId[i] = remainingIngredient;
     this.dissolvedAmount[i] = remainingUnits;
     if (amount) {
@@ -312,6 +346,11 @@ export class World {
     }
   }
   clear() {
+    this.viewportState?.clear();
+    this.quantity.fill(1);
+    this.detailRef.fill(0);
+    this.detailX.fill(0);
+    this.detailY.fill(0);
     this.poreUpdated.fill(0);
     this.portals.clear();
     for (const key of portalFields) this[key].fill(0);

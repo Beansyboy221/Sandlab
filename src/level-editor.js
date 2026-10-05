@@ -1,3 +1,4 @@
+import { reframeWorld } from "./viewport-navigation.js";
 import { writeElasticPixels } from "./render/elastic-renderer.js";
 import { canvasModes } from "./sim/canvas-modes.js";
 import {
@@ -13,9 +14,16 @@ import {
   applyLevelMetadata,
 } from "./level-properties.js";
 import { createLevel, resizeLevel, ResizePlacement } from "./level.js";
+import { validateScale, CELL_METERS } from "./sim/world-units.js";
+import { WorldRulesPanel } from "./world-rules-panel.js";
 
 export class LevelEditor {
-  constructor(dialog, world, renderer, { open, close, remember, refresh }) {
+  constructor(
+    dialog,
+    world,
+    renderer,
+    { open, close, remember, refresh, zoomed = () => {} },
+  ) {
     this.dialog = dialog;
     this.world = world;
     this.renderer = renderer;
@@ -23,7 +31,11 @@ export class LevelEditor {
     this.closeDialog = close;
     this.remember = remember;
     this.refresh = refresh;
+    this.zoomed = zoomed;
     this.form = dialog.querySelector("form");
+    this.rules = new WorldRulesPanel(
+      dialog.querySelector("#world-simulation-fields"),
+    );
     this.starter = dialog.querySelector("#level-starter");
     for (const preset of presets)
       if (preset.id !== "blank") {
@@ -42,6 +54,7 @@ export class LevelEditor {
         "ambientLight",
         "canvasMode",
         "modeStrength",
+        "metersPerPixel",
       ].map((key) => [key, dialog.querySelector(`#level-${key}`)]),
     );
     this.ambientOutput = dialog.querySelector("#level-ambientLight-value");
@@ -64,6 +77,10 @@ export class LevelEditor {
     this.previewPanel = dialog.querySelector("#resize-panel");
     this.fields = dialog.querySelector("#level-fields");
     this.error = dialog.querySelector("#level-error");
+    this.scaleSummary = dialog.querySelector("#world-scale-summary");
+    this.inputs.metersPerPixel.addEventListener("input", () =>
+      this.updateScaleSummary(),
+    );
     this.submit = dialog.querySelector("#level-submit");
     this.placement = null;
     this.drag = null;
@@ -73,13 +90,14 @@ export class LevelEditor {
     });
     this.form.addEventListener("input", () => {
       this.error.textContent = "";
+      this.updateScaleSummary();
       if (!this.placement)
         this.submit.textContent =
           this.editing && this.sizeChanged()
             ? "Place resize"
             : this.editing
               ? "Apply changes"
-              : "Create canvas";
+              : "Create world";
     });
     dialog.querySelector("#resize-back").addEventListener("click", () => {
       this.placement = null;
@@ -161,7 +179,8 @@ export class LevelEditor {
     this.placement = null;
     this.error.textContent = "";
     const values = levelProperties(this.world);
-    if (!editing) values.name = "Untitled canvas";
+    if (!editing) values.name = "Untitled world";
+    this.rules.load(this.world);
     for (const [key, input] of Object.entries(this.inputs))
       input.value =
         key === "ambientLight" || key === "modeStrength"
@@ -170,13 +189,16 @@ export class LevelEditor {
     this.ambientOutput.value = `${this.inputs.ambientLight.value}%`;
     this.strengthOutput.value = `${this.inputs.modeStrength.value}%`;
     this.dialog.querySelector("h2").textContent = editing
-      ? "Canvas properties"
-      : "New canvas";
+      ? "World settings"
+      : "New world";
     const mobile = document.body.classList.contains("mobile-layout"),
       box = this.renderer.canvas.getBoundingClientRect();
     const limit = canvasResolutionLimit(box.width, box.height);
     const size = editing
-      ? values
+      ? {
+          width: Math.round(values.width),
+          height: Math.round(values.height),
+        }
       : fittedCanvasSize(
           Math.min(limit, this.world.width, this.world.height),
           box.width,
@@ -184,6 +206,7 @@ export class LevelEditor {
           this.renderer.rotation,
         );
     this.startSize = { width: size.width, height: size.height };
+    this.updateScaleSummary();
     this.shortAxis = size.width <= size.height ? "width" : "height";
     for (const [axis, input] of Object.entries(this.axes)) {
       input.value = size[axis];
@@ -195,9 +218,10 @@ export class LevelEditor {
     }
     this.dialog.querySelector("#level-note").textContent = editing
       ? mobile
-        ? "The longer dimension follows the drawing area. Place the kept area before applying a resize."
-        : "Place the kept area before applying a resize."
-      : "The current canvas remains available in Undo.";
+        ? "The longer dimension follows the drawing area. Position the viewport before applying a resize."
+        : "Position the viewport before applying a resize."
+      : "The current world remains available in Undo.";
+    this.updateScaleSummary();
     this.showFields();
     this.openDialog(this.dialog.id);
   }
@@ -209,7 +233,7 @@ export class LevelEditor {
         ? "Place resize"
         : this.editing
           ? "Apply changes"
-          : "Create canvas";
+          : "Create world";
   }
   syncDimensions() {
     const short = this.axes[this.shortAxis];
@@ -233,8 +257,7 @@ export class LevelEditor {
     this.axes[longAxis].value = Math.max(size.width, size.height);
   }
   dimensions() {
-    if (this.editing && !this.sizeChanged())
-      return { width: this.world.width, height: this.world.height };
+    if (this.editing && !this.sizeChanged()) return { ...this.startSize };
     const width = Number(this.axes.width.value),
       height = Number(this.axes.height.value);
     if (this.axes.width.disabled || this.axes.height.disabled) {
@@ -254,22 +277,42 @@ export class LevelEditor {
     );
   }
   values() {
+    const scale = validateScale(Number(this.inputs.metersPerPixel.value)),
+      size = this.dimensions(),
+      ratio = scale / CELL_METERS;
     return validateLevelProperties({
       ...Object.fromEntries(
         Object.entries(this.inputs).map(([key, input]) => [
           key,
-          key === "ambientLight" || key === "modeStrength"
-            ? Number(input.value) / 100
-            : input.value,
+          key === "metersPerPixel"
+            ? Number(input.value)
+            : key === "ambientLight" || key === "modeStrength"
+              ? Number(input.value) / 100
+              : input.value,
         ]),
       ),
-      ...this.dimensions(),
+      ...this.rules.values(),
+      width: Math.round(size.width),
+      height: Math.round(size.height),
+      viewOriginX: this.world.viewOriginX,
+      viewOriginY: this.world.viewOriginY,
     });
   }
   commit() {
     try {
       const values = this.values();
-      if (this.editing && this.sizeChanged() && !this.placement) {
+      const gridChanged =
+          values.width !== this.world.width ||
+          values.height !== this.world.height,
+        scaleChanged = values.metersPerPixel !== this.world.metersPerPixel;
+      if (
+        this.editing &&
+        gridChanged &&
+        !this.placement &&
+        (this.sizeChanged() ||
+          values.width < this.world.width ||
+          values.height < this.world.height)
+      ) {
         this.placement = new ResizePlacement(this.world, values);
         this.fields.hidden = true;
         this.previewPanel.hidden = false;
@@ -281,16 +324,62 @@ export class LevelEditor {
         return;
       }
       if (this.placement) {
-        const p = this.placement,
-          resized = resizeLevel(this.world, p.properties, p.x, p.y);
+        const p = this.placement;
         this.remember();
-        Object.assign(this.world, resized);
+        reframeWorld(this.world, {
+          width: p.properties.width,
+          height: p.properties.height,
+          pitch: p.properties.metersPerPixel,
+          x: this.world.viewOriginX + p.x * this.world.metersPerPixel,
+          y: this.world.viewOriginY + p.y * this.world.metersPerPixel,
+          cacheMB: this.renderer.navigation?.settings.get("maxCacheMB") ?? 16,
+          predictHidden:
+            this.renderer.navigation?.settings.get("predictHidden") ?? true,
+        });
+        applyLevelMetadata(this.world, {
+          ...p.properties,
+          viewOriginX: this.world.viewOriginX,
+          viewOriginY: this.world.viewOriginY,
+        });
+        if (scaleChanged) {
+          this.renderer.cameraWidth = this.world.width;
+          this.renderer.cameraHeight = this.world.height;
+          this.renderer.center = {
+            x: this.world.width / 2,
+            y: this.world.height / 2,
+          };
+        }
+      } else if (this.editing && (gridChanged || scaleChanged)) {
+        this.remember();
+        reframeWorld(this.world, {
+          width: values.width,
+          height: values.height,
+          pitch: values.metersPerPixel,
+          x:
+            this.world.viewOriginX +
+            (this.world.width * this.world.metersPerPixel -
+              values.width * values.metersPerPixel) /
+              2,
+          y:
+            this.world.viewOriginY +
+            (this.world.height * this.world.metersPerPixel -
+              values.height * values.metersPerPixel) /
+              2,
+          cacheMB: this.renderer.navigation?.settings.get("maxCacheMB") ?? 16,
+          predictHidden:
+            this.renderer.navigation?.settings.get("predictHidden") ?? true,
+        });
+        applyLevelMetadata(this.world, {
+          ...values,
+          viewOriginX: this.world.viewOriginX,
+          viewOriginY: this.world.viewOriginY,
+        });
       } else if (!this.editing) {
         const created = createLevel(values);
         created.setGravity(this.world.gravityX, this.world.gravityY);
         if (this.starter.value !== "blank") {
           loadPreset(created, this.starter.value);
-          if (values.name !== "Untitled canvas") created.name = values.name;
+          if (values.name !== "Untitled world") created.name = values.name;
         }
         this.remember();
         Object.assign(this.world, created);
@@ -303,18 +392,33 @@ export class LevelEditor {
             "ambientLight",
             "canvasMode",
             "modeStrength",
-          ].some((key) => values[key] !== this.world[key])
+            "metersPerPixel",
+            "simulationSpeed",
+          ].some((key) => values[key] !== this.world[key]) ||
+          JSON.stringify(values.mechanics) !==
+            JSON.stringify(this.world.mechanics)
         ) {
           this.remember();
           applyLevelMetadata(this.world, values);
         }
       }
       this.world.lastStrikeTick = -1;
+      this.world.rebind();
       this.refresh();
       this.closeDialog(this.dialog);
+      if (this.editing && scaleChanged) this.zoomed();
     } catch (error) {
       this.error.textContent = error.message;
     }
+  }
+  updateScaleSummary() {
+    const value = Number(this.inputs.metersPerPixel.value),
+      width = Number(this.axes.width.value),
+      height = Number(this.axes.height.value);
+    this.scaleSummary.textContent =
+      Number.isFinite(value) && value > 0
+        ? `${(width * value).toFixed(2)} × ${(height * value).toFixed(2)} m visible · ${value} m / pixel`
+        : "";
   }
   captureParticles() {
     this.particles.width = this.world.width;

@@ -1,3 +1,4 @@
+import { distanceRatio } from "./world-units.js";
 import { materials, M } from "./materials.js";
 import { portalContact, transportMissile } from "./portal-transport.js";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -10,8 +11,8 @@ function blocked(w, x, y, gx, gy) {
   for (let across = -2; across <= 2; across++)
     for (let down = -1; down <= 1; down++) {
       const j = w.index(
-        Math.floor(x + tx * across + gx * down),
-        Math.floor(y + ty * across + gy * down),
+        Math.floor(x + (tx * across + gx * down) * distanceRatio(w)),
+        Math.floor(y + (ty * across + gy * down) * distanceRatio(w)),
       );
       if (j < 0 ? w.border === "solid" : obstacles[w.cells[j]]) return true;
     }
@@ -61,7 +62,9 @@ export function stepMachine(w, a) {
   const submerged =
     center >= 0 && materials[w.cells[center]].category === "liquid";
   const motor = w.mechanics.machineMotors && a.temperature > -60 && !submerged;
-  const drive = motor ? w.mechanics.machineSpeed * direction : 0;
+  const drive = motor
+    ? w.mechanics.machineSpeed * direction * distanceRatio(w)
+    : 0;
   const tangent = a.vx * tx + a.vy * ty;
   let vertical = a.vx * gx + a.vy * gy;
   if (m.vehicle === "drone" && motor) vertical *= 0.7;

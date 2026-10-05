@@ -23,7 +23,7 @@ test("inspection reads exact cell state without changing world or accepting lett
   const before = snapshot(world),
     data = cellProperties(world, { x: 0.5, y: 0.2 });
   assert.equal(data.material.name, "Fire");
-  assert.deepEqual(data.rows.slice(0, 4), [
+  assert.deepEqual(data.rows.slice(1, 5), [
     ["Temperature", "721.3°C"],
     ["Lifetime", "28 ticks"],
     ["Charge", "3 ticks"],

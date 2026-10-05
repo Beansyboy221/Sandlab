@@ -1,9 +1,11 @@
+import { distanceRatio } from "./world-units.js";
 import { projectileProfiles } from "./creature-profiles.js";
 import { LaserGuidance, wrappedDelta } from "./missile-guidance.js";
 import { stepMachine, machineFits } from "./machine-motion.js";
 import { materials, M } from "./materials.js";
 import { clearSight } from "./predation.js";
 import { transportMissile } from "./portal-transport.js";
+import { entityCanSpawn } from "./entity-metrics.js";
 export const MAX_MISSILES = 32;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 const surfaces = Uint8Array.from(materials, (m) =>
@@ -25,6 +27,7 @@ export class Missiles {
     const w = this.world;
     if (
       !materials[material]?.projectile ||
+      !entityCanSpawn(w, material) ||
       ![x, y, dx, dy].every(Number.isFinite) ||
       x < 2 ||
       y < 2 ||
@@ -45,8 +48,8 @@ export class Missiles {
       x,
       y,
       angle,
-      vx: Math.cos(angle) * profile.initialSpeed,
-      vy: Math.sin(angle) * profile.initialSpeed,
+      vx: Math.cos(angle) * profile.initialSpeed * distanceRatio(w),
+      vy: Math.sin(angle) * profile.initialSpeed * distanceRatio(w),
       life: materials[material].vehicle ? 0 : profile.lifetime,
       ...(materials[material].vehicle ? { health: 100 } : {}),
       temperature: 20,
@@ -191,7 +194,7 @@ export class Missiles {
         a.angle += clamp(turn, -profile.turnRate, profile.turnRate);
       }
       w.fields.forceAt(a.x, a.y, 0.015, profile.airDrag);
-      const speed = w.mechanics.missileSpeed;
+      const speed = w.mechanics.missileSpeed * distanceRatio(w);
       a.vx =
         a.vx * profile.momentumRetention +
         Math.cos(a.angle) * speed * profile.thrust +
@@ -347,7 +350,7 @@ export class Missiles {
     this.scanTick = -100;
   }
 }
-export function validateMissiles(data) {
+export function validateMissiles(data, maximumPosition = 2048) {
   if (data === undefined) return;
   if (!Array.isArray(data) || data.length > MAX_MISSILES)
     throw Error("Invalid missile count.");
@@ -373,8 +376,8 @@ export function validateMissiles(data) {
           a.health > 100
         : a.life < 1 || a.life > 480) ||
       ![a.x, a.y, a.angle, a.vx, a.vy, a.temperature].every(Number.isFinite) ||
-      Math.abs(a.x) > 2048 ||
-      Math.abs(a.y) > 2048 ||
+      Math.abs(a.x) > maximumPosition ||
+      Math.abs(a.y) > maximumPosition ||
       Math.abs(a.angle) > 10000 ||
       Math.abs(a.vx) > 20 ||
       Math.abs(a.vy) > 20 ||

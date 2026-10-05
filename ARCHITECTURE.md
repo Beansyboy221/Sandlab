@@ -166,6 +166,14 @@ contact/chemistry authority. Full subpixel fluid particles would require a diffe
 neighbor/contact solver and substantially more state; the pixel approach preserves
 the current game and its inexpensive grid queries.
 
+## Viewport ownership
+
+`viewport-navigation.js` switches the fixed-size live `World` between physical origins and pitches; `renderer.js` delegates pan/pinch/wheel navigation and keeps presentation pixels fixed. `sim/viewport-resample.js` owns bounded material reduction, refinement, structural reconnection, field interpolation and fast typed-row panning. Solvers continue to operate on only one grid.
+
+`sim/viewport-cache.js` stores sparse unresolved detail with an explicit LRU byte budget; `viewport-overview.js` retains a fixed coarse reconstruction source, not a live world. `hidden-entities.js` predicts finite poses against coarse obstacles and destructive-event history. `world-units.js` defines distance/area units, and `mechanical-mass.js` combines density, fractional quantity and contents. `persistence.js` includes world rules, physical origin and the compressed overview but excludes ephemeral detail references/cache. See `PHYSICS_MODEL.md` for the deliberate fidelity losses.
+
+`setting-controls.js` supplies shared form widgets; `world-rules-panel.js` edits a world-local draft committed by `level-editor.js`. Browser preferences contain presentation/input/cache limits, not simulation rules.
+
 ## Extension and verification
 
 Add ordinary materials through traits/state data; add actor species through the

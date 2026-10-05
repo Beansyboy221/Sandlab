@@ -357,7 +357,7 @@ export class Input {
       "wheel",
       (e) => {
         e.preventDefault();
-        if (e.ctrlKey)
+        if (e.ctrlKey || e.altKey)
           renderer.zoomAt(
             Math.exp(-Math.max(-100, Math.min(100, e.deltaY)) * 0.005),
             e.clientX,
@@ -448,6 +448,7 @@ export class Input {
     // Renderer points measure from cell edges; engine brush centers are integer cells.
     a = { x: a.x - 0.5, y: a.y - 0.5 };
     b = { x: b.x - 0.5, y: b.y - 0.5 };
+    const radius = this.state.radius;
     const tool = erase ? "erase" : this.state.tool || "paint";
     if (tool === "paint" && materials[this.state.material].circuit) {
       [dx, dy] = circuitDirection(this.state.deviceFacing ?? 0);
@@ -477,7 +478,7 @@ export class Input {
         this.world,
         a,
         b,
-        this.state.radius,
+        radius,
         this.state.shape,
         this.state.includeSolids,
         elapsed,
@@ -489,17 +490,14 @@ export class Input {
         this.world,
         a,
         b,
-        this.state.radius,
+        radius,
         this.state.shape,
         this.state.power || 1,
       );
       return;
     }
     const distance = Math.hypot(b.x - a.x, b.y - a.y),
-      steps = Math.max(
-        1,
-        Math.ceil(distance / Math.max(1, this.state.radius * 0.5)),
-      );
+      steps = Math.max(1, Math.ceil(distance / Math.max(1, radius * 0.5)));
     for (let i = 0; i <= steps; i++) {
       const x = a.x + ((b.x - a.x) * i) / steps,
         y = a.y + ((b.y - a.y) * i) / steps;
@@ -508,7 +506,7 @@ export class Input {
           this.world,
           x,
           y,
-          this.state.radius,
+          radius,
           this.state.shape,
           this.state.colorLayer,
           parseInt(this.state.color.slice(1), 16),
@@ -523,7 +521,7 @@ export class Input {
           tool,
           x,
           y,
-          this.state.radius,
+          radius,
           this.state.shape,
           dx,
           dy,
@@ -533,20 +531,13 @@ export class Input {
         continue;
       }
       if (tool === "erase" && !this.state.includeSolids) {
-        applyTool(
-          this.world,
-          "erase-mobile",
-          x,
-          y,
-          this.state.radius,
-          this.state.shape,
-        );
+        applyTool(this.world, "erase-mobile", x, y, radius, this.state.shape);
         continue;
       }
       this.world.brush(
         a.x + ((b.x - a.x) * i) / steps,
         a.y + ((b.y - a.y) * i) / steps,
-        this.state.radius,
+        radius,
         erase ? 0 : this.state.material,
         this.state.shape,
         this.state.replace,

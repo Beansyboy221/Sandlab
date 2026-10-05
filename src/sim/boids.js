@@ -26,7 +26,7 @@ export class Boids {
     for (const key of sumFields) this[key].fill(0);
     for (let i = 0; i < bodies.length; i++) {
       const a = bodies[i],
-        p = actorProfile(a.material);
+        p = actorProfile(a.material, w);
       a.flockSize = 0;
       a.flockMove = a.flockLift = 0;
       if (

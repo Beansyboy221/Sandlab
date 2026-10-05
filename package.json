@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.28.1",
+  "version": "1.29.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -42,6 +42,8 @@
     "test:portals": "python3 tests/portals_check.py",
     "bench:render": "python3 tests/rigid-render-benchmark.py",
     "bench:fire": "python3 tests/fire-render-benchmark.py",
+    "bench:viewport": "node tests/viewport-benchmark.js",
+    "test:viewport": "python3 tests/world_scale_check.py",
     "bench:audio": "node tests/acoustics-benchmark.js"
   },
   "devDependencies": {

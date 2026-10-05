@@ -15,16 +15,25 @@ import { particleStateFields } from "./sim/particle-state.js";
 import { World } from "./sim/world.js";
 import { acceptsLiquid } from "./sim/absorption.js";
 import { materials, M, canonicalMaterial } from "./sim/materials.js";
+import { ViewportOverview } from "./sim/viewport-overview.js";
+import { ViewportState } from "./sim/viewport-state.js";
+import { validateGridSize } from "./sim/world-units.js";
 const KEY = "sandlab.saves.v1",
   AUTO = "sandlab.autosave.v1";
-const arrays = [...particleStateFields, "backgroundPaint"];
-const floatFields = [...elasticFloatFields, ...rigidFields];
+const arrays = [
+  ...particleStateFields.filter(
+    (key) => !["detailRef", "detailX", "detailY"].includes(key),
+  ),
+  "backgroundPaint",
+];
+const floatFields = [...elasticFloatFields, ...rigidFields, "quantity"];
 export function snapshot(world, typed = false) {
   world.portals.ensure();
   world.portals.pruneLinks();
   return {
     version: 1,
     porousModel: 1,
+    viewport: world.viewportState?.export(world),
     stickmen: world.stickmen.snapshot(),
     missiles: world.missiles.snapshot(),
     atmosphere: {
@@ -49,6 +58,11 @@ export function snapshot(world, typed = false) {
       ambientLight: world.ambientLight,
       canvasMode: world.canvasMode,
       modeStrength: world.modeStrength,
+      metersPerPixel: world.metersPerPixel,
+      viewOriginX: world.viewOriginX,
+      viewOriginY: world.viewOriginY,
+      simulationSpeed: world.simulationSpeed,
+      mechanics: { ...world.mechanics },
     },
     width: world.width,
     height: world.height,
@@ -74,17 +88,19 @@ function validateDimensions(data) {
     !Number.isInteger(data.height) ||
     data.width < 8 ||
     data.height < 8 ||
-    data.width > 512 ||
-    data.height > 512 ||
-    data.width * data.height > 200000
+    data.width > 1024 ||
+    data.height > 1024 ||
+    data.width * data.height > 400000
   )
     throw Error("This file uses an unsupported world size or format.");
+  validateGridSize(data.width, data.height, data.level?.metersPerPixel);
 }
 export function validateSnapshot(data) {
   validateDimensions(data);
   validateStickmen(data.stickmen);
   validateMissiles(data.missiles);
   if (data.level !== undefined) validateLevelMetadata(data.level);
+  validateOverview(data);
   if (
     (data.seed !== undefined &&
       (!Number.isInteger(data.seed) ||
@@ -101,6 +117,7 @@ export function validateSnapshot(data) {
       ([
         ...elasticFields,
         ...rigidFields,
+        "quantity",
         "pigment",
         "backgroundPaint",
         "heading",
@@ -115,7 +132,9 @@ export function validateSnapshot(data) {
         "dissolvedAmount",
         ...portalFields,
       ].includes(key)
-        ? new Uint32Array(length)
+        ? key === "quantity"
+          ? new Float32Array(length).fill(1)
+          : new Uint32Array(length)
         : undefined);
     if (
       !(Array.isArray(values) || ArrayBuffer.isView(values)) ||
@@ -128,50 +147,54 @@ export function validateSnapshot(data) {
     const values = data.arrays[key];
     if (!values) continue;
     const maximum =
-      key === "temp"
-        ? 100000
-        : floatFields.includes(key)
-          ? key.startsWith("offset")
-            ? 1.5
-            : key.startsWith("rest")
-              ? 2048
-              : key === "damage"
-                ? 100000
-                : 4
-          : key === "elasticAnchor"
-            ? 15
-            : key === "heading"
-              ? 7
-              : key === "pigment" ||
-                  key === "backgroundPaint" ||
-                  key === "chargedAt" ||
-                  key === "portalId" ||
-                  key === "portalLink" ||
-                  ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
-                    key,
-                  )
-                ? 4294967295
-                : key === "portalCooldown"
-                  ? PORTAL_COOLDOWN
-                  : key === "life"
-                    ? 65535
-                    : key === "storedAmount"
-                      ? 255
-                      : [
-                            "cells",
-                            "clone",
-                            "residue",
-                            "storedLiquid",
-                            "dissolvedId",
-                          ].includes(key)
-                        ? materials.length - 1
-                        : 255;
+      key === "quantity"
+        ? 64
+        : key === "temp"
+          ? 100000
+          : floatFields.includes(key)
+            ? key.startsWith("offset")
+              ? 1.5
+              : key.startsWith("rest")
+                ? 2048
+                : key === "damage"
+                  ? 100000
+                  : 4
+            : key === "elasticAnchor"
+              ? 15
+              : key === "heading"
+                ? 7
+                : key === "pigment" ||
+                    key === "backgroundPaint" ||
+                    key === "chargedAt" ||
+                    key === "portalId" ||
+                    key === "portalLink" ||
+                    ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
+                      key,
+                    )
+                  ? 4294967295
+                  : key === "portalCooldown"
+                    ? PORTAL_COOLDOWN
+                    : key === "life"
+                      ? 65535
+                      : key === "storedAmount"
+                        ? 255
+                        : [
+                              "cells",
+                              "clone",
+                              "residue",
+                              "storedLiquid",
+                              "dissolvedId",
+                            ].includes(key)
+                          ? materials.length - 1
+                          : 255;
     const minimum =
-      key === "temp"
-        ? -273
-        : floatFields.includes(key) && key !== "damage"
-          ? -maximum
-          : 0;
+      key === "quantity"
+        ? 0
+        : key === "temp"
+          ? -273
+          : floatFields.includes(key) && key !== "damage"
+            ? -maximum
+            : 0;
     if (
       values.some(
         (v) =>
@@ -184,6 +207,9 @@ export function validateSnapshot(data) {
     )
       throw Error("This save contains invalid particle data.");
   }
+  for (let i = 0; i < length; i++)
+    if (data.arrays.cells[i] && data.arrays.quantity?.[i] === 0)
+      throw Error("Invalid occupied particle amount.");
   const elasticIds = new Set();
   validatePortalState(data);
   for (let i = 0; i < length; i++) {
@@ -303,7 +329,12 @@ export function restore(world, data) {
   world.setGravity(gravityX, gravityY);
   world.lastStrikeTick = -1;
   for (const key of arrays)
-    world[key].set(data.arrays[key] ?? new Uint32Array(world.length));
+    world[key].set(
+      data.arrays[key] ??
+        (key === "quantity"
+          ? new Float32Array(world.length).fill(1)
+          : new Uint32Array(world.length)),
+    );
   for (const key of [
     "cells",
     "clone",
@@ -370,6 +401,17 @@ export function restore(world, data) {
   world.environment.update();
   world.fragments.dirty = world.damage.some((v) => v > 0);
   world.fields.obstaclesDirty = true;
+  if (data.viewport) {
+    world.viewportState = new ViewportState(
+      world,
+      16,
+      ViewportOverview.restore(world, data.viewport),
+    );
+    if (data.viewport.home)
+      world.viewportState.home = { ...data.viewport.home };
+  } else world.viewportState = null;
+  world.rebind();
+  world.environment.update();
   if (data.activity) world.motionStamp.set(data.activity);
   else world.motionStamp.fill(world.tick + 1);
 }
@@ -398,6 +440,7 @@ export function unpack(data) {
   validateStickmen(data.stickmen);
   validateMissiles(data.missiles);
   if (data.level !== undefined) validateLevelMetadata(data.level);
+  validateOverview(data);
   if (data.encoding === undefined) return data;
   if (data.encoding !== "rle") throw Error("Unsupported save encoding.");
   const output = { ...data, arrays: {} };
@@ -407,6 +450,7 @@ export function unpack(data) {
       ([
         ...elasticFields,
         ...rigidFields,
+        "quantity",
         "pigment",
         "backgroundPaint",
         "heading",
@@ -420,7 +464,7 @@ export function unpack(data) {
         "dissolvedId",
         "dissolvedAmount",
       ].includes(key)
-        ? [data.width * data.height, 0]
+        ? [data.width * data.height, key === "quantity" ? 1 : 0]
         : undefined);
     if (
       !Array.isArray(runs) ||
@@ -501,4 +545,39 @@ export function getAutosave() {
   } catch {
     return null;
   }
+}
+
+function validateOverview(data) {
+  if (data.viewport === undefined) return;
+  const level = validateLevelMetadata(data.level),
+    w = { ...level, width: data.width, height: data.height };
+  ViewportOverview.restore(w, data.viewport);
+  validateStickmen(data.viewport.actors, 1e6);
+  validateMissiles(data.viewport.missiles, 1e6);
+  for (const a of [
+    ...(data.viewport.actors ?? []),
+    ...(data.viewport.missiles ?? []),
+  ])
+    if (
+      (a.observedTick !== undefined &&
+        (!Number.isSafeInteger(a.observedTick) ||
+          a.observedTick < 0 ||
+          a.observedTick > (data.tick ?? 0))) ||
+      (a.observedEventSequence !== undefined &&
+        (!Number.isSafeInteger(a.observedEventSequence) ||
+          a.observedEventSequence < 0)) ||
+      (a.wasActive !== undefined && typeof a.wasActive !== "boolean")
+    )
+      throw Error("Invalid prediction clock.");
+  if (
+    data.viewport.home &&
+    (!["x", "y", "width", "height"].every(
+      (key) =>
+        Number.isFinite(data.viewport.home[key]) &&
+        Math.abs(data.viewport.home[key]) <= 1e6,
+    ) ||
+      data.viewport.home.width <= 0 ||
+      data.viewport.home.height <= 0)
+  )
+    throw Error("Invalid world extent.");
 }

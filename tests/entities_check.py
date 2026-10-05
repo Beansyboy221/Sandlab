@@ -88,12 +88,15 @@ with sync_playwright() as p:
         page.locator('#redo-btn').click();assert page.evaluate('sandlab.world.canvasMode')=='zero'
         exact=page.evaluate('''async()=>{const p=await import('./src/persistence.js');const s=p.snapshot(sandlab.world);p.restore(sandlab.world,p.unpack(p.pack(s)));return JSON.stringify(p.snapshot(sandlab.world))===JSON.stringify(s)}''')
         assert exact
-        page.locator('#settings-btn').click();page.locator('#settings-tab-devices').click()
-        assert page.locator('#setting-laserGuidance').is_checked()
-        page.locator('#setting-laserGuidance').uncheck();assert not page.evaluate('sandlab.world.mechanics.laserGuidance')
-        page.locator('#settings-tab-performance').click();assert page.locator('#setting-fragmentParticles').is_checked()
-        page.locator('#setting-fragmentParticles').uncheck();assert not page.evaluate('sandlab.world.mechanics.fragmentParticles')
-        page.locator('#settings-dialog .dialog-close').click()
+        page.locator('#level-properties-btn').click()
+        page.locator('.world-setting-group').filter(has_text='Devices').locator('summary').click()
+        assert page.locator('#world-setting-laserGuidance').is_checked()
+        page.locator('#world-setting-laserGuidance').uncheck()
+        page.locator('.world-setting-group').filter(has_text='Fragmentation').locator('summary').click()
+        page.locator('#world-setting-fragmentParticles').uncheck()
+        page.locator('#level-submit').click()
+        assert not page.evaluate('sandlab.world.mechanics.laserGuidance')
+        assert not page.evaluate('sandlab.world.mechanics.fragmentParticles')
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         assert not errors,errors
         page.screenshot(path=str(ARTIFACTS/f'entities-{width}x{height}.png'))

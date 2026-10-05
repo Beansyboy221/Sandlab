@@ -40,6 +40,10 @@ test("fragment optimization can be disabled and pending cuts survive export", ()
   assert.equal(w.cells[1210], M.Wood);
   const loaded = new World();
   restore(loaded, snapshot(w));
+  assert.equal(loaded.mechanics.fragmentParticles, false);
+  loaded.fragments.step();
+  assert.equal(loaded.cells[1210], M.Wood);
+  loaded.mechanics.fragmentParticles = true;
   loaded.fragments.step();
   assert.equal(loaded.cells[1210], M["Wood Chips"]);
 });

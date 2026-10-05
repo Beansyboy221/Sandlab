@@ -4,6 +4,7 @@ import { actorProfile } from "./creature-profiles.js";
 import { creatureMotion } from "./creature-behavior.js";
 import { Boids } from "./boids.js";
 import { StickmanPathfinder } from "./stickman-pathfinding.js";
+import { entityCanSpawn } from "./entity-metrics.js";
 export const MAX_STICKMEN = 32;
 const segmentDistance = (x, y, ax, ay, bx, by) => {
   const dx = bx - ax,
@@ -32,12 +33,13 @@ export class Stickmen {
   spawn(x, y, material) {
     if (
       !materials[material]?.actor ||
+      !entityCanSpawn(this.world, material) ||
       !Number.isFinite(x) ||
       !Number.isFinite(y) ||
       this.bodies.length >= MAX_STICKMEN
     )
       return false;
-    const profile = actorProfile(material),
+    const profile = actorProfile(material, this.world),
       restX = profile.x,
       restY = profile.y;
     const w = this.world,
@@ -96,7 +98,7 @@ export class Stickmen {
           (px, n) =>
             Math.hypot(px - x, a.y[n] - y) <= radius + (n === 0 ? 1.5 : 0.7),
         ) ||
-        actorProfile(a.material).links.some(
+        actorProfile(a.material, this.world).links.some(
           ([u, v], k) =>
             a.bonds[k] &&
             segmentDistance(x, y, a.x[u], a.y[u], a.x[v], a.y[v]) <= radius,
@@ -111,7 +113,7 @@ export class Stickmen {
     }
     if (!this.bodies.length) return;
     for (const a of this.bodies) {
-      const { links } = actorProfile(a.material);
+      const { links } = actorProfile(a.material, this.world);
       for (let n = 0; n < 9; n++) {
         const inBrush =
           shape === "square"
@@ -320,7 +322,7 @@ export class Stickmen {
   }
 }
 
-export function validateStickmen(data) {
+export function validateStickmen(data, maximumPosition = 2048) {
   if (data === undefined) return;
   if (!Array.isArray(data) || data.length > MAX_STICKMEN)
     throw Error("Invalid stickman count.");
@@ -370,7 +372,7 @@ export function validateStickmen(data) {
               ? v < -250 || v > 6000
               : f === "fuel"
                 ? v < 0 || v > 100
-                : Math.abs(v) > 2048),
+                : Math.abs(v) > maximumPosition),
         )
       )
         throw Error("Invalid stickman joints.");

@@ -16,6 +16,7 @@ with sync_playwright() as p:
         page.goto('http://sandlab.test/');page.wait_for_function('()=> (!!window.sandlab)')
         page.evaluate('sandlab.settings.set("autosave",false);sandlab.state.paused=true;sandlab.world.clear();sandlab.renderer.resetView()')
         if touch:page.locator('#palette-toggle').click()
+        page.locator('#entities-tab').click()
         page.get_by_role('button',name='Bird',exact=True).click()
         positions=page.evaluate('''()=>{const {world:w,renderer:r}=sandlab;r.resize();const b=r.canvas.getBoundingClientRect(),d=r.canvas.width/b.width;
           return [[-14,0],[0,-10],[14,0]].map(([dx,dy])=>{const q=r.project(w.width*.5+dx,w.height*.4+dy);return {x:b.x+q.x/d,y:b.y+q.y/d};});}''')
@@ -26,21 +27,22 @@ with sync_playwright() as p:
         page.evaluate('sandlab.state.paused=false')
         page.wait_for_function('()=> (sandlab.world.stickmen.bodies.every(a=>a.behavior==="Flocking"&&a.flockSize===3))')
         if page.evaluate('document.body.classList.contains("canvas-focus")'):page.locator('#mobile-exit-focus').click()
-        page.locator('#settings-btn').click();page.locator('#settings-tab-wildlife').click()
-        assert page.locator('#setting-flocking').is_checked()
-        page.locator('#setting-flocking').uncheck()
-        assert page.locator('#setting-flockRange').is_disabled()
-        assert page.locator('#setting-flockMinimum').is_disabled()
-        page.locator('#settings-dialog .dialog-close').click()
+        page.locator('#level-properties-btn').click();page.locator('.world-setting-group').filter(has=page.get_by_text('Wildlife',exact=True)).evaluate('e=>e.open=true')
+        assert page.locator('#world-setting-flocking').is_checked()
+        page.locator('#world-setting-flocking').uncheck()
+        assert page.locator('#world-setting-flockRange').is_disabled()
+        assert page.locator('#world-setting-flockMinimum').is_disabled()
+        page.locator('#level-submit').click()
         page.wait_for_function('()=> (sandlab.world.stickmen.bodies.every(a=>a.flockSize===0))')
-        page.locator('#settings-btn').click();page.locator('#settings-tab-wildlife').click()
-        page.locator('#setting-flocking').check()
-        page.locator('#setting-flockMinimum').evaluate('e=>{e.value=4;e.dispatchEvent(new Event("input",{bubbles:true}));}')
-        assert page.evaluate('sandlab.world.mechanics.flockMinimum')==4
-        page.locator('#setting-flockMinimum').evaluate('e=>{e.value=3;e.dispatchEvent(new Event("input",{bubbles:true}));}')
-        page.locator('#setting-flockRange').evaluate('e=>{e.value=48;e.dispatchEvent(new Event("input",{bubbles:true}));}')
+        page.locator('#level-properties-btn').click();page.locator('.world-setting-group').filter(has=page.get_by_text('Wildlife',exact=True)).evaluate('e=>e.open=true')
+        page.locator('#world-setting-flocking').check()
+        page.locator('#world-setting-flockMinimum').evaluate('e=>{e.value=4;e.dispatchEvent(new Event("input",{bubbles:true}));}')
+        assert page.evaluate('sandlab.levelEditor.rules.settings.get("flockMinimum")')==4
+        page.locator('#world-setting-flockMinimum').evaluate('e=>{e.value=3;e.dispatchEvent(new Event("input",{bubbles:true}));}')
+        page.locator('#world-setting-flockRange').evaluate('e=>{e.value=48;e.dispatchEvent(new Event("input",{bubbles:true}));}')
+        assert page.evaluate('sandlab.levelEditor.rules.settings.get("flockRange")')==48
+        page.locator('#level-submit').click()
         assert page.evaluate('sandlab.world.mechanics.flockRange')==48
-        page.locator('#settings-dialog .dialog-close').click()
         page.locator('#new-canvas-btn').click();page.locator('#level-starter').select_option('flocks');page.locator('#level-submit').click()
         page.evaluate('sandlab.state.paused=false')
         page.wait_for_function('()=> (sandlab.world.stickmen.bodies.length===6&&sandlab.world.stickmen.bodies.every(a=>a.flockSize===3))',timeout=10000)
@@ -52,9 +54,9 @@ with sync_playwright() as p:
         assert page.evaluate('sandlab.snapshot().stickmen')==saved
         page.evaluate('sandlab.state.paused=false');page.wait_for_function('()=> (sandlab.world.stickmen.bodies.every(a=>a.flockSize===3))')
         page.wait_for_timeout(800);page.screenshot(path=str(ARTIFACTS/f'flocking-{width}x{height}.png'))
-        # Settings persist on reload and still feed the new simulation manager.
+        # A new world uses its own defaults, independent of the prior world's rules.
         page.reload();page.wait_for_function('()=> (!!window.sandlab)')
-        assert page.evaluate('sandlab.world.mechanics.flockRange')==48
+        assert page.evaluate('sandlab.world.mechanics.flockRange')==40
         assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
         assert not errors,errors
         print(f'Bird drawing, flocking/schooling, settings, inspection, saves and layout passed: {width}x{height}',flush=True)

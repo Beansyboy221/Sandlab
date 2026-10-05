@@ -42,7 +42,10 @@ test("ambient atmosphere is stable; heater and cooler create local air temperatu
     assert.ok(Math.abs(far - 20) < Math.abs(local - 20) * 0.1);
     assert.ok(w.fields.pressure.some((v) => (id === M.Heater ? v > 0 : v < 0)));
     const inspected = cellProperties(w, { x: 13, y: 16 });
-    assert.equal(inspected.rows[0][1], `${local.toFixed(1)}°C`);
+    assert.equal(
+      inspected.rows.find(([label]) => label === "Air temperature")[1],
+      `${local.toFixed(1)}°C`,
+    );
   }
 });
 test("thin solid walls stop atmospheric fields, openings reconnect them, and void edges vent", () => {
