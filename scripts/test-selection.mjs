@@ -37,7 +37,14 @@ export const groups = {
     "bodies-fill",
     "paint",
   ],
-  atmosphere: ["airflow", "atmosphere", "simulation", "ignition", "energy"],
+  atmosphere: [
+    "airflow",
+    "airflow-system",
+    "atmosphere",
+    "simulation",
+    "ignition",
+    "energy",
+  ],
   actors: [
     "stickmen",
     "creatures",
@@ -102,7 +109,7 @@ export const browserChecks = {
 const rules = [
   [/^src\/sim\/(body-|rigid-|collision-|fragments\.)/, ["collisions"]],
   [/^src\/sim\/elastic/, ["elastics"]],
-  [/^src\/sim\/(airflow|fields|combustion|ignition|weather)\./, ["atmosphere"]],
+  [/^src\/sim\/(airflow|air-brush|fields|combustion|ignition|weather)\./, ["atmosphere"]],
   [/^src\/sim\/(stickm|creature|boids|predation)/, ["actors"]],
   [/^src\/sim\/(missile|machine|circuit)/, ["devices"]],
   [/^src\/sim\/(energy|sparks|bubbles)/, ["atmosphere", "lighting"]],

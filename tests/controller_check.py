@@ -13,7 +13,7 @@ with sync_playwright() as p:
         c=b.new_context(viewport=dict(width=width,height=height),has_touch=mobile,is_mobile=mobile,device_scale_factor=2)
         c.route('http://sandlab.test/**',serve);page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
         page.add_init_script("""window.testPad={index:0,connected:true,mapping:'standard',axes:[0,0,0,0],buttons:Array.from({length:17},()=>({pressed:false,value:0}))};Object.defineProperty(navigator,'getGamepads',{value:()=>[testPad]});""")
-        page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab?.controller')
+        page.goto('http://sandlab.test/');page.wait_for_function('() => !!window.sandlab?.controller')
         page.evaluate("""async()=>{window.M=(await import('./src/sim/materials.js')).M;sandlab.settings.set('autosave',false);sandlab.state.paused=true;
           window.controlFrame=(buttons=[],axes=[0,0,0,0])=>{testPad.buttons.forEach((b,n)=>{b.pressed=buttons.includes(n);b.value=b.pressed?1:0});testPad.axes=axes;sandlab.controller.focused=true;sandlab.controller.update(1000/60);sandlab.controller.input.update();sandlab.playerControls.update();};controlFrame();}""")
         if page.evaluate('document.body.classList.contains("canvas-focus")'):page.locator('#mobile-exit-focus').click()

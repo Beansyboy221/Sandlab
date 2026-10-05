@@ -81,7 +81,6 @@ const state = {
   colorErase: false,
   power: 1,
   includeSolids: true,
-  fanDirection: "drag",
   deviceFacing: 0,
   replace: false,
   paused: false,
@@ -243,7 +242,6 @@ function updateToolProperties() {
     "wind",
   ].includes(tool);
   $("solids-property").hidden = !["grab", "erase"].includes(tool);
-  $("direction-property").hidden = tool !== "wind";
   const shape = tool === "select" ? state.selectionShape : state.shape;
   $("brush-control").hidden =
     reading || tool === "fill" || (tool === "select" && shape === "square");
@@ -343,10 +341,6 @@ $("tool-power").addEventListener("input", (e) => {
 $("include-solids").addEventListener(
   "change",
   (e) => (state.includeSolids = e.target.checked),
-);
-$("fan-direction").addEventListener(
-  "change",
-  (e) => (state.fanDirection = e.target.value),
 );
 for (const [value, name] of brushTools) {
   const option = document.createElement("option");

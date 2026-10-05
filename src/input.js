@@ -5,13 +5,7 @@ import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
 import { stampGesture } from "./drawing-gesture.js";
 import { M, materials } from "./sim/materials.js";
-import { applyTool, dragBrush } from "./sim/tools.js";
-const fanDirections = {
-  right: [1, 0],
-  left: [-1, 0],
-  up: [0, -1],
-  down: [0, 1],
-};
+import { applyTool, dragBrush, blowBrush } from "./sim/tools.js";
 const readTools = new Set(["inspect", "eyedropper", "guide"]);
 export function lightningInterval(radius) {
   return 1000 / (1 + 0.4 * (Math.max(1, Math.min(30, radius)) - 1));
@@ -133,7 +127,12 @@ export class Input {
         materials[state.material].rigid
       )
         drawingPause?.begin(e.pointerId);
-      if (!selecting && !geometric && !this.pointers.size) {
+      if (
+        !selecting &&
+        !geometric &&
+        !this.pointers.size &&
+        (state.tool !== "wind" || e.button === 2 || state.erase)
+      ) {
         this.onStroke();
         if (state.tool === "recolor") beginColorStroke(world);
       }
@@ -144,6 +143,7 @@ export class Input {
         selecting,
         dx: 1,
         dy: 0,
+        strokeStarted: state.tool !== "wind" || e.button === 2 || state.erase,
       });
       if (geometric) {
         const gesture = {
@@ -209,10 +209,20 @@ export class Input {
       if (last) {
         const dx = point.x - last.x,
           dy = point.y - last.y;
+        if (
+          state.tool === "wind" &&
+          !last.erase &&
+          !last.strokeStarted &&
+          (dx || dy)
+        ) {
+          this.onStroke();
+          last.strokeStarted = true;
+        }
         const direction =
           Math.hypot(dx, dy) > 0.1 ? { dx, dy } : { dx: last.dx, dy: last.dy };
         this.paint(last, point, last.erase, direction.dx, direction.dy);
         this.pointers.set(e.pointerId, {
+          ...last,
           ...point,
           erase: last.erase,
           ...direction,
@@ -462,6 +472,17 @@ export class Input {
       );
       return;
     }
+    if (tool === "wind") {
+      blowBrush(
+        this.world,
+        a,
+        b,
+        this.state.radius,
+        this.state.shape,
+        this.state.power || 1,
+      );
+      return;
+    }
     const distance = Math.hypot(b.x - a.x, b.y - a.y),
       steps = Math.max(
         1,
@@ -485,7 +506,6 @@ export class Input {
         continue;
       }
       if (tool !== "paint" && tool !== "erase") {
-        const direction = fanDirections[this.state.fanDirection];
         applyTool(
           this.world,
           tool,
@@ -493,14 +513,8 @@ export class Input {
           y,
           this.state.radius,
           this.state.shape,
-          direction
-            ? this.world.gravityY * direction[0] +
-                this.world.gravityX * direction[1]
-            : dx,
-          direction
-            ? -this.world.gravityX * direction[0] +
-                this.world.gravityY * direction[1]
-            : dy,
+          dx,
+          dy,
           this.state.power || 1,
         );
         if (!distance) break;
@@ -557,6 +571,7 @@ export class Input {
         !point.gesture &&
         !point.pan &&
         !point.portalLink &&
+        !(s.tool === "wind" && !point.erase) &&
         !(frozen && this.drawingPause.pointers.has(id) && !changed)
       )
         this.paint(point, point, point.erase, point.dx, point.dy);

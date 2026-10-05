@@ -191,12 +191,12 @@ test("air and pressure switch together; temperature remains independent", () => 
   const field = w.fields.index(10, 5);
   w.fields.temperature[field] = 400;
   w.fields.add(10, 5, 8);
-  applyTool(w, "wind", 10, 5, 2);
+  applyTool(w, "wind", 10, 5, 2, "circle", 1, 0);
   assert.ok(w.fields.pressure.some((v) => v !== 0));
   w.mechanics.pressureSimulation = false;
   w.mechanics.temperatureSimulation = false;
   w.fields.configure(w.mechanics);
-  applyTool(w, "wind", 10, 5, 2);
+  applyTool(w, "wind", 10, 5, 2, "circle", 1, 0);
   applyTool(w, "pressure", 10, 5, 2);
   run(w, 4);
   assert.ok(w.fields.pressure.every((v) => v === 0));
@@ -215,7 +215,7 @@ test("air and pressure switch together; temperature remains independent", () => 
   );
   w.mechanics.pressureSimulation = true;
   w.fields.configure(w.mechanics);
-  applyTool(w, "wind", 10, 5, 2);
+  applyTool(w, "wind", 10, 5, 2, "circle", 1, 0);
   w.fields.update(w);
   assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
   assert.ok(w.fields.pressure.some((v) => v !== 0));

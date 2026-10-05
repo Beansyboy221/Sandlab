@@ -20,16 +20,41 @@ with sync_playwright() as p:
         page.evaluate('sandlab.settings.set("autosave",false)')
         page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option="wind"]').click()
         if touch and page.locator('#controls-toggle').get_attribute('aria-expanded')!='true':page.locator('#controls-toggle').click()
-        assert page.locator('#direction-property').is_visible()
+        assert page.locator('#direction-property').count()==0
         assert page.locator('#power-property').is_visible()
         assert page.locator('#palette-toggle').is_hidden()
-        page.locator('#fan-direction').select_option('right')
+        if not page.evaluate('sandlab.state.paused'):page.locator('#play-btn').click()
         page.evaluate('sandlab.world.clear();sandlab.state.setRadius(8)')
         if touch:page.locator('#controls-toggle').click()
-        q=page.evaluate('''()=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(60,60),d=r.canvas.width/b.width;return{x:b.x+p.x/d,y:b.y+p.y/d}}''')
-        if touch:page.touchscreen.tap(**q)
-        else:page.mouse.click(**q)
-        assert page.evaluate('sandlab.world.fields.pressure.some(v=>v!==0)')
+        def point(x,y):
+            return page.evaluate('''([x,y])=>{const r=sandlab.renderer,b=r.canvas.getBoundingClientRect(),p=r.project(x,y),d=r.canvas.width/b.width;return{x:b.x+p.x/d,y:b.y+p.y/d}}''',[x,y])
+        a=point(60,60);b=point(90,74)
+        air=lambda:page.evaluate('JSON.stringify({pressure:sandlab.snapshot().pressure,atmosphere:sandlab.snapshot().atmosphere})')
+        before=air()
+        if touch:
+            session=c.new_cdp_session(page)
+            session.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[dict(a,id=1)]})
+        else:page.mouse.move(**a);page.mouse.down()
+        page.wait_for_timeout(100)
+        assert air()==before,'A stationary Blow press must leave the air unchanged'
+        assert page.locator('#undo-btn').is_disabled(),'A stationary press must not add history'
+        if touch:
+            for n in range(1,6):
+                q={k:a[k]+(b[k]-a[k])*n/5 for k in a}
+                session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[dict(q,id=1)]})
+        else:page.mouse.move(**b,steps=5)
+        page.wait_for_function('''b=>{const target=sandlab.renderer.point(b.x,b.y);return Array.from(sandlab.controller.input.pointers.values()).some(p=>Math.hypot(p.x-target.x,p.y-target.y)<.5)}''',arg=b)
+        moving=air()
+        assert moving!=before and page.evaluate('sandlab.world.count===0'), {'viewport':[width,height],'air_changed':moving!=before,'state':page.evaluate('({tool:sandlab.state.tool,paused:sandlab.state.paused,count:sandlab.world.count,mechanics:sandlab.world.mechanics})'),'points':[a,b]}
+        page.wait_for_timeout(100)
+        assert air()==moving,'Holding after a stroke must not repeat the last impulse'
+        if touch:session.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+        else:page.mouse.up()
+        page.wait_for_timeout(100);assert air()==moving
+        if touch:page.locator('#controls-toggle').click()
+        page.locator('#undo-btn').click();assert air()==before
+        page.locator('#redo-btn').click();assert air()==moving
+        if touch:page.locator('#controls-toggle').click()
         assert page.locator('#tool-picker-toggle').get_attribute('aria-label')=='Tool: Blow'
         if touch and page.locator('#mobile-exit-focus').is_visible():page.locator('#mobile-exit-focus').click()
         page.locator('#settings-btn').click();page.locator('#settings-tab-atmosphere').click()

@@ -529,7 +529,7 @@ test("wind applies air momentum, grab carries solids and contents, and walls pre
   applyTool(w, "wind", 14, 12, 3, "square", 1, 0);
   assert.equal(w.cells[i], M.Sponge);
   assert.equal(w.cells[index(w, 15, 11)], M.Sand);
-  assert.ok(w.fields.pressure.some((value) => value !== 0));
+  assert.ok(w.fields.airflow.velocityX.some((value) => value > 0));
   dragBrush(w, { x: 14, y: 12 }, { x: 19, y: 12 }, 3, "square");
   assert.equal(w.cells[index(w, 19, 12)], M.Sponge);
   assert.equal(w.storedAmount[index(w, 19, 12)], 17);

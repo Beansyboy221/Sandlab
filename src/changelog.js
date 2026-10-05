@@ -1,5 +1,13 @@
 export const changelog = [
   {
+    version: "1.27.1",
+    date: "2026-10-05",
+    title: "Brush-driven airflow",
+    changes: [
+      "Blow pushes air along moving brush strokes, stays idle when held still, and lets the shared airflow solver produce pressure and lingering gusts.",
+    ],
+  },
+  {
     version: "1.27.0",
     date: "2026-10-04",
     title: "Shared pixel engine",

@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M } from "../src/sim/materials.js";
-import { applyTool } from "../src/sim/tools.js";
 import { actorProfile } from "../src/sim/creature-profiles.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 import { loadPreset } from "../src/presets.js";
@@ -182,7 +181,7 @@ test("standing feet stop residual drift after releasing either walking direction
       assert.ok(a.alive && a.grounded && a.bonds.every(Boolean));
     }
 });
-test("idle grip does not cancel airborne momentum, fan impulses or detached-limb motion", () => {
+test("idle grip does not cancel airborne momentum, external air forces or detached-limb motion", () => {
   for (const direction of [-1, 1]) {
     const w = arena();
     w.stickmen.spawn(90, 78, M.Player);
@@ -201,9 +200,10 @@ test("idle grip does not cancel airborne momentum, fan impulses or detached-limb
     );
     run(w, 100);
     const before = a.x[2];
-    // A sustained Blow brush now acts through pressure, not a body-only impulse.
+    // Calibrate strong pressure independently of tool stroke cadence.
     for (let n = 0; n < 8; n++) {
-      applyTool(w, "wind", a.x[2], a.y[2], 20, "circle", direction * 4, 0, 1);
+      w.fields.add(a.x[2] - direction * 4, a.y[2], 8);
+      w.fields.add(a.x[2] + direction * 4, a.y[2], -8);
       w.step();
     }
     assert.ok(

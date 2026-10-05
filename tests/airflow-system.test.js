@@ -9,15 +9,18 @@ import { Settings, settingsKey } from "../src/settings.js";
 const step = (w, n) => {
   for (let t = 0; t < n; t++) w.step();
 };
-test("Blow injects a local pressure dipole, and pressure accelerates air without crossing sealed surfaces", () => {
+test("Blow pushes air momentum, whose divergence creates pressure without crossing sealed surfaces", () => {
   const w = new World(48, 32);
   for (let y = 0; y < 32; y++) w.set(y * 48 + 32, M.Wall);
   applyTool(w, "wind", 26, 16, 6, "circle", 1, 0, 2);
+  assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
+  w.fields.update(w);
   assert.ok(w.fields.pressure.some((p) => p > 0));
   assert.ok(w.fields.pressure.some((p) => p < 0));
-  assert.ok(w.fields.airflow.velocityX.every((v) => v === 0));
-  for (let t = 0; t < 30; t++) w.fields.update(w);
+  for (let t = 0; t < 4; t++) w.fields.update(w);
   assert.ok(w.fields.airflow.velocityX.some((v) => v > 0.01));
+  for (let t = 0; t < 25; t++) w.fields.update(w);
+  assert.ok(w.fields.airflow.velocityX.some((v) => Math.abs(v) > 0.005));
   for (let y = 0; y < w.fields.height; y++)
     for (let x = 9; x < w.fields.width; x++) {
       assert.equal(w.fields.pressure[y * w.fields.width + x], 0);

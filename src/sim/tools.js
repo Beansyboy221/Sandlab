@@ -1,5 +1,7 @@
 import { materials } from "./materials.js";
 import { brushFootprint, inBrushCircle } from "../brush-geometry.js";
+import { blowBrush } from "./air-brush.js";
+export { blowBrush } from "./air-brush.js";
 export const toolGroups = [
   { name: "Create", tools: ["paint", "fill", "recolor", "erase"] },
   { name: "Arrange", tools: ["select", "grab"] },
@@ -83,24 +85,35 @@ export function applyTool(
   y,
   radius,
   shape = "circle",
-  dx = 1,
+  dx = 0,
   dy = 0,
   power = 1,
 ) {
   if (![x, y, radius, dx, dy].every(Number.isFinite)) return;
   if (radius < 0) return;
+  if (tool === "wind") {
+    blowBrush(
+      w,
+      { x: x - dx / 2, y: y - dy / 2 },
+      { x: x + dx / 2, y: y + dy / 2 },
+      radius,
+      shape,
+      power,
+    );
+    return;
+  }
   const footprint = brushFootprint(radius),
     centerX = Math.round(x) + 0.5 + footprint.center,
     centerY = Math.round(y) + 0.5 + footprint.center;
-  if (["wind", "pressure", "vacuum"].includes(tool)) {
+  if (["pressure", "vacuum"].includes(tool)) {
     w.fields.configure(w.mechanics);
     if (!w.fields.pressureEnabled) return;
     w.fields.border = w.border;
     w.fields.rebuildBarriers(w);
   }
-  // Blow/Pressure/Vacuum write the shared field; entities feel its forces during
-  // their normal integration instead of receiving a second brush-only impulse.
-  if (!["wind", "pressure", "vacuum"].includes(tool)) {
+  // Field tools act on entities during their normal integration instead of
+  // receiving a second brush-only impulse.
+  if (!["pressure", "vacuum"].includes(tool)) {
     w.missiles.brush(
       tool,
       centerX,
@@ -140,12 +153,6 @@ export function applyTool(
         ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
       )
         w.fields.heat(nx, ny, (tool === "warm" ? 12 : -12) * power);
-      if (
-        tool === "wind" &&
-        !w.fields.blocks(w.cells[i]) &&
-        ((nx % 4 === 0 && ny % 4 === 0) || (ox === 0 && oy === 0))
-      )
-        w.fields.airflow.impulse(w.fields, nx, ny, dx, dy, power);
       if (tool === "erase-mobile") {
         if (
           w.cells[i] &&

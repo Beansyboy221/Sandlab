@@ -24,14 +24,14 @@ with sync_playwright() as p:
         context.route('http://sandlab.test/**', serve)
         page = context.new_page(); errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
-        page.goto('http://sandlab.test/'); page.wait_for_function('!!window.sandlab')
+        page.goto('http://sandlab.test/'); page.wait_for_function('() => !!window.sandlab')
         page.evaluate('sandlab.state.paused=true;sandlab.settings.set("autosave",false);sandlab.world.clear();sandlab.renderer.resetView()')
         page.wait_for_timeout(200)
         session = context.new_cdp_session(page)
         box = page.locator('#world').bounding_box()
         x, y = box['x']+box['width']/2, box['y']+box['height']*.4
         # Two simultaneous fingers must never draw, fill, erase, or recolor.
-        for tool in ['paint','fill','erase','recolor','warm','cool','fan','grab','select','inspect','eyedropper']:
+        for tool in ['paint','fill','erase','recolor','warm','cool','wind','grab','select','inspect','eyedropper']:
             page.evaluate('(tool)=>{sandlab.state.tool=tool;sandlab.renderer.resetView()}', tool)
             anchor = page.evaluate('([x,y])=>sandlab.renderer.point(x,y)', [x,y])
             dispatch(session,'Start',[touch(x-40,y,1),touch(x+40,y,2)])

@@ -550,9 +550,8 @@ with sync_playwright() as p:
     assert phone.locator('#deselect-selection').bounding_box()['height'] >= 44
     phone.set_viewport_size({'width':390,'height':844})
     choose(phone, 'wind')
-    assert phone.locator('#fan-direction').is_visible()
-    phone.locator('#fan-direction').select_option('up')
-    assert phone.evaluate("sandlab.state.fanDirection === 'up'")
+    assert phone.locator('#fan-direction').count() == 0
+    assert phone.locator('#power-property').is_visible()
     choose(phone, 'paint')
     assert phone.locator('#palette-toggle').is_visible()
     phone.set_viewport_size({'width':360,'height':640})

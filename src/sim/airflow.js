@@ -190,6 +190,71 @@ export class Airflow {
     this.y = uy * (1 - b) + this.velocityY[i] * b;
     return i;
   }
+  push(f, x, y, dx, dy, power = 1) {
+    if (
+      !f.windEnabled ||
+      !Number.isFinite(x) ||
+      !Number.isFinite(y) ||
+      !Number.isFinite(dx) ||
+      !Number.isFinite(dy) ||
+      !Number.isFinite(power) ||
+      power <= 0 ||
+      x < 0 ||
+      y < 0 ||
+      x >= this.width * 4 ||
+      y >= this.height * 4
+    )
+      return;
+    const length = Math.hypot(dx, dy);
+    if (!length || !Number.isFinite(length)) return;
+    const fx = x >> 2,
+      fy = y >> 2,
+      i = fy * this.width + fx,
+      left = fx ? i - 1 : f.border === "looping" ? i + this.width - 1 : -1,
+      up = fy
+        ? i - this.width
+        : f.border === "looping"
+          ? i + (this.height - 1) * this.width
+          : -1,
+      vx = (dx / length) * power * 0.1,
+      vy = (dy / length) * power * 0.1,
+      horizontal =
+        fx === this.width - 1 && f.border === "solid" ? 0 : f.horizontal[i],
+      vertical =
+        fy === this.height - 1 && f.border === "solid" ? 0 : f.vertical[i];
+    // Distribute brush momentum to the tile's faces. The normal divergence pass
+    // creates compression and suction; closed faces cannot carry this momentum.
+    this.velocityX[i] = clamp(
+      this.velocityX[i] + vx * horizontal,
+      -MAX_AIR_SPEED,
+      MAX_AIR_SPEED,
+    );
+    this.velocityY[i] = clamp(
+      this.velocityY[i] + vy * vertical,
+      -MAX_AIR_SPEED,
+      MAX_AIR_SPEED,
+    );
+    if (left >= 0)
+      this.velocityX[left] = clamp(
+        this.velocityX[left] + vx * f.horizontal[left],
+        -MAX_AIR_SPEED,
+        MAX_AIR_SPEED,
+      );
+    else if (f.border !== "solid")
+      this.west[fy] = clamp(this.west[fy] + vx, -MAX_AIR_SPEED, MAX_AIR_SPEED);
+    if (up >= 0)
+      this.velocityY[up] = clamp(
+        this.velocityY[up] + vy * f.vertical[up],
+        -MAX_AIR_SPEED,
+        MAX_AIR_SPEED,
+      );
+    else if (f.border !== "solid")
+      this.north[fx] = clamp(
+        this.north[fx] + vy,
+        -MAX_AIR_SPEED,
+        MAX_AIR_SPEED,
+      );
+  }
   impulse(f, x, y, dx, dy, power = 1) {
     if (
       !f.windEnabled ||

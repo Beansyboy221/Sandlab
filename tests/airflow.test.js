@@ -2,13 +2,101 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M } from "../src/sim/materials.js";
-import { applyTool } from "../src/sim/tools.js";
+import { applyTool, blowBrush } from "../src/sim/tools.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 import { resizeLevel } from "../src/level.js";
 import { loadPreset } from "../src/presets.js";
 const run = (w, n, fieldsOnly = false) => {
   for (let k = 0; k < n; k++) fieldsOnly ? w.fields.update(w) : w.step();
 };
+test("Blow only deposits air from movement, without touching matter or spawning held impulses", () => {
+  const w = new World(64, 64),
+    a = { x: 24, y: 24 };
+  w.set(24 * 64 + 24, M.Smoke);
+  const before = snapshot(w),
+    cells = w.cells.slice();
+  for (let n = 0; n < 60; n++) {
+    blowBrush(w, a, a, 6);
+    applyTool(w, "wind", 24, 24, 6);
+  }
+  assert.deepEqual(snapshot(w), before);
+  blowBrush(w, a, { x: 40, y: 36 }, 6);
+  assert.ok(w.fields.airflow.velocityX.some((v) => v > 0));
+  assert.ok(w.fields.airflow.velocityY.some((v) => v > 0));
+  assert.deepEqual(w.cells, cells);
+  const moving = snapshot(w);
+  blowBrush(w, a, a, 6);
+  assert.deepEqual(snapshot(w), moving);
+  run(w, 3, true);
+  assert.ok(w.fields.pressure.some((v) => v > 0));
+  assert.ok(w.fields.pressure.some((v) => v < 0));
+  assert.ok(w.fields.airflow.velocityX.reduce((a, b) => a + b, 0) > 0);
+  assert.ok(w.fields.airflow.velocityY.reduce((a, b) => a + b, 0) > 0);
+});
+test("Blow follows stroke direction, strength and length rather than event subdivision", () => {
+  for (const [dx, dy] of [
+    [24, 0],
+    [-24, 0],
+    [0, 24],
+    [0, -24],
+    [24, 24],
+  ]) {
+    const whole = new World(96, 96),
+      divided = new World(96, 96),
+      strong = new World(96, 96);
+    const a = { x: 48, y: 48 },
+      b = { x: 48 + dx, y: 48 + dy };
+    blowBrush(whole, a, b, 5, "square");
+    blowBrush(strong, a, b, 5, "square", 2);
+    for (let n = 0; n < 12; n++)
+      blowBrush(
+        divided,
+        { x: a.x + (dx * n) / 12, y: a.y + (dy * n) / 12 },
+        { x: a.x + (dx * (n + 1)) / 12, y: a.y + (dy * (n + 1)) / 12 },
+        5,
+        "square",
+      );
+    const energy = (w) =>
+      w.fields.airflow.velocityX.reduce((a, b) => a + Math.abs(b), 0) +
+      w.fields.airflow.velocityY.reduce((a, b) => a + Math.abs(b), 0);
+    assert.ok(Math.abs(energy(divided) / energy(whole) - 1) < 0.2);
+    assert.ok(energy(strong) > energy(whole) * 1.9);
+    run(whole, 2, true);
+    const vx = whole.fields.airflow.velocityX.reduce((a, b) => a + b, 0),
+      vy = whole.fields.airflow.velocityY.reduce((a, b) => a + b, 0);
+    if (dx) assert.ok(vx * dx > 0);
+    if (dy) assert.ok(vy * dy > 0);
+  }
+});
+test("Blow clips off-canvas strokes, respects disabled airflow and cannot push through sealed walls", () => {
+  const w = new World(64, 48);
+  for (let y = 0; y < 48; y++) w.set(y * 64 + 32, M.Wall);
+  blowBrush(w, { x: 12, y: 24 }, { x: 24, y: 24 }, 2, "circle", 2);
+  run(w, 20, true);
+  for (let y = 0; y < w.fields.height; y++)
+    for (let x = 9; x < w.fields.width; x++) {
+      assert.equal(w.fields.pressure[y * w.fields.width + x], 0);
+      assert.equal(w.fields.airflow.velocityX[y * w.fields.width + x], 0);
+    }
+  const unchanged = snapshot(w);
+  blowBrush(w, { x: -1000000, y: 0 }, { x: -1000000, y: 24 }, 5);
+  assert.deepEqual(snapshot(w), unchanged);
+  let deposits = 0;
+  const impulse = w.fields.airflow.push.bind(w.fields.airflow);
+  w.fields.airflow.push = (...args) => {
+    deposits++;
+    impulse(...args);
+  };
+  blowBrush(w, { x: -1000000, y: 8 }, { x: 1000000, y: 8 }, 0);
+  assert.ok(
+    deposits > 0 && deposits < 100,
+    "Sampling must be bounded by the canvas",
+  );
+  w.fields.clear();
+  w.mechanics.pressureSimulation = false;
+  blowBrush(w, { x: 8, y: 8 }, { x: 16, y: 16 }, 4);
+  assert.ok(w.fields.pressure.every((v) => v === 0));
+});
 function chamber(hole = -1, right = 51) {
   const w = new World(80, 64);
   for (let y = 12; y <= 51; y++)
