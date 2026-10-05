@@ -7,4 +7,8 @@ export const collisionLimits = Object.freeze({
   supportPasses: 3,
   rasterSearch: 64,
   rasterVisitsPerPixel: 16,
+  grainSearch: 64,
+  grainDepth: 6,
+  grainVisits: 256,
+  grainMoves: 64,
 });

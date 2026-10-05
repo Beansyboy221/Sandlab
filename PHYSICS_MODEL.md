@@ -111,3 +111,15 @@ surface query, staggered over eight ticks. These transfers lower radial potentia
 respect viscosity/density and walls, and preserve contents and particle state; they
 do not prescribe a circular boundary. The finite reach leaves pixel-scale surface
 roughness rather than resolving an incompressible pressure field across a whole pool.
+
+Rigid impacts use relative contact velocity, effective mass and angular leverage;
+energy per contact pixel determines whether a narrow edge can cut a softer solid.
+Cutting consumes toughness-dependent work and ejects the configured family fragment
+only when a local opening can accept it. Crack damage spends a brittleness-dependent
+fraction of collision work; ductile metals mainly dissipate contact energy.
+Granular force chains preserve every grain and reservoir, with 64 visits per query,
+six links of reach, 256 visits and 64 moves across an entire tick. A failed search
+leaves contents in place; this local yield model does not solve a continuum
+soil stress field. Topology changes rebuild outside the active contact pass instead of
+recursively restarting contacts. Grab release velocity comes from timed movement, then respects
+the existing body speed caps.

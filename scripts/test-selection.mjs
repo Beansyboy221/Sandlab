@@ -20,6 +20,7 @@ export const groups = {
     "material-upgrade",
     "mechanical-mass",
     "rigid-physics",
+    "contact-yield",
     "collision-bounds",
     "bodies-fill",
     "fragments",
@@ -96,7 +97,11 @@ export const groups = {
 export const browserChecks = {
   portals: ["portals_check"],
   quick: [],
-  collisions: ["unified_scene_check", "rigid_physics_check"],
+  collisions: [
+    "contact_yield_check",
+    "unified_scene_check",
+    "rigid_physics_check",
+  ],
   elastics: ["elastic_contacts_check", "elastics_check"],
   atmosphere: ["airflow_check"],
   actors: ["creatures_audio_check", "audio_occlusion_check", "flocking_check"],
@@ -109,7 +114,10 @@ export const browserChecks = {
 const rules = [
   [/^src\/sim\/(body-|rigid-|collision-|fragments\.)/, ["collisions"]],
   [/^src\/sim\/elastic/, ["elastics"]],
-  [/^src\/sim\/(airflow|air-brush|fields|combustion|ignition|weather)\./, ["atmosphere"]],
+  [
+    /^src\/sim\/(airflow|air-brush|fields|combustion|ignition|weather)\./,
+    ["atmosphere"],
+  ],
   [/^src\/sim\/(stickm|creature|boids|predation)/, ["actors"]],
   [/^src\/sim\/(missile|machine|circuit)/, ["devices"]],
   [/^src\/sim\/(energy|sparks|bubbles)/, ["atmosphere", "lighting"]],

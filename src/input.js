@@ -143,6 +143,7 @@ export class Input {
         selecting,
         dx: 1,
         dy: 0,
+        at: e.timeStamp || performance.now(),
         strokeStarted: state.tool !== "wind" || e.button === 2 || state.erase,
       });
       if (geometric) {
@@ -207,6 +208,7 @@ export class Input {
         return;
       }
       if (last) {
+        const now = e.timeStamp || performance.now();
         const dx = point.x - last.x,
           dy = point.y - last.y;
         if (
@@ -220,12 +222,21 @@ export class Input {
         }
         const direction =
           Math.hypot(dx, dy) > 0.1 ? { dx, dy } : { dx: last.dx, dy: last.dy };
-        this.paint(last, point, last.erase, direction.dx, direction.dy);
+        this.paint(
+          last,
+          point,
+          last.erase,
+          direction.dx,
+          direction.dy,
+          false,
+          now - last.at,
+        );
         this.pointers.set(e.pointerId, {
           ...last,
           ...point,
           erase: last.erase,
           ...direction,
+          at: now,
         });
       }
     };
@@ -433,7 +444,7 @@ export class Input {
     };
     this.onHover(point);
   }
-  paint(a, b, erase, dx = 1, dy = 0, immediate = false) {
+  paint(a, b, erase, dx = 1, dy = 0, immediate = false, elapsed = 1000 / 60) {
     // Renderer points measure from cell edges; engine brush centers are integer cells.
     a = { x: a.x - 0.5, y: a.y - 0.5 };
     b = { x: b.x - 0.5, y: b.y - 0.5 };
@@ -469,6 +480,7 @@ export class Input {
         this.state.radius,
         this.state.shape,
         this.state.includeSolids,
+        elapsed,
       );
       return;
     }

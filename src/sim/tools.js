@@ -27,7 +27,17 @@ export const brushTools = [
   ["pressure", "Pressure", "pressure"],
   ["vacuum", "Vacuum", "vacuum"],
 ];
-export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
+export function moveBrush(
+  w,
+  x,
+  y,
+  radius,
+  shape,
+  dx,
+  dy,
+  solids = false,
+  carried,
+) {
   dx = Math.round(dx);
   dy = Math.round(dy);
   if (!dx && !dy) return;
@@ -54,8 +64,9 @@ export function moveBrush(w, x, y, radius, shape, dx, dy, solids = false) {
         const body = w.rigid.bodyOf.get(w.elasticId[i]);
         if (body && !movedBodies.has(body)) {
           movedBodies.add(body);
-          if (solids) w.rigid.translate(body, dx, dy);
-          else {
+          if (solids) {
+            if (w.rigid.translate(body, dx, dy)) carried?.add(body);
+          } else {
             const pose = w.rigid.pose(body);
             if (pose) {
               pose.vx += dx / Math.sqrt(body.mass);
@@ -172,7 +183,15 @@ export function applyTool(
       }
     }
 }
-export function dragBrush(w, a, b, radius, shape, solids = true) {
+export function dragBrush(
+  w,
+  a,
+  b,
+  radius,
+  shape,
+  solids = true,
+  elapsed = 1000 / 60,
+) {
   const footprint = brushFootprint(radius);
   w.missiles.brush(
     "grab",
@@ -198,13 +217,26 @@ export function dragBrush(w, a, b, radius, shape, solids = true) {
     dy = Math.round(b.y) - Math.round(a.y),
     steps = Math.max(Math.abs(dx), Math.abs(dy));
   if (!steps) return;
+  const carried = new Set();
   let px = Math.round(a.x),
     py = Math.round(a.y);
   for (let n = 1; n <= steps; n++) {
     const nx = Math.round(a.x + (dx * n) / steps),
       ny = Math.round(a.y + (dy * n) / steps);
-    moveBrush(w, px, py, radius, shape, nx - px, ny - py, solids);
+    moveBrush(w, px, py, radius, shape, nx - px, ny - py, solids, carried);
     px = nx;
     py = ny;
+  }
+  // Carrying uses one-pixel placement steps; throw speed must come from the
+  // complete timed stroke rather than its last one-pixel step.
+  const gain =
+    (0.3 * (1000 / 60)) /
+    Math.max(4, Number.isFinite(elapsed) ? elapsed : 1000 / 60);
+  for (const body of carried) {
+    const p = w.rigid.pose(body);
+    if (!p) continue;
+    p.vx = Math.max(-2.5, Math.min(2.5, (b.x - a.x) * gain));
+    p.vy = Math.max(-2.5, Math.min(2.5, (b.y - a.y) * gain));
+    w.rigid.sync(body, p);
   }
 }

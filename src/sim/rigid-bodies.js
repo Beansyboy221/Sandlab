@@ -3,6 +3,7 @@ import { materials, M } from "./materials.js";
 import { containedFluidMass, cellMass } from "./mechanical-mass.js";
 import { BodyConnections } from "./body-connections.js";
 import { BodyRaster } from "./body-raster.js";
+import { GranularContact } from "./granular-contact.js";
 import { stepBodies } from "./body-motion.js";
 
 export const rigidFields = ["restX", "restY", "angularVelocity", "damage"];
@@ -39,11 +40,14 @@ export class RigidBodies {
       limitedContacts: 0,
       airStressSamples: 0,
       impactStressSamples: 0,
+      grainVisits: 0,
+      grainMoves: 0,
     };
     this.parents = new Int32Array(world.length);
     this.edgeCounts = new Uint8Array(world.length);
     this.connections = new BodyConnections(this);
     this.raster = new BodyRaster(this);
+    this.grains = new GranularContact(this);
     this.targets = this.raster.targets;
     this.targetX = this.raster.x;
     this.targetY = this.raster.y;
@@ -383,6 +387,7 @@ export class RigidBodies {
             maxX: -Infinity,
             minY: Infinity,
             maxY: -Infinity,
+            samples: [],
           };
           contacts.push(contact);
           contactLookup.set(key, contact);
@@ -407,6 +412,16 @@ export class RigidBodies {
           ((axis === 0 ? x : y) - boundary) * sign,
         );
         contact.count++;
+        // Retain a bounded, deterministic sample of the actual contact pixels.
+        // Broad impacts must distribute work across their face, not one corner.
+        const sample =
+          contact.count <= collisionLimits.contacts
+            ? contact.count - 1
+            : ((contact.count * 2654435761) >>> 0) % contact.count;
+        if (sample < collisionLimits.contacts) {
+          contact.samples[sample * 2] = i;
+          contact.samples[sample * 2 + 1] = j;
+        }
         let cx = (i % w.width) + 0.5 + w.offsetX[i],
           cy = Math.floor(i / w.width) + 0.5 + w.offsetY[i];
         if (w.border === "looping") {

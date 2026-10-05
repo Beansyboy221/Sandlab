@@ -34,3 +34,5 @@
 - Replace composite concrete/ceramic melt proxies with tested dehydration, sintering and melt-composition data when thermal amount accounting supports it; preserve family identity and finite contents.
 
 - Extend shared-grid presentation benchmarks to moving/cut elastic meshes and mixed crowds on physical phones; refine subpixel contact coverage only where pixel-scale fixtures justify its memory and calculation cost.
+
+- Calibrate anchored-contact effective mass, fatigue and temperature-dependent mechanical strength with controlled fixtures; preserve bounded grain/cutting work and avoid a continuum or recursive body rebuild.

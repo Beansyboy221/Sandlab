@@ -90,8 +90,11 @@ export function stepBodies(solver) {
       pressureTorque = 0,
       rooted = false;
     for (const id of body.edges) {
-      const i = solver.locations.get(id),
-        x = i % w.width,
+      const i = solver.locations.get(id);
+      // An earlier body can cut this body during the same tick. Surviving nodes
+      // keep their cached motion; topology is rebuilt outside the active contact pass.
+      if (i === undefined) continue;
+      const x = i % w.width,
         y = Math.floor(i / w.width);
       w.fields.surfaceForce(w, i);
       pressureX += w.fields.forceX;
@@ -169,17 +172,33 @@ export function stepBodies(solver) {
       } else {
         if (transportRigid(solver, body, p, hit)) break;
         if (!hit.internal && hit.i >= 0) solver.collidedBodies.add(body.ids[0]);
+        let yielded = false;
         for (let c = 0; c <= (hit.others?.length || 0); c++) {
           const contact = c ? hit.others[c - 1] : hit;
-          collide(
-            solver,
-            body,
-            p,
-            contact,
-            p.vx - p.omega * ((contact.y ?? p.y) - p.y),
-            p.vy + p.omega * ((contact.x ?? p.x) - p.x),
-          );
+          yielded =
+            collide(
+              solver,
+              body,
+              p,
+              contact,
+              p.vx - p.omega * ((contact.y ?? p.y) - p.y),
+              p.vy + p.omega * ((contact.x ?? p.x) - p.x),
+            ) === true;
+          if (yielded || solver.dirty) break;
+        }
+        if (yielded) {
+          const advance = {
+            ...p,
+            x: p.x + p.vx * dt,
+            y: p.y + p.vy * dt,
+            angle: p.angle + p.omega * dt,
+          };
+          if (!solver.plan(body, advance)) {
+            solver.commit(body, advance, false);
+            Object.assign(p, advance);
+          }
           if (solver.dirty) break;
+          continue;
         }
         if (solver.dirty) break;
         if (

@@ -1,14 +1,27 @@
-import { impactStress } from "./body-stress.js";
+import { impactStress, fractureLimits } from "./body-stress.js";
 import { materials, M } from "./materials.js";
 import { emitSpark } from "./sparks.js";
+import { yieldContact } from "./contact-yield.js";
+import { fractureFraction, cuttingFraction } from "./fracture-energy.js";
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
 
-export function fracture(solver, i, energy) {
+function normalImpulse(body, p, other, op, nx, ny, lever, otherLever, impulse) {
+  p.vx -= (impulse * nx) / body.mass;
+  p.vy -= (impulse * ny) / body.mass;
+  p.omega -= (impulse * lever) / body.inertia;
+  if (op) {
+    op.vx += (impulse * nx) / other.mass;
+    op.vy += (impulse * ny) / other.mass;
+    op.omega += (impulse * otherLever) / other.inertia;
+  }
+}
+
+export function fracture(solver, i, energy, cutting = false) {
   const w = solver.world;
   if (i < 0) return;
   const m = materials[w.cells[i]];
   if (!m.rigid || m.static) return;
-  w.damage[i] += energy * (0.5 + m.brittleness);
+  w.damage[i] += energy * (cutting ? cuttingFraction(m) : fractureFraction(m));
   if (w.damage[i] < m.toughness) return;
   if (m.breakInto !== undefined) {
     w.transform(i, m.breakInto, w.temp[i]);
@@ -193,15 +206,33 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
           op ? other.restitution : (surface.restitution ?? 0.05),
         )
       : 0;
-  const impulse = (closing * (1 + restitution)) / inverse;
-  p.vx -= (impulse * nx) / body.mass;
-  p.vy -= (impulse * ny) / body.mass;
-  p.omega -= (impulse * lever) / body.inertia;
-  if (op) {
-    op.vx += (impulse * nx) / other.mass;
-    op.vy += (impulse * ny) / other.mass;
-    op.omega += (impulse * otherLever) / other.inertia;
+  const relativeEnergy = (0.5 * closing * closing) / inverse,
+    area = Math.max(1, hit.count || 1);
+  if (effects && closing > 0.15) {
+    const spent = yieldContact(solver, i, j, relativeEnergy / area, fracture);
+    if (spent) {
+      // Opening a path consumes work. A reduced normal impulse shares that loss
+      // between the bodies, leaving the remaining motion available to penetrate.
+      const impulse =
+        (closing / inverse) *
+        (1 - Math.sqrt(Math.max(0, 1 - spent / relativeEnergy)));
+      normalImpulse(body, p, other, op, nx, ny, lever, otherLever, impulse);
+      if (op && !solver.solving) solver.sync(other, op);
+      w.fields.add(i % w.width, Math.floor(i / w.width), spent * 0.08);
+      w.sound.emit(
+        "impact",
+        cx,
+        cy,
+        Math.min(1.2, Math.sqrt(spent) * 0.08),
+        body.mass,
+        w.cells[i],
+        { contact: surface.id },
+      );
+      return true;
+    }
   }
+  const impulse = (closing * (1 + restitution)) / inverse;
+  normalImpulse(body, p, other, op, nx, ny, lever, otherLever, impulse);
   // Coulomb friction transfers slipping motion into spin. Its energy is bounded
   // by the normal impulse, so round bodies roll while blocks can settle or slide.
   const tangentLever = rx * ty - ry * tx,
@@ -259,38 +290,38 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
       { contact: surface.id },
     );
   if (closing > 0.7) {
+    // Contact area concentrates stress at a tip; total body size is not an area.
     const energy = Math.min(
       70,
-      (0.5 * closing * closing) /
-        inverse /
-        Math.max(1, Math.sqrt(body.ids.length)),
+      (relativeEnergy * (1 - restitution * restitution)) / area,
     );
+    const sourceResistance = materials[w.cells[i]].toughness || 1,
+      targetResistance = surface.static
+        ? sourceResistance * 4
+        : surface.toughness || 1,
+      share = sourceResistance / (sourceResistance + targetResistance);
     if (solver.solving) {
-      impactStress(solver, j, energy);
-      impactStress(solver, i, energy);
+      if (hit.samples?.length > 2) {
+        for (let n = 0; n < hit.samples.length; n += 2) {
+          if (
+            solver.work.impactStressSamples + 2 >
+            fractureLimits.impactSamples
+          )
+            break;
+          solver.work.impactStressSamples += 2;
+          solver.queueFracture(hit.samples[n + 1], energy * share);
+          solver.queueFracture(hit.samples[n], energy * (1 - share));
+        }
+      } else {
+        impactStress(solver, j, energy * share);
+        impactStress(solver, i, energy * (1 - share));
+      }
     } else {
-      fracture(solver, j, energy);
-      fracture(solver, i, energy * 0.35);
+      fracture(solver, j, energy * share);
+      fracture(solver, i, energy * (1 - share));
     }
     w.fields.add(i % w.width, Math.floor(i / w.width), energy * 0.08);
     if (materials[w.cells[i]].conductive && energy > 5)
       emitSpark(w, i, i % w.width, Math.floor(i / w.width));
-  }
-  // Loose grains are pushed into nearby free space, never silently deleted.
-  if (j >= 0 && materials[w.cells[j]].category === "powder" && closing > 0.15) {
-    for (const [sx, sy] of [
-      [-ny, nx],
-      [ny, -nx],
-      [nx, ny],
-    ]) {
-      const k = w.index(
-        (j % w.width) + Math.sign(sx),
-        Math.floor(j / w.width) + Math.sign(sy),
-      );
-      if (k >= 0 && !w.cells[k]) {
-        w.swap(j, k);
-        break;
-      }
-    }
   }
 }

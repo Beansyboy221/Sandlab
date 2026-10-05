@@ -1,5 +1,14 @@
 export const changelog = [
   {
+    version: "1.28.0",
+    date: "2026-10-05",
+    title: "Wedges and impact work",
+    changes: [
+      "Sharp impacts concentrate energy at contact, pushing packed grains aside and cutting softer solids without deleting their contents.",
+      "Grab throws use timed stroke speed, while ductile metals resist crumbling during rolling contact.",
+    ],
+  },
+  {
     version: "1.27.1",
     date: "2026-10-05",
     title: "Brush-driven airflow",

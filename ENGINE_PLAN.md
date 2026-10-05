@@ -1,6 +1,7 @@
 # Sandlab engine evolution
 
-Status: staged roadmap. v1.27.0 separates solver ownership from world state, compiles
+Status: staged roadmap. v1.28.0 adds bounded grain force chains, contact-area impact
+work, ductility-aware cracking and timed Grab throws. v1.27.0 separates solver ownership from world state, compiles
 actor/projectile configuration and unifies body/entity rendering with material
 pixels; see [ARCHITECTURE.md](ARCHITECTURE.md). v1.26.0 unifies base/state authoring, validates physical
 transition identities, preserves fracture/corrosion components and compiles common
