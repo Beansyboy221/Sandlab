@@ -1,3 +1,5 @@
+import { MAX_ELECTRICAL_ENERGY } from "./sim/electrical-energy.js";
+import { MAX_PARTICLE_QUANTITY } from "./sim/world-units.js";
 import { airflowFields, MAX_AIR_SPEED } from "./sim/airflow.js";
 import { portalFields, PORTAL_COOLDOWN } from "./sim/portals.js";
 import { validatePortalState } from "./sim/portal-validation.js";
@@ -26,7 +28,13 @@ const arrays = [
   ),
   "backgroundPaint",
 ];
-const floatFields = [...elasticFloatFields, ...rigidFields, "quantity"];
+const floatFields = [
+  ...elasticFloatFields,
+  ...rigidFields,
+  "quantity",
+  "electricalEnergy",
+  "electricalSupply",
+];
 export function snapshot(world, typed = false) {
   world.portals.ensure();
   world.portals.pruneLinks();
@@ -118,6 +126,8 @@ export function validateSnapshot(data) {
         ...elasticFields,
         ...rigidFields,
         "quantity",
+        "electricalEnergy",
+        "electricalSupply",
         "pigment",
         "backgroundPaint",
         "heading",
@@ -147,48 +157,56 @@ export function validateSnapshot(data) {
     const values = data.arrays[key];
     if (!values) continue;
     const maximum =
-      key === "quantity"
-        ? 64
-        : key === "temp"
-          ? 100000
-          : floatFields.includes(key)
-            ? key.startsWith("offset")
-              ? 1.5
-              : key.startsWith("rest")
-                ? 2048
-                : key === "damage"
-                  ? 100000
-                  : 4
-            : key === "elasticAnchor"
-              ? 15
-              : key === "heading"
-                ? 7
-                : key === "pigment" ||
-                    key === "backgroundPaint" ||
-                    key === "chargedAt" ||
-                    key === "portalId" ||
-                    key === "portalLink" ||
-                    ["elasticId", "bond0", "bond1", "bond2", "bond3"].includes(
-                      key,
-                    )
-                  ? 4294967295
-                  : key === "portalCooldown"
-                    ? PORTAL_COOLDOWN
-                    : key === "life"
-                      ? 65535
-                      : key === "storedAmount"
-                        ? 255
-                        : [
-                              "cells",
-                              "clone",
-                              "residue",
-                              "storedLiquid",
-                              "dissolvedId",
-                            ].includes(key)
-                          ? materials.length - 1
-                          : 255;
+      key === "electricalEnergy" || key === "electricalSupply"
+        ? MAX_ELECTRICAL_ENERGY
+        : key === "quantity"
+          ? MAX_PARTICLE_QUANTITY
+          : key === "temp"
+            ? 100000
+            : floatFields.includes(key)
+              ? key.startsWith("offset")
+                ? 1.5
+                : key.startsWith("rest")
+                  ? 2048
+                  : key === "damage"
+                    ? 100000
+                    : 4
+              : key === "elasticAnchor"
+                ? 15
+                : key === "heading"
+                  ? 7
+                  : key === "pigment" ||
+                      key === "backgroundPaint" ||
+                      key === "chargedAt" ||
+                      key === "portalId" ||
+                      key === "portalLink" ||
+                      [
+                        "elasticId",
+                        "bond0",
+                        "bond1",
+                        "bond2",
+                        "bond3",
+                      ].includes(key)
+                    ? 4294967295
+                    : key === "portalCooldown"
+                      ? PORTAL_COOLDOWN
+                      : key === "life"
+                        ? 65535
+                        : key === "storedAmount"
+                          ? 255
+                          : [
+                                "cells",
+                                "clone",
+                                "residue",
+                                "storedLiquid",
+                                "dissolvedId",
+                              ].includes(key)
+                            ? materials.length - 1
+                            : 255;
     const minimum =
-      key === "quantity"
+      key === "quantity" ||
+      key === "electricalEnergy" ||
+      key === "electricalSupply"
         ? 0
         : key === "temp"
           ? -273
@@ -449,6 +467,8 @@ export function unpack(data) {
         ...elasticFields,
         ...rigidFields,
         "quantity",
+        "electricalEnergy",
+        "electricalSupply",
         "pigment",
         "backgroundPaint",
         "heading",

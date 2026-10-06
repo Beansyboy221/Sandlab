@@ -73,7 +73,7 @@ export const presets = [
   {
     id: "circuit",
     name: "Live wire",
-    subtitle: "Spark and metal circuit",
+    subtitle: "Powered wire and arc ignition",
     tag: "ELECTRICITY",
     color: "#9dafe5",
   },
@@ -237,43 +237,21 @@ export function loadPreset(world, id) {
     world.set(emitter, M.Clone);
     world.clone[emitter] = M.Lava;
   } else if (id === "circuit") {
-    line(w * 0.18, h * 0.5, w * 0.38, h * 0.5, "Steel", 2);
-    line(w * 0.38, h * 0.5, w * 0.38, h * 0.3, "Steel", 2);
-    line(w * 0.38, h * 0.3, w * 0.62, h * 0.3, "Steel", 2);
-    line(w * 0.62, h * 0.3, w * 0.62, h * 0.65, "Steel", 2);
-    line(w * 0.62, h * 0.65, w * 0.8, h * 0.65, "Steel", 2);
-    line(w * 0.18, h * 0.52, w * 0.38, h * 0.52, "Ceramic", 1);
-    rect(Math.round(w * 0.81), Math.round(h * 0.62), 10, 12, "TNT");
-    const terminalX = Math.round(w * 0.81),
-      terminalY = Math.round(h * 0.65);
-    line(w * 0.62, terminalY, terminalX - 3, terminalY, "Steel", 1);
-    rect(terminalX - 2, terminalY - 3, 2, 7, "Empty");
-    put(terminalX - 1, terminalY, "Steel");
-    // A capped arc gap heats a supported fuse underneath. The tinder cannot
-    // topple into the electrical gap when the new contact solver settles it.
-    rect(terminalX - 2, terminalY - 1, 2, 1, "Wall");
-    rect(terminalX - 2, terminalY + 1, 3, 1, "Wood");
-    rect(terminalX - 2, terminalY + 2, 3, 1, "Wall");
-    // A static channel holds the live wire in place; keep the visible arc gap open.
-    const backing = [];
-    for (let i = 0; i < world.length; i++)
-      if ([M.Steel, M.Ceramic].includes(world.cells[i])) {
-        const x = i % w,
-          y = Math.floor(i / w);
-        world.eachNeighbor(x, y, (j) => {
-          const jx = j % w,
-            jy = Math.floor(j / w);
-          const gap =
-            jx >= terminalX - 2 &&
-            jx <= terminalX + 10 &&
-            jy >= terminalY - 1 &&
-            jy <= terminalY;
-          if (!world.cells[j] && !gap) backing.push(j);
-        });
-      }
-    for (const i of backing) world.set(i, M.Wall);
-    rect(terminalX, Math.round(h * 0.62) + 12, 10, 2, "Wall");
-    put(Math.round(w * 0.18) - 3, Math.round(h * 0.5), "Spark");
+    const sourceX = Math.round(w * 0.18),
+      terminalX = Math.round(w * 0.81),
+      y = Math.round(h * 0.5);
+    // A supported, unbranched conductor carries finite powered pulses to a
+    // fixed arc terminal; the fuse is heated by the arc's actual energy budget.
+    line(sourceX, y, terminalX - 3, y, "Copper", 0);
+    rect(sourceX, y - 1, terminalX - sourceX - 2, 1, "Wall");
+    rect(sourceX, y + 1, terminalX - sourceX - 2, 1, "Wall");
+    put(sourceX - 1, y, "Battery");
+    world.heading[y * w + sourceX - 1] = 0;
+    world.electricalSupply[y * w + sourceX - 1] = 32768;
+    put(terminalX - 1, y, "Signal Lamp");
+    rect(terminalX - 2, y - 1, 2, 1, "Wall");
+    rect(terminalX - 2, y + 1, 10, 12, "TNT");
+    rect(terminalX - 2, y + 13, 10, 2, "Wall");
   } else if (id === "chemistry") {
     const x = Math.round(w * 0.31),
       y = Math.round(h * 0.24),

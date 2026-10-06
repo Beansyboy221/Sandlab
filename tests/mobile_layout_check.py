@@ -28,7 +28,7 @@ with sync_playwright() as p:
     browser=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
     for width,height in [(320,740),(390,844),(1024,1366)]:
         c=browser.new_context(viewport={'width':width,'height':height},has_touch=True,is_mobile=True,device_scale_factor=3);c.route('http://sandlab.test/**',serve)
-        page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.locator('#play-btn').tap()
+        page=c.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.goto('http://sandlab.test/');page.wait_for_function('!!window.sandlab');page.locator('#controls-toggle').tap();page.locator('#play-btn').tap();page.locator('#controls-toggle').tap()
         page.evaluate("sandlab.settings.set('autosave',false);sandlab.world.clear();sandlab.world.background='#223344';sandlab.renderer.bloom=false;sandlab.renderer.cursor=null")
         assert page.locator('#level-resolution,.canvas-resize-handle').count()==0
         assert page.locator('#controls-toggle').inner_text()==''
@@ -71,8 +71,11 @@ with sync_playwright() as p:
             target={k:round(v) for k,v in point(page,50,80).items()};anchor=page.evaluate('p=>sandlab.renderer.point(p.x,p.y)',target)
             page.mouse.move(**target);page.keyboard.down('Control');page.mouse.wheel(0,-100);page.keyboard.up('Control');page.wait_for_timeout(100)
             after=page.evaluate('p=>sandlab.renderer.point(p.x,p.y)',target);assert abs(anchor['x']-after['x'])<.01 and abs(anchor['y']-after['y'])<.01
-            old=point(page,50,80);page.mouse.move(**old);page.mouse.down(button='middle');page.mouse.move(old['x']+25,old['y']+10);page.mouse.up(button='middle');new=point(page,50,80)
-            assert abs(new['x']-old['x']-25)<.01 and abs(new['y']-old['y']-10)<.01
+            physical=page.evaluate('({x:sandlab.world.viewOriginX+50.5*sandlab.world.metersPerPixel,y:sandlab.world.viewOriginY+80.5*sandlab.world.metersPerPixel})')
+            old=point(page,50,80);unit=point(page,51,80);tolerance=((unit['x']-old['x'])**2+(unit['y']-old['y'])**2)**.5+.01
+            page.mouse.move(**old);page.mouse.down(button='middle');page.mouse.move(old['x']+25,old['y']+10);page.mouse.up(button='middle')
+            coords=page.evaluate('p=>({x:(p.x-sandlab.world.viewOriginX)/sandlab.world.metersPerPixel-.5,y:(p.y-sandlab.world.viewOriginY)/sandlab.world.metersPerPixel-.5})',physical);new=point(page,coords['x'],coords['y'])
+            assert abs(new['x']-old['x']-25)<=tolerance and abs(new['y']-old['y']-10)<=tolerance,(old,new,tolerance)
             page.evaluate('sandlab.renderer.resetView()')
             # Projected motion is screen-down for sand and screen-up for steam.
             page.evaluate('''async()=>{const {M}=await import('./src/sim/materials.js');sandlab.world.clear();sandlab.world.set(80*120+50,M.Sand);window.fallBefore=sandlab.renderer.project(50.5,80.5);sandlab.world.move(80*120+50,50,80);window.fallAfter=sandlab.renderer.project(50.5+sandlab.world.gravityX,80.5+sandlab.world.gravityY)}''')

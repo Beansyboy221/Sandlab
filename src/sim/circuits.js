@@ -1,3 +1,5 @@
+import { CELL_METERS } from "./world-units.js";
+import { energize } from "./electrical-energy.js";
 import { conducts } from "./oxidation.js";
 import { materials } from "./materials.js";
 // Output follows the Facing control. A is behind, B is on the left of that heading.
@@ -52,12 +54,10 @@ export class Circuits {
       w.index((j % w.width) + dx, Math.floor(j / w.width) + dy) === target
     );
   }
-  energize(j) {
+  energize(j, energy) {
     const w = this.world;
     if (j >= 0 && conducts(w, j) && !w.cooldown[j]) {
-      w.charge[j] = 6;
-      w.cooldown[j] = 18;
-      w.chargedAt[j] = w.tick;
+      energize(w, j, energy);
     }
   }
   step() {
@@ -90,7 +90,13 @@ export class Circuits {
       else if (rule === "delay") w.life[i] = ((state << 1) | Number(a)) & 4095;
       else if (rule === "battery") w.life[i] = 1;
       else w.life[i] = Number(a);
-      if (circuitOutput(m, w.life[i])) this.energize(w.index(x + dx, y + dy));
+      if (circuitOutput(m, w.life[i]))
+        this.energize(
+          w.index(x + dx, y + dy),
+          (w.electricalSupply[i] || m.pulseEnergy || 6) *
+            w.quantity[i] *
+            (w.metersPerPixel / CELL_METERS) ** 2,
+        );
       if (rule === "fan" && a) this.fan(x, y, dx, dy);
     }
   }

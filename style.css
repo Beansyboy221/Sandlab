@@ -3102,6 +3102,7 @@ body:not(.mobile-layout) .toolbox :is(.icon-button, .play-button) {
 }
 
 #zoom-value {
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: var(--muted);
   font-size: 12px;

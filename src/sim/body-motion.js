@@ -88,6 +88,8 @@ export function stepBodies(solver) {
       pressureX = 0,
       pressureY = 0,
       pressureTorque = 0,
+      dragX = 0,
+      dragY = 0,
       rooted = false;
     for (const id of body.edges) {
       const i = solver.locations.get(id);
@@ -96,7 +98,11 @@ export function stepBodies(solver) {
       if (i === undefined) continue;
       const x = i % w.width,
         y = Math.floor(i / w.width);
-      w.fields.surfaceForce(w, i);
+      const rx = x + 0.5 + w.offsetX[i] - p.x,
+        ry = y + 0.5 + w.offsetY[i] - p.y;
+      w.fields.surfaceForce(w, i, p.vx - p.omega * ry, p.vy + p.omega * rx);
+      dragX += w.fields.dragX;
+      dragY += w.fields.dragY;
       pressureX += w.fields.forceX;
       pressureY += w.fields.forceY;
       pressureTorque +=
@@ -126,6 +132,8 @@ export function stepBodies(solver) {
       p.vx = p.vy = p.omega = 0;
       continue;
     }
+    body.dragX = dragX;
+    body.dragY = dragY;
     airStress(solver, body, p);
     const buoyancy = contacts
         ? liquid / contacts / (body.mass / body.volume)

@@ -1,3 +1,4 @@
+import { thermalCapacity } from "../thermal-capacity.js";
 import { materials, materialTables } from "../materials.js";
 
 export function transferHeat(world, i, j) {
@@ -8,8 +9,11 @@ export function transferHeat(world, i, j) {
     materialTables.heatTransfer[
       world.cells[i] * materials.length + world.cells[j]
     ];
-  world.temp[i] -= transfer;
-  world.temp[j] += transfer;
+  const a = thermalCapacity(world, i),
+    b = thermalCapacity(world, j);
+  const energy = (transfer * 2) / (1 / a + 1 / b);
+  world.temp[i] -= energy / a;
+  world.temp[j] += energy / b;
 }
 
 export function exchangeParticleHeat(world, i, x, y) {
@@ -46,13 +50,16 @@ export function exchangeWithAir(fields, world, i, x, y) {
     heat =
       (world.temp[i] - fields.temperature[fi]) *
       (m.heatSource ? 0.08 : m.gas ? 0.015 : 0.003);
-  if (!m.heatSource)
-    world.temp[i] = Math.max(-273, Math.min(6000, world.temp[i] - heat));
-  // One tile contains sixteen air cells; heat is retained locally and diffuses.
-  fields.temperature[fi] = Math.max(
-    -273,
-    Math.min(6000, fields.temperature[fi] + heat / 16),
+  const capacity = thermalCapacity(world, i);
+  let energy = m.heatSource ? heat : heat / (1 / capacity + 1 / 16);
+  energy = Math.max(
+    (-273 - fields.temperature[fi]) * 16,
+    Math.min((6000 - fields.temperature[fi]) * 16, energy),
   );
+  if (!m.heatSource) world.temp[i] -= energy / capacity;
+  // The coarse tile's normalized ambient heat capacity is explicit. Equal and
+  // opposite energy fluxes avoid density-dependent loss at the particle boundary.
+  fields.temperature[fi] += energy / 16;
   fields.add(x, y, heat * 0.0005);
 }
 

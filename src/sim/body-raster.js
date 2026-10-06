@@ -7,6 +7,7 @@ export class BodyRaster {
     this.solver = solver;
     const length = solver.world.length;
     this.targets = new Int32Array(length);
+    this.seeded = new Uint32Array(length);
     this.x = new Float64Array(length);
     this.y = new Float64Array(length);
     this.reservations = new Uint32Array(length);
@@ -22,12 +23,44 @@ export class BodyRaster {
     this.visits = 0;
     this.limited = 0;
     this.epoch = (this.epoch + 1) >>> 0 || 1;
-    if (this.epoch === 1) this.reservations.fill(0);
+    if (this.epoch === 1) {
+      this.reservations.fill(0);
+      this.seeded.fill(0);
+    }
   }
   assign(node, cell) {
     this.targets[node] = cell;
     this.reservations[cell] = this.epoch;
     this.owners[cell] = node;
+  }
+  seed(body, pose) {
+    const s = this.solver,
+      w = s.world,
+      previous = s.motionPose(body);
+    if (!previous) return;
+    const dx = Math.round(pose.x - previous.x),
+      dy = Math.round(pose.y - previous.y);
+    // Reuse the previous bijection before augmenting new raster candidates.
+    // Rotation cannot turn an object's own reservations into immovable supports.
+    for (let n = 0; n < body.ids.length; n++) {
+      const i = s.locations.get(body.ids[n]);
+      this.x[n] = s.targetX[n];
+      this.y[n] = s.targetY[n];
+      if (i === undefined || s.targets[n] < 0) continue;
+      const gx = (i % w.width) + dx,
+        gy = Math.floor(i / w.width) + dy;
+      const j = w.index(gx, gy);
+      if (
+        j < 0 ||
+        !s.passable(j, body) ||
+        this.reservations[j] === this.epoch ||
+        Math.abs(gx + 0.5 - this.x[n]) > 1.49 ||
+        Math.abs(gy + 0.5 - this.y[n]) > 1.49
+      )
+        continue;
+      this.assign(n, j);
+      this.seeded[n] = this.epoch;
+    }
   }
   reserve(node, x, y, body, ideal) {
     const w = this.solver.world,

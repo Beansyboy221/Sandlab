@@ -331,7 +331,9 @@ test("connected elastic contact preserves momentum; detached pieces still collid
   w.elastic.substep(0);
   w.velocityX[i] = 0.7;
   w.elastic.moveAxis(i, 0.7, true);
-  assert.ok(w.velocityX[i] < 0);
+  assert.ok(w.velocityX[i] >= 0 && w.velocityX[i] < 0.7);
+  assert.ok(w.velocityX[j] > w.velocityX[i]);
+  assert.ok(Math.abs(w.velocityX[i] + w.velocityX[j] - 0.7) < 1e-6);
   assert.equal(w.count, 2);
   assert.equal(w.elastic.locations.size, 2);
 });

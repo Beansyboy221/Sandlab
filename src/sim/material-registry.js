@@ -76,6 +76,10 @@ const fractions = [
 const positive = [
   "surfaceArea",
   "conductivity",
+  "electricalResistance",
+  "specificHeat",
+  "dragCoefficient",
+  "pulseEnergy",
   "viscosity",
   "elasticity",
   "toughness",
@@ -176,6 +180,7 @@ function validate(m) {
   for (const key of positive)
     if (m[key] !== undefined && (!Number.isFinite(m[key]) || m[key] < 0))
       throw Error(`Invalid ${key} for ${m.name}`);
+  if (!(m.specificHeat > 0)) throw Error(`Invalid specificHeat for ${m.name}`);
   if ((m.rigid && (m.elasticity || m.static)) || (m.static && m.elasticity))
     throw Error(`Conflicting representations for ${m.name}`);
   if (m.category === "elastic" && !(m.elasticity > 0 && m.tearAt > 1))
@@ -348,6 +353,9 @@ export function compileMaterials(
                 ? 0.1
                 : 0,
         conductivity: 0.04,
+        electricalResistance: 0.025,
+        specificHeat: 1,
+        dragCoefficient: 1,
         oxidationRate: 0,
         surfaceArea: 1,
         acidity: 0,
@@ -434,6 +442,10 @@ export function compileMaterials(
   for (const key of [
     "density",
     "conductivity",
+    "electricalResistance",
+    "specificHeat",
+    "dragCoefficient",
+    "pulseEnergy",
     "porosity",
     "permeability",
     "retention",

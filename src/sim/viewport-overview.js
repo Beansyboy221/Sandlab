@@ -1,5 +1,5 @@
 import { materials } from "./materials.js";
-import { CELL_METERS } from "./world-units.js";
+import { CELL_METERS, MAX_PARTICLE_QUANTITY } from "./world-units.js";
 
 export const OVERVIEW_SIZE = 128;
 export const summaryFields = [
@@ -267,7 +267,7 @@ export class ViewportOverview {
           max = material
             ? materials.length - 1
             : key === "quantity"
-              ? 64
+              ? MAX_PARTICLE_QUANTITY
               : key === "temp"
                 ? 100000
                 : key === "velocityX" || key === "velocityY"

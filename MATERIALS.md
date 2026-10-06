@@ -44,21 +44,21 @@ incubation, lifetime and replication. `reservoir` receives nutrients without bud
 
 ## Component ownership
 
-| Component data | Shared calculation |
-| --- | --- |
-| Representation, density, friction, restitution, strength, brittleness, family fragments | Physics: displacement, rigid/elastic contacts, impact work and fracture |
-| Viscosity, porosity, permeability, retention, absorbable and water-only flags | Fluid motion and finite pore/mixture transport |
-| Conductivity, thresholds, phase products and heat sources | Thermodynamics and phase transitions |
-| Air permeability, buoyancy, pressure triggers, air sources | Atmospheric pressure/face velocities, vents and forces |
-| Conductive flag, resistance, oxidation and circuit behavior kind | Electrical pulses, gates and sparks |
-| Absorption, reflection, refractive index and spectral dispersion | Optical packets and read-only visual radiance |
-| Sound absorption, transmission and dispersion | Acoustic waves, listener paths and property-based audio |
-| Acidity, alkalinity, carbonate, solubility, oxidation/reduction and product references | Compiled contact chemistry, dissolution and corrosion |
-| Ignition, burn duration, oxidizer, suppression, combustion products and sparks | Combustion, heat and local pressure |
-| Biology mode, hydration/nutrient conditions, probabilities, temperatures, depth and products | Shared biology solver |
-| Suspended condensate and rain/vapor/discharge products | Local cloud coalescence and charge separation |
-| Decay emission, ray transport, force/sink/replicator/portal capabilities | Bounded energy and device mechanisms |
-| Actor anatomy, behavior kind, movement/habitat/prey and projectile profiles | Agent decision and body integration solvers |
+| Component data                                                                               | Shared calculation                                                      |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Representation, density, friction, restitution, strength, brittleness, family fragments      | Physics: displacement, rigid/elastic contacts, impact work and fracture |
+| Viscosity, porosity, permeability, retention, absorbable and water-only flags                | Fluid motion and finite pore/mixture transport                          |
+| Conductivity, specific heat, thresholds, phase products and heat sources                     | Thermodynamics and phase transitions                                    |
+| Air permeability, buoyancy, pressure triggers, air sources                                   | Atmospheric pressure/face velocities, vents and forces                  |
+| Conductive flag, resistance, oxidation and circuit behavior kind                             | Electrical pulses, gates and sparks                                     |
+| Absorption, reflection, refractive index and spectral dispersion                             | Optical packets and read-only visual radiance                           |
+| Sound absorption, transmission and dispersion                                                | Acoustic waves, listener paths and property-based audio                 |
+| Acidity, alkalinity, carbonate, solubility, oxidation/reduction and product references       | Compiled contact chemistry, dissolution and corrosion                   |
+| Ignition, burn duration, oxidizer, suppression, combustion products and sparks               | Combustion, heat and local pressure                                     |
+| Biology mode, hydration/nutrient conditions, probabilities, temperatures, depth and products | Shared biology solver                                                   |
+| Suspended condensate and rain/vapor/discharge products                                       | Local cloud coalescence and charge separation                           |
+| Decay emission, ray transport, force/sink/replicator/portal capabilities                     | Bounded energy and device mechanisms                                    |
+| Actor anatomy, behavior kind, movement/habitat/prey and projectile profiles                  | Agent decision and body integration solvers                             |
 
 Configuration describes inputs and supported behavior kinds. The solvers contain
 the algorithms and shared numerical constants. Introducing a missing mechanism
@@ -114,3 +114,14 @@ resource use, light/temperature limits, decomposition/infection, recipe executio
 compiler safety and growth budgets. It also rejects stock-name branches in the
 runtime simulation. See [PHYSICS_MODEL.md](PHYSICS_MODEL.md) for accuracy limits and
 [ENGINE_PLAN.md](ENGINE_PLAN.md) for calibration priorities.
+
+Physical exchange also accepts `specificHeat` (positive normalized capacity),
+`electricalResistance` (nonnegative dissipative pulse loss), `dragCoefficient`
+(nonnegative face drag) and `pulseEnergy` (explicit powered-device supply).
+`quantity` is represented parcel amount, not a decorative alpha or occupancy value.
+State changes preserve its density-weighted mass, and all pulse state travels with
+particles through editing, transport and persistence.
+
+Powered devices may override supply per particle through saved `electricalSupply`;
+it scales with represented amount and physical pixel area, while ordinary devices
+retain their configured low-power defaults.

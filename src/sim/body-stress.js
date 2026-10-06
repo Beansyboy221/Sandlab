@@ -1,3 +1,4 @@
+import { cellMass } from "./mechanical-mass.js";
 import { materials } from "./materials.js";
 
 export const fractureLimits = Object.freeze({
@@ -5,28 +6,38 @@ export const fractureLimits = Object.freeze({
   impactSamples: 128,
 });
 
-// Air loads act most strongly on long, thin, brittle shapes. This is a coarse
-// estimate of bending stress, not fatigue caused by uniform gravity itself.
+// Sample actual pressure traction, never body speed or age. Gravity alone
+// cannot fracture a freely falling body; concentrated air loads can bend it.
 export function airStress(solver, body, p) {
-  if (body.radius < 5 || body.ids.length / (body.radius * body.radius) > 0.8)
-    return;
-  const speed2 = p.vx * p.vx + p.vy * p.vy;
-  if (speed2 < 0.5) return;
   const w = solver.world;
   if (
-    (w.tick + body.ids[0]) % 16 ||
     !body.edges.length ||
+    (w.tick + body.ids[0]) % 16 ||
     solver.work.airStressSamples >= fractureLimits.airSamples
   )
     return;
   solver.work.airStressSamples++;
-  const n = (w.tick * 17) % body.edges.length,
-    i = solver.locations.get(body.edges[n]);
+  const i = solver.locations.get(body.edges[(w.tick * 17) % body.edges.length]);
   if (i === undefined) return;
   const m = materials[w.cells[i]];
-  if (m.brittleness < 0.7 || !m.breakInto) return;
-  const leverage = Math.min(2, body.radius / 10);
-  solver.queueFracture(i, speed2 * m.density * m.brittleness * leverage * 0.09);
+  if (!m.brittleness || !m.breakInto) return;
+  const rx = (i % w.width) + 0.5 + w.offsetX[i] - p.x,
+    ry = Math.floor(i / w.width) + 0.5 + w.offsetY[i] - p.y;
+  w.fields.surfaceForce(w, i, p.vx - p.omega * ry, p.vy + p.omega * rx);
+  const fraction = cellMass(w, i) / body.mass;
+  const unevenDrag = Math.hypot(
+    w.fields.dragX - (body.dragX || 0) * fraction,
+    w.fields.dragY - (body.dragY || 0) * fraction,
+  );
+  // A slender span amplifies bending from differential traction. Uniform drag
+  // is common acceleration and does not create artificial internal tension.
+  const leverage = Math.min(
+    16,
+    Math.max(1, (body.radius * body.radius) / Math.max(1, body.volume)),
+  );
+  const stress = w.fields.surfaceStress + unevenDrag * leverage;
+  const strength = m.compressiveStrength * (1.4 - m.brittleness);
+  if (stress > strength) solver.queueFracture(i, (stress - strength) * 0.03);
 }
 
 // Share a finite impact energy budget with immediately adjacent tissue. Never

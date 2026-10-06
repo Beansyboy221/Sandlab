@@ -1,3 +1,4 @@
+import { surfaceLoad } from "./aerodynamic-load.js";
 import { Airflow } from "./airflow.js";
 import { materials } from "./materials.js";
 import { exchangeWithAir, depositHeat } from "./solvers/thermodynamics.js";
@@ -104,25 +105,8 @@ export class Fields {
   }
   // Pressure traction is sampled only on exposed faces, with reusable scalar
   // outputs. Interiors add no duplicate force; uniform ambient load cancels.
-  surfaceForce(world, i) {
-    const x = i % world.width,
-      y = Math.floor(i / world.width);
-    const center = this.pressure[this.index(x, y)];
-    this.forceX = this.forceY = this.surfaceStress = 0;
-    if (!this.pressureEnabled) return;
-    for (let d = 0; d < 4; d++) {
-      const dx = d === 0 ? -1 : d === 1 ? 1 : 0,
-        dy = d === 2 ? -1 : d === 3 ? 1 : 0;
-      const j = world.index(x + dx, y + dy);
-      if (j >= 0 && this.blocks(world.cells[j]) >= 0.95) continue;
-      const p = this.sample(
-        Math.floor((x + dx * 4) / 4),
-        Math.floor((y + dy * 4) / 4),
-      );
-      this.forceX -= dx * p;
-      this.forceY -= dy * p;
-      this.surfaceStress = Math.max(this.surfaceStress, Math.abs(p - center));
-    }
+  surfaceForce(world, i, vx = 0, vy = 0) {
+    surfaceLoad(this, world, i, vx, vy);
   }
   // Moving actors use the same cached local pressure gradient and air velocity.
   forceAt(x, y, pressure = 0.015, drag = 0.02) {

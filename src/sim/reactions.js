@@ -50,7 +50,10 @@ export function react(world, i, x, y) {
   const { cells: c, temp: t, life: l, charge: q, cooldown: cd } = world;
   const id = c[i],
     m = materials[id];
-  if (cd[i]) cd[i]--;
+  if (cd[i]) {
+    cd[i]--;
+    if (cd[i]) world.wake(i);
+  }
   if (q[i] && world.chargedAt[i] !== world.tick)
     conductCharge(world, i, x, y, m);
   // Stable grains and fluids still exchange heat in World.step. They need a

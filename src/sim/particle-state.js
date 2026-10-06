@@ -12,6 +12,8 @@ export const particleStateFields = [
   "temp",
   "life",
   "charge",
+  "electricalEnergy",
+  "electricalSupply",
   "cooldown",
   "clone",
   "residue",

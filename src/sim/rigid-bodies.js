@@ -460,6 +460,7 @@ export class RigidBodies {
     // Most rejected moves touch a support near the last row of the body. Reserve
     // occupancy only after the physical sweep succeeds, avoiding wasted matching.
     this.raster.begin(body.ids.length);
+    let rejected = -1;
     for (let n = 0; n < body.ids.length; n++)
       if (
         !this.raster.reserve(
@@ -469,8 +470,30 @@ export class RigidBodies {
           body,
           this.targets[n],
         )
-      )
-        return { i: this.locations.get(body.ids[n]), j: -1, internal: true };
+      ) {
+        rejected = n;
+        break;
+      }
+    if (rejected >= 0) {
+      const remaining = this.raster.remaining,
+        visits = this.raster.visits;
+      this.raster.begin(body.ids.length);
+      this.raster.remaining = remaining;
+      this.raster.visits = visits;
+      this.raster.seed(body, p);
+      for (let n = 0; n < body.ids.length; n++)
+        if (
+          this.raster.seeded[n] !== this.raster.epoch &&
+          !this.raster.reserve(
+            n,
+            this.targetX[n],
+            this.targetY[n],
+            body,
+            this.targets[n],
+          )
+        )
+          return { i: this.locations.get(body.ids[n]), j: -1, internal: true };
+    }
     return null;
   }
   commit(body, p, sync = true) {

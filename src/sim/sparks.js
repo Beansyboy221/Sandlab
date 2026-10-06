@@ -1,3 +1,4 @@
+import { CELL_METERS } from "./world-units.js";
 import { conducts } from "./oxidation.js";
 import { materials, solverProducts } from "./materials.js";
 
@@ -35,7 +36,17 @@ export function arcGap(world, i, x, y) {
       conducts(world, target) &&
       !world.cooldown[target]
     ) {
+      const energy = world.electricalEnergy[i] * 0.25;
+      if (energy < 0.015) return;
       world.transform(gap, solverProducts.spark, 1200, 20);
+      // Partition the arc's finite budget into thermal and transported energy.
+      world.quantity[gap] =
+        (energy * 0.5) /
+        ((1200 - 20) *
+          (world.metersPerPixel / CELL_METERS) ** 2 *
+          materials[solverProducts.spark].specificHeat);
+      world.electricalEnergy[gap] = energy * 0.5;
+      world.electricalEnergy[i] -= energy;
       return;
     }
   }

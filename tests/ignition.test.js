@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { World } from "../src/sim/world.js";
 import { M } from "../src/sim/materials.js";
 import { react } from "../src/sim/reactions.js";
+import { energize } from "../src/sim/electrical-energy.js";
 import { arcGap } from "../src/sim/sparks.js";
 import { snapshot, restore, pack, unpack } from "../src/persistence.js";
 
@@ -50,12 +51,14 @@ test("electrical arcs require an open conductor gap and hot embers never energiz
   const w = new World(20, 20);
   w.set(210, M.Steel);
   w.set(212, M.Copper);
+  energize(w, 210);
   arcGap(w, 210, 10, 10);
   assert.equal(w.cells[211], M.Spark);
   react(w, 211, 11, 10);
   assert.ok(w.charge[212] > 0);
   w.set(211, M.Glass);
   w.charge[212] = 0;
+  energize(w, 210);
   arcGap(w, 210, 10, 10);
   assert.equal(w.cells[211], M.Glass);
   w.set(211, M.Spark, 800, 8);

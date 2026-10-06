@@ -1,5 +1,16 @@
 export const changelog = [
   {
+    version: "1.31.0",
+    date: "2026-10-06",
+    title: "Physical scale and finite energy",
+    changes: [
+      "Scale shows distance per pixel, and physical phase changes and fracture retain represented mass.",
+      "Electrical pulses spend finite energy, while heat exchange accounts for mass and capacity.",
+      "Free solids and cut elastics avoid self-locking, rubber bounces, and uneven aerodynamic loads can fracture brittle shapes.",
+      "Live wire now uses an explicit battery and a supported arc terminal.",
+    ],
+  },
+  {
     version: "1.30.0",
     date: "2026-10-06",
     title: "Materials as data",

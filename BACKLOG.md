@@ -5,7 +5,9 @@
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
 - Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.
 - Add finite ambient oxygen transport so sealed fuel can exhaust implicit air; explicit gases already affect ignition and suppression.
-- Introduce latent heat and calibrated heat capacities before adding more physical phase transitions.
+- Calibrate specific heat, latent heat and volume expansion; contact/air heat exchange and family phase/fracture mass now have conservation checks.
+- Extend exact amount/yield accounting to chemical products, biomass and pore release after viewport resampling; keep implicit atmosphere and external sources explicit.
+- Couple aerodynamic reaction momentum and dissipated mechanical work back into the air/thermal fields before claiming global momentum or energy conservation.
 - Extend spring-body tests to folded ropes and large cut membranes touching other elastic objects.
 - Measure simulations on physical iPhones and Android devices; browser emulation verifies touch/layout but cannot measure phone thermal throttling or Safari sensor behavior.
 

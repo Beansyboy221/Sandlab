@@ -1,3 +1,4 @@
+import { energize } from "../electrical-energy.js";
 import { materials, solverProducts } from "../materials.js";
 import {
   bendLight,
@@ -163,9 +164,7 @@ export function moveOpticalRay(w, i, x, y, m) {
         w.temp[j] + (m.absorptionHeat || 1) * absorbed,
       );
       if (target.photoelectric && absorbed > 0) {
-        w.charge[j] = 6;
-        w.cooldown[j] = 18;
-        w.chargedAt[j] = w.tick;
+        energize(w, j, Math.min(6, absorbed));
       }
     }
     if (target.id !== medium.id) {

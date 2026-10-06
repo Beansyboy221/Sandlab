@@ -10,7 +10,7 @@ import {
 import { MaterialGroups, GroupVisibility } from "./material-groups.js";
 import { MaterialGroupsPanel } from "./material-groups-panel.js";
 import { FrameClock } from "./frame-clock.js";
-import { CELL_METERS } from "./sim/world-units.js";
+import { CELL_METERS, scaleRatio } from "./sim/world-units.js";
 import { entityCanSpawn } from "./sim/entity-metrics.js";
 import { GameAudio } from "./audio.js";
 import { ColorPicker } from "./color-picker.js";
@@ -1344,7 +1344,7 @@ function frame(now) {
   simTime = performance.now() - start;
   audio.update(state.paused);
   renderer.draw();
-  const zoomText = `${Math.round(renderer.zoom * 100)}%`;
+  const zoomText = scaleRatio(world.metersPerPixel);
   if ($("zoom-value").value !== zoomText) $("zoom-value").value = zoomText;
 
   inspector.update(now);

@@ -14,7 +14,12 @@ import {
   applyLevelMetadata,
 } from "./level-properties.js";
 import { createLevel, resizeLevel, ResizePlacement } from "./level.js";
-import { validateScale, CELL_METERS } from "./sim/world-units.js";
+import {
+  validateScale,
+  CELL_METERS,
+  physicalDistance,
+  scaleRatio,
+} from "./sim/world-units.js";
 import { WorldRulesPanel } from "./world-rules-panel.js";
 
 export class LevelEditor {
@@ -417,7 +422,7 @@ export class LevelEditor {
       height = Number(this.axes.height.value);
     this.scaleSummary.textContent =
       Number.isFinite(value) && value > 0
-        ? `${(width * value).toFixed(2)} × ${(height * value).toFixed(2)} m visible · ${value} m / pixel`
+        ? `${physicalDistance(width * value)} × ${physicalDistance(height * value)} visible · ${scaleRatio(value)} per pixel`
         : "";
   }
   captureParticles() {

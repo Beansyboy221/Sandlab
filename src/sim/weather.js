@@ -1,3 +1,4 @@
+import { energize } from "./electrical-energy.js";
 import { cloudWeather } from "./cloud-weather.js";
 import { conducts } from "./oxidation.js";
 import { materials, solverProducts } from "./materials.js";
@@ -68,9 +69,7 @@ export function strike(w, x, y, dischargeId = solverProducts.discharge) {
       ) {
         w.temp[i] = Math.max(w.temp[i], m.ignite ? m.ignite + 180 : 850);
         if (conducts(w, i)) {
-          w.charge[i] = 6;
-          w.cooldown[i] = 18;
-          w.chargedAt[i] = w.tick;
+          energize(w, i);
         }
         w.fields.add(bx, by, 4);
         return;

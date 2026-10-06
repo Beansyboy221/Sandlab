@@ -1,3 +1,5 @@
+import { MAX_ELECTRICAL_ENERGY } from "./electrical-energy.js";
+import { MAX_PARTICLE_QUANTITY } from "./world-units.js";
 import { particleStateFields } from "./particle-state.js";
 import { materials } from "./materials.js";
 import { cachedValue } from "./viewport-cache.js";
@@ -196,12 +198,43 @@ export function resampleViewport(old, next, state, entry) {
       if (!id) continue;
       for (const key of transferFields) next[key][i] = read(chosen, key);
       if (next.cells[i]) {
+        let electricalEnergy = 0;
+        if (samples === 4) {
+          for (let n = 0; n < 4; n++)
+            electricalEnergy +=
+              (read(records[n], "electricalEnergy") *
+                (next.metersPerPixel / records[n].pitch) ** 2) /
+              4;
+        } else {
+          const source = chosen.detail
+            ? old.electricalEnergy[chosen.parent]
+            : read(chosen, "electricalEnergy");
+          const pitch = chosen.detail ? old.metersPerPixel : chosen.pitch;
+          const detailWeight = chosen.detail
+            ? (mass(chosen) * chosen.quantityFactor) /
+              Math.max(
+                1e-8,
+                mass({ source: old, i: chosen.parent, entry: null }),
+              )
+            : 1;
+          electricalEnergy =
+            source * (next.metersPerPixel / pitch) ** 2 * detailWeight;
+        }
+        next.electricalEnergy[i] = Math.min(
+          MAX_ELECTRICAL_ENERGY,
+          electricalEnergy,
+        );
+        if (chosen.detail) {
+          next.charge[i] = old.charge[chosen.parent];
+          next.cooldown[i] = old.cooldown[chosen.parent];
+          next.chargedAt[i] = old.chargedAt[chosen.parent];
+        }
         next.quantity[i] = clamp(
           samples === 4
             ? total / (4 * Math.max(1e-8, baseMass(chosen)))
             : read(chosen, "quantity") * chosen.quantityFactor,
           1e-8,
-          64,
+          MAX_PARTICLE_QUANTITY,
         );
         next.temp[i] = clamp(
           samples === 4 && total

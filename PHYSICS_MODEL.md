@@ -20,8 +20,11 @@ Their density stays unchanged unless the state explicitly supplies a bulk-densit
 override. Voids between grains normally supply the lower aggregate density.
 
 A physical phase transition must stay in its family, checked by the compiler.
-Temperature thresholds determine phase; pressure-dependent boiling, calibrated
-heat capacity and latent heat are not implemented yet. Rust cannot become metal
+Temperature thresholds determine phase; pressure-dependent boiling, SI-calibrated
+specific heat and latent heat are not implemented yet. Physical changes within a
+family rescale `quantity` by density to retain parcel mass, including fragmentation.
+A gas parcel may represent more than one cell of expanded volume: its amount is
+conserved, but full volume expansion is still a coarse transport approximation. Rust cannot become metal
 by heating alone: its chemical reduction requires a reducer and a temperature
 threshold. Oxidation is saved state and travels through cuts and physical phases.
 
@@ -75,32 +78,35 @@ using pH as a universal material property. Add ion balance, buffers and partial
 neutralization only after finite amount/yield tests. Adding a fake pH slider to
 non-aqueous solids would not make chemistry more accurate.
 
-Fixed occupied cells, different densities and whole-cell product yields do not
-provide exact SI mass or enthalpy conservation. Pressure/heat yields are normalized
+Physical state changes retain density-weighted parcel mass. Particle-to-particle
+and particle-to-air exchanges use equal and opposite energy fluxes and explicit
+heat capacity; stock `specificHeat` values remain normalized rather than calibrated.
+Whole-cell chemical product yields and growth do not yet provide exact molecular
+mass, elemental balance or enthalpy conservation. Pressure/heat yields are normalized
 coefficients. Preserve stored ingredients and explicitly consumed reagents today;
 calibrate substance amounts, thermal energy and chemical yield accounting before
 claiming quantitative conservation or laboratory accuracy.
 
 ## Shared mechanical systems
 
-| System            | Resolve                                                                                             | Approximate / current limit                                                                    |
-| ----------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Motion            | Density, gravity, local displacement, friction, contact impulses, rigid rotation and spring tension | Fixed cell occupancy and bounded contact/substep budgets; no continuum stress tensor           |
-| Liquids           | Density displacement, viscosity, radial pressure relaxation, pore transport and retention           | Cellular local flow; no full incompressible Navier–Stokes or calibrated surface tension        |
-| Heat              | Local neighbor exchange, air temperature and configured phase thresholds                            | Relative conductivity and thresholds; heat capacity, latent heat and calibrated units are next |
-| Air               | Local pressure, face velocity, barriers, moving-matter momentum, vents and buoyancy                 | Coarse four-pixel tiles with finite force budgets; ambient oxygen remains implicit             |
-| Electricity       | Conductivity, insulation/oxidation, transported pulses, sparks and gates                            | Digital pulse propagation and heating; not a calibrated voltage/current network                |
-| Light             | Shared absorption, reflection, refraction, shadows and mechanical ray transport                     | Bounded geometric rays, coarse radiance, finite bounces and cosmetic interior glow             |
-| Sound             | Shared material barriers, absorption, dispersion, wave propagation and listener occlusion           | Damped coarse wave field, procedural foley and three finite reflection taps                    |
-| Biology | Resource-based germination, shoots, light/temperature-dependent photosynthesis, decomposition and finite infection | Four-neighbor rules and 32 births/tick; biomass yields, nutrient types and metabolism remain qualitative |
-| Weather | Local condensate density, mixed frozen/liquid charge separation, updraft and finite precipitation | Staggered 25-cell samples; no full humidity/microphysical droplet distribution |
-| Radiation / devices | Configured decay emission, ray packets, circuits, force sources, sinks, replicators and portals | Decay is stochastic heat deposition, not isotope chains or nuclear physics; fictional devices remain explicit mechanisms |
+| System              | Resolve                                                                                                            | Approximate / current limit                                                                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Motion              | Density, gravity, local displacement, friction, contact impulses, rigid rotation and spring tension                | Fixed cell occupancy and bounded contact/substep budgets; no continuum stress tensor                                                             |
+| Liquids             | Density displacement, viscosity, radial pressure relaxation, pore transport and retention                          | Cellular local flow; no full incompressible Navier–Stokes or calibrated surface tension                                                          |
+| Heat                | Local neighbor exchange, air temperature and configured phase thresholds                                           | Capacity-weighted conservative contact/air exchange; normalized specific heat, no latent heat                                                    |
+| Air                 | Local pressure, face velocity, barriers, moving-matter momentum, vents and buoyancy                                | Coarse four-pixel tiles with finite force budgets; ambient oxygen remains implicit                                                               |
+| Electricity         | Conductivity, insulation/oxidation, transported pulses, sparks and gates                                           | Finite pulse budgets split/coalesce and dissipate as heat; powered devices are external energy sources, not a calibrated voltage/current network |
+| Light               | Shared absorption, reflection, refraction, shadows and mechanical ray transport                                    | Bounded geometric rays, coarse radiance, finite bounces and cosmetic interior glow                                                               |
+| Sound               | Shared material barriers, absorption, dispersion, wave propagation and listener occlusion                          | Damped coarse wave field, procedural foley and three finite reflection taps                                                                      |
+| Biology             | Resource-based germination, shoots, light/temperature-dependent photosynthesis, decomposition and finite infection | Four-neighbor rules and 32 births/tick; biomass yields, nutrient types and metabolism remain qualitative                                         |
+| Weather             | Local condensate density, mixed frozen/liquid charge separation, updraft and finite precipitation                  | Staggered 25-cell samples; no full humidity/microphysical droplet distribution                                                                   |
+| Radiation / devices | Configured decay emission, ray packets, circuits, force sources, sinks, replicators and portals                    | Decay is stochastic heat deposition, not isotope chains or nuclear physics; fictional devices remain explicit mechanisms                         |
 
 These are the macroscopic systems this sandbox supports, not a claim to simulate
 all natural phenomena. Cellular geometry, qualitative coefficients and work limits
 are deliberate. Quantum dynamics, molecular collisions, relativistic effects and
 full continuum mechanics would add substantial cost without matching the current
-pixel-scale gameplay. Thermal capacity/latent heat, chemical equivalents and finite
+pixel-scale gameplay. SI-calibrated capacity and latent heat, chemical equivalents and finite
 ambient oxygen are the next measurable accuracy increments.
 
 Materials now supply capabilities and configured products to these shared solvers;
@@ -142,7 +148,6 @@ soil stress field. Topology changes rebuild outside the active contact pass inst
 recursively restarting contacts. Grab release velocity comes from timed movement, then respects
 the existing body speed caps.
 
-
 ## Viewport fidelity and reconstruction
 
 The spatial unit is meters per displayed pixel, with a fixed one-meter slice depth. The reference pitch is 0.125 m and each zoom step halves or doubles it; the tick remains 60 Hz maximum. A full pixel at twice the pitch has four times the area and dry mass. `quantity` is a saved fractional material amount, so coarsening existing matter averages represented mass instead of treating each merged cell as newly full. Existing thermal and chemical rules remain qualitative pixel models; this unit contract does not add latent heat, exact gas-volume expansion, or calibrated continuum transport.
@@ -152,3 +157,32 @@ Only the current viewport is a live `World`. Coarsening merges cells into one re
 The detail cache is an LRU with a configurable 0–64 MiB byte budget and conservative record overhead. It is not serialized. A fixed 128 × 128 coarse overview and at most 32 actor/32 device records retain approximate surroundings; exported overview planes use run-length encoding and are validated before load. Saves therefore do not accumulate every viewed level of detail. Revisiting distant or reloaded regions restores estimated geometry and fields, rather than an exact old fine scene.
 
 Subpixel/offscreen entities leave the live integration pool. Before re-entry, velocity and elapsed ticks estimate their positions, with a maximum 3,600-tick prediction horizon, 64 coarse collision samples and 32 timestamped destructive events. Event sequence numbers disambiguate edits while paused. Destruction uses the predicted position at the event's time, so a creature which plausibly escaped is not removed merely because its old area was hit. This does not predict unseen AI decisions, flocking, exact trajectories or missed collisions; behavior resumes when the entity becomes visible.
+
+## Conservation boundaries and aerodynamic loads
+
+Passive electrical transport partitions each pulse's energy between resistance,
+neighboring conductors and arcs, without renewing it at each hop. Simultaneous
+fronts coalesce. A leading pulse is transported once; its remaining charge duration
+is a digital display. Batteries and powered logic (with saved per-device `electricalSupply`), user tools, light emitters and
+thermostats are explicit sources. A source-free pulse cannot keep heating a wire
+indefinitely. Arc budgets split between thermal and electrical energy, and spark
+contact heating draws from its remaining thermal capacity. Saved games and visible
+viewport resampling retain the budget; spent coarse pulses cannot reappear from cache.
+
+Air loads sample exposed faces using relative air/object velocity and
+`dragCoefficient`. A free body's uniform drag is shared acceleration; uneven drag
+is an internal bending load amplified by a bounded slender-span estimate. Pressure
+traction and impact energy also produce stress; speed or elapsed time alone never
+cause damage. Raster matching keeps its original per-pixel budget and may reuse a
+previous admissible bijection when ordinary matching rejects an unsupported move.
+Detached elastic pieces resolve paired impulses and may share temporary raster
+translation, without reconnecting their springs or arresting their common centroid.
+
+These checks establish local invariants, not global laboratory conservation:
+implicit air/oxygen, chemical/biological yields, dissipative field boundaries,
+unresolved-species viewport reconstruction and latent heat remain approximations.
+Atmospheric drag uses a normalized pressure unit and physical distance conversion;
+gravity/timing and material strength still need joint SI calibration. Friction,
+speed limiting and wave damping remove energy rather than implementing a full
+conversion of all mechanical loss into heat. Fictional sources and sinks remain
+intentional sandbox mechanisms.

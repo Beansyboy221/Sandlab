@@ -1,3 +1,4 @@
+import { pulseAmount } from "./electrical-energy.js";
 import {
   mixtureBase,
   migrateMixture,
@@ -62,6 +63,8 @@ export class World {
     this.temp.fill(20);
     this.life = new Uint16Array(this.length);
     this.charge = new Uint8Array(this.length);
+    this.electricalEnergy = new Float32Array(this.length);
+    this.electricalSupply = new Float32Array(this.length);
     this.cooldown = new Uint8Array(this.length);
     this.clone = new Uint8Array(this.length);
     this.residue = new Uint8Array(this.length);
@@ -243,6 +246,10 @@ export class World {
     this.poreUpdated[i] = 0;
     this.chargedAt[i] = 0;
     this.charge[i] = 0;
+    this.electricalEnergy[i] = materials[id].electricalArc
+      ? pulseAmount(this, i)
+      : 0;
+    this.electricalSupply[i] = 0;
     this.cooldown[i] = 0;
     this.clone[i] = 0;
     this.residue[i] = 0;
@@ -276,6 +283,7 @@ export class World {
       vy = this.velocityY[i];
     const ox = this.offsetX[i],
       oy = this.offsetY[i];
+    const electricalEnergy = this.electricalEnergy[i];
     const charge = this.charge[i],
       cooldown = this.cooldown[i];
     if (
@@ -293,7 +301,14 @@ export class World {
       remainingUnits = this.dissolvedAmount[i];
     this.set(i, id, ...state);
     if (sameSubstance) {
-      this.quantity[i] = quantity;
+      const fluidDensity =
+        amount * materials[type].density +
+        remainingUnits * materials[remainingIngredient].density;
+      this.quantity[i] =
+        old.density > 0 && next.density > 0
+          ? (quantity * (old.density + fluidDensity)) /
+            (next.density + fluidDensity)
+          : quantity;
       this.detailRef[i] = detailRef;
       this.detailX[i] = detailX;
       this.detailY[i] = detailY;
@@ -320,6 +335,7 @@ export class World {
       this.velocityX[i] = vx;
       this.velocityY[i] = vy;
       this.charge[i] = next.conductive ? charge : 0;
+      this.electricalEnergy[i] = next.conductive ? electricalEnergy : 0;
       this.cooldown[i] = cooldown;
     }
     return true;
@@ -379,6 +395,8 @@ export class World {
       "heading",
       "life",
       "charge",
+      "electricalEnergy",
+      "electricalSupply",
       "cooldown",
       "clone",
       "residue",

@@ -178,7 +178,7 @@ test("microbial contact growth has a global tick budget and survives export", ()
   restore(loaded, unpack(pack(saved)));
   assert.deepEqual(snapshot(loaded), saved);
 });
-test("a falling brick string sheds a few pieces in air and crumbles on impact, while metal stays ductile", () => {
+test("a falling brick string stays intact in quiet air and crumbles on impact, while metal stays ductile", () => {
   for (const name of ["Brick", "Steel"]) {
     const w = new World(100, 150);
     for (let x = 20; x < 65; x++) w.set(at(w, x, 20), M[name]);
@@ -186,7 +186,7 @@ test("a falling brick string sheds a few pieces in air and crumbles on impact, w
     run(w, 40);
     const airborne = w.cells.filter((id) => id === M["Brick Rubble"]).length;
     if (name === "Brick")
-      assert.ok(airborne > 0 && airborne < 15, `${airborne} airborne crumbs`);
+      assert.equal(airborne, 0, "gravity is not a fracture load");
     else assert.equal(w.rigid.locations.size, 45);
     run(w, 80);
     if (name === "Brick")

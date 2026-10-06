@@ -352,9 +352,9 @@ export class Elasticity {
         fx[i] = fy[i] = 0;
         continue;
       }
-      const fi = w.fields.forceGradient(x, y),
-        pressureX = w.fields.gradientX[fi],
-        pressureY = w.fields.gradientY[fi];
+      w.fields.surfaceForce(w, i, w.velocityX[i], w.velocityY[i]);
+      const pressureX = w.fields.forceX,
+        pressureY = w.fields.forceY;
       let liquidDensity = 0,
         liquidNeighbors = 0;
       for (const [dx, dy] of supports) {
@@ -434,7 +434,8 @@ export class Elasticity {
       m.category === "liquid" ||
       (m.elasticity &&
         !w.elasticAnchor[j] &&
-        this.components[i] === this.components[j])
+        (this.components[i] === this.components[j] ||
+          this.momentum.sameGroup(i, j)))
     );
   }
 
@@ -514,15 +515,22 @@ export class Elasticity {
         offsets[i] = displaced;
         return j;
       }
-      if (internal) {
-        offsets[i] = limit(offset, 1.49);
-        return i;
+      if (!internal) {
+        this.momentum.collide(i, j, horizontal, Math.sign(shift));
+        this.momentum.join(i, j);
       }
+      offsets[i] = limit(offset, 1.49);
+      return i;
     }
     this.momentum.contact(i, horizontal);
     offsets[i] = limit(offset, 0.49);
-    velocity[i] *= -0.18;
-    if (!horizontal) w.velocityX[i] *= 0.8;
+    const m = materials[w.cells[i]];
+    velocity[i] *= -Math.max(m.restitution, target?.restitution || 0);
+    const tangent = horizontal ? w.velocityY : w.velocityX;
+    tangent[i] *= Math.max(
+      0,
+      1 - Math.sqrt(m.friction * (target?.friction ?? m.friction)) * 0.5,
+    );
     return i;
   }
 }

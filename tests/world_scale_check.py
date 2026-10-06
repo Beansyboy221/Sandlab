@@ -23,7 +23,7 @@ with sync_playwright() as p:
         page.keyboard.down('Control');page.mouse.wheel(0,-100);page.keyboard.up('Control')
         page.wait_for_function('sandlab.renderer.zoom>1')
         zoom=page.evaluate('sandlab.renderer.zoom');assert page.evaluate('sandlab.world.metersPerPixel')==.0625
-        page.wait_for_function('document.querySelector("#zoom-value").value!=="100%"')
+        page.wait_for_function('document.querySelector("#zoom-value").value==="1:6.25 cm"')
         page.keyboard.down('Alt');page.mouse.wheel(0,100);page.keyboard.up('Alt')
         page.wait_for_function('sandlab.world.metersPerPixel===.125')
         assert page.evaluate('sandlab.renderer.zoom')==1
@@ -72,4 +72,4 @@ with sync_playwright() as p:
         assert not errors,errors
         context.close()
     browser.close()
-print('PASS: world-owned rules, percentage Zoom, unified Ctrl/Alt+scroll zoom, content/temperature conservation, unified simulation zoom and mobile rotation.')
+print('PASS: world-owned rules, physical scale ratios, unified Ctrl/Alt+scroll zoom, content/temperature conservation, unified simulation zoom and mobile rotation.')

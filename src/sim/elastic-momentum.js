@@ -1,3 +1,4 @@
+import { materials } from "./materials.js";
 import { cellMass } from "./mechanical-mass.js";
 const clamp = (v, n) => Math.max(-n, Math.min(n, v));
 const NONE = 4294967295;
@@ -27,7 +28,15 @@ export class ElasticMomentum {
         "refY",
       ])
         this[key] = new Float64Array(capacity);
-      for (const key of ["heads", "next", "nodeSlots", "grid", "ids"])
+      for (const key of [
+        "heads",
+        "tails",
+        "parents",
+        "next",
+        "nodeSlots",
+        "grid",
+        "ids",
+      ])
         this[key] = new Uint32Array(capacity);
       this.blocked = new Uint8Array(capacity);
       this.nodeMass = new Float64Array(capacity);
@@ -59,6 +68,8 @@ export class ElasticMomentum {
         this.refX[slot] = (i % w.width) + 0.5;
         this.refY[slot] = Math.floor(i / w.width) + 0.5;
         this.heads[slot] = NONE;
+        this.parents[slot] = slot;
+        this.tails[slot] = n;
       }
       this.nodeSlots[n] = slot;
       this.ids[n] = ids[n];
@@ -110,8 +121,71 @@ export class ElasticMomentum {
       s.forceY[i] = w.offsetY[i] + w.velocityY[i] * this.dt;
     }
   }
-  contact(i, horizontal) {
+  root(slot) {
+    while (this.parents[slot] !== slot) {
+      this.parents[slot] = this.parents[this.parents[slot]];
+      slot = this.parents[slot];
+    }
+    return slot;
+  }
+  slot(i) {
     const slot = this.slots.get(this.solver.components[i]);
+    return slot === undefined ? undefined : this.root(slot);
+  }
+  sameGroup(i, j) {
+    const a = this.slot(i),
+      b = this.slot(j);
+    return a !== undefined && a === b;
+  }
+  // Free pieces in mutual contact cannot support one another against gravity.
+  // Share only raster translation, never spring bonds; cuts stay disconnected.
+  join(i, j) {
+    const a = this.slot(i),
+      b = this.slot(j);
+    if (a === undefined || b === undefined || a === b) return;
+    const mass = this.mass[a] + this.mass[b],
+      w = this.solver.world;
+    for (const key of ["x", "y", "vx", "vy"]) {
+      let value = this[key][b];
+      if (w.border === "looping" && (key === "x" || key === "y")) {
+        const span = key === "x" ? w.width : w.height;
+        value -= Math.round((value - this[key][a]) / span) * span;
+      }
+      this[key][a] =
+        (this[key][a] * this.mass[a] + value * this.mass[b]) / mass;
+    }
+    this.mass[a] = mass;
+    this.blocked[a] |= this.blocked[b];
+    this.parents[b] = a;
+    this.next[this.tails[a]] = this.heads[b];
+    this.tails[a] = this.tails[b];
+  }
+  collide(i, j, horizontal, sign) {
+    const w = this.solver.world,
+      velocity = horizontal ? w.velocityX : w.velocityY;
+    const closing = (velocity[i] - velocity[j]) * sign;
+    if (closing <= 0) return;
+    const a = cellMass(w, i),
+      b = cellMass(w, j);
+    const restitution = Math.max(
+      materials[w.cells[i]].restitution,
+      materials[w.cells[j]].restitution,
+    );
+    const impulse = ((1 + restitution) * closing * sign) / (1 / a + 1 / b);
+    for (const [node, delta] of [
+      [i, -impulse / a],
+      [j, impulse / b],
+    ]) {
+      velocity[node] += delta;
+      const slot = this.slot(node);
+      if (slot === undefined) continue;
+      const dv = (delta * cellMass(w, node)) / this.mass[slot];
+      this[horizontal ? "vx" : "vy"][slot] += dv;
+      this[horizontal ? "x" : "y"][slot] += dv * this.dt;
+    }
+  }
+  contact(i, horizontal) {
+    const slot = this.slot(i);
     if (slot !== undefined) this.blocked[slot] |= horizontal ? 1 : 2;
   }
   translate(slot, horizontal, shift) {
@@ -142,7 +216,8 @@ export class ElasticMomentum {
   project() {
     const s = this.solver,
       w = s.world;
-    for (let slot = 0; slot < this.slots.size; slot++)
+    for (let slot = 0; slot < this.slots.size; slot++) {
+      if (this.root(slot) !== slot) continue;
       for (const horizontal of [true, false]) {
         if (this.blocked[slot] & (horizontal ? 1 : 2)) continue;
         let gridMean = 0,
@@ -199,5 +274,6 @@ export class ElasticMomentum {
           }
         }
       }
+    }
   }
 }

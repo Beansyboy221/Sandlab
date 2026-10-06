@@ -1,5 +1,7 @@
 // Stock calibration is plain data. Generic derivations run once at compilation.
 export const stockProfiles = {
+  Battery: { pulseEnergy: 6 },
+
   Water: {
     aqueous: true,
     waterLike: true,
@@ -270,6 +272,8 @@ export const stockProfiles = {
     nutritionSoluble: true,
   },
   Rubber: {
+    restitution: 0.72,
+    friction: 0.65,
     combustionGas: "CO2",
   },
   Nitrogen: {
@@ -291,6 +295,7 @@ export const stockProfiles = {
     brittleness: 0.08,
   },
   Jelly: {
+    restitution: 0.25,
     porosity: 1,
     permeability: 0.001,
     retention: 0.98,
