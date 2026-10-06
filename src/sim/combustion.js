@@ -1,8 +1,8 @@
 import { emitSpark } from "./sparks.js";
-import { M, materials } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 
 export function oxidizer(id) {
-  return id === 0 || id === M.Oxygen || id === M.Fire;
+  return !!materials[id].oxidizer;
 }
 
 export function hasOxidizer(w, i, x, y) {
@@ -52,7 +52,7 @@ export function burnFuel(world, i, x, y, material) {
   if (--life[i] === 0) {
     world.transform(
       i,
-      material.residue || material.combustionGas || M.Smoke,
+      material.residue || material.combustionGas || solverProducts.smoke,
       120,
     );
     return;
@@ -68,7 +68,7 @@ export function burnFuel(world, i, x, y, material) {
       gas: 1,
     });
   if (material.sparkChance && world.random() < material.sparkChance)
-    emitSpark(world, i, x, y, material.residue || M.Ash);
+    emitSpark(world, i, x, y, material.residue || solverProducts.ash);
 
   // Prefer the exposed upper face. Side vents also support walls and overhangs.
   const above = world.relativeIndex(x, y, 0, -1);
@@ -83,12 +83,16 @@ export function burnFuel(world, i, x, y, material) {
         world.transform(
           vent,
           material.category === "gas" || world.random() < 0.45
-            ? material.combustionGas || M.Smoke
-            : M.Smoke,
+            ? material.combustionGas || solverProducts.smoke
+            : solverProducts.smoke,
           Math.max(120, temp[i] * 0.3),
         );
     } else if (above >= 0 && !cells[above])
-      world.transform(above, material.combustionGas || M.Smoke, 180);
+      world.transform(
+        above,
+        material.combustionGas || solverProducts.smoke,
+        180,
+      );
   }
   // Heat travels along contiguous fuel, while the exposed-face test controls ignition.
   for (const [dx, dy] of neighbors) {
@@ -98,21 +102,24 @@ export function burnFuel(world, i, x, y, material) {
   }
 }
 function plumePassage(id) {
-  return !id || id === M.Fire || id === M.Smoke || id === M.Oxygen;
+  return !id || materials[id].plumePassage || materials[id].oxidizer;
 }
 function emitFlame(world, fuel, j, probability) {
   if (j < 0) return;
   const id = world.cells[j];
-  if (id === M.Fire) {
+  if (materials[id].flame) {
     world.temp[j] = Math.max(world.temp[j], 650);
     return;
   }
-  if ((!id || id === M.Oxygen) && world.random() < probability)
+  if (
+    (!id || (materials[id].oxidizer && !materials[id].flame)) &&
+    world.random() < probability
+  )
     world.transform(
       j,
-      M.Fire,
+      solverProducts.flame,
       Math.max(650, world.temp[fuel]),
-      materials[M.Fire].lifetime,
+      materials[solverProducts.flame].lifetime,
     );
 }
 
@@ -134,14 +141,18 @@ export function reactFire(world, i, x, y) {
         !world.nutrition[j] &&
         materials[cells[j]].dryTo === undefined
       ) {
-        world.transform(j, M.Steam, Math.max(105, temp[j]));
+        world.transform(
+          j,
+          materials[cells[j]].boilTo ?? solverProducts.vapor,
+          Math.max(105, temp[j]),
+        );
         world.fields.add(x, y, 1.5);
       }
       quenched = true;
     }
   }
   if (quenched) {
-    world.transform(i, M.Smoke, 100);
+    world.transform(i, solverProducts.smoke, 100);
     return;
   }
   if (smothered >= 2) {
@@ -151,7 +162,7 @@ export function reactFire(world, i, x, y) {
   if (!life[i] || --life[i] === 0) {
     world.transform(
       i,
-      world.residue[i] || (world.random() < 0.7 ? M.Smoke : 0),
+      world.residue[i] || (world.random() < 0.7 ? solverProducts.smoke : 0),
       120,
     );
     return;
@@ -159,15 +170,19 @@ export function reactFire(world, i, x, y) {
   temp[i] = Math.max(temp[i], 550);
   world.fields.add(x, y, 0.04);
   if ((world.tick + i) % 20 === 0)
-    world.sound.emit("crackle", x, y, 0.08, 1, M.Fire, {
+    world.sound.emit("crackle", x, y, 0.08, 1, cells[i], {
       pressure: 0.04,
       heat: 70,
     });
   for (const [dx, dy] of neighbors) {
     const j = world.index(x + dx, y + dy);
     if (j < 0) continue;
-    if (cells[j] === M.Oxygen) {
-      world.transform(j, M.Fire, 900, 25);
+    if (
+      cells[j] &&
+      materials[cells[j]].oxidizer &&
+      !materials[cells[j]].flame
+    ) {
+      world.transform(j, solverProducts.flame, 900, 25);
       life[i] = Math.min(80, life[i] + 4);
     } else if (materials[cells[j]].ignite) temp[j] += 70;
   }
@@ -205,7 +220,7 @@ export function moveSurfaceFlame(world, i, x, y) {
     if (j < 0 || support < 0) continue;
     const id = world.cells[j];
     if (
-      (!id || id === M.Smoke) &&
+      (!id || materials[id].smokeCarrier) &&
       materials[world.cells[support]].ignite &&
       world.random() < 0.35
     ) {

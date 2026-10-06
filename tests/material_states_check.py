@@ -35,7 +35,7 @@ with sync_playwright() as p:
         if touch:page.touchscreen.tap(**target)
         else:page.mouse.click(**target)
         assert page.evaluate('sandlab.world.cells[30*sandlab.world.width+30]===M.Steel')
-        page.evaluate("""async()=>{const {fracture}=await import('./src/sim/body-collisions.js');const w=sandlab.world,i=40*w.width+40;w.set(i,M.Steel);w.oxidationLevel[i]=128;w.pigment[i]=0xffccaa77;fracture(w.rigid,i,1000);sandlab.renderer.draw();}""")
+        page.evaluate("""async()=>{const {fracture}=await import('./src/sim/body-collisions.js');const {fractureWork}=await import('./src/sim/fracture-energy.js');const w=sandlab.world,i=40*w.width+40;w.set(i,M.Steel);w.oxidationLevel[i]=128;w.pigment[i]=0xffccaa77;fracture(w.rigid,i,fractureWork(w,i)*1.1);sandlab.renderer.draw();}""")
         assert page.evaluate('sandlab.world.cells[40*sandlab.world.width+40]===M["Metal Dust"]')
         page.locator('#tool-picker-toggle').click();page.locator('[data-tool-option=inspect]').click()
         if touch:assert page.locator('#controls-toggle').get_attribute('aria-expanded')=='false'

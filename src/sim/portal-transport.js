@@ -1,4 +1,4 @@
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 import { PORTAL_COOLDOWN } from "./portals.js";
 import { rotateMotion } from "./portal-geometry.js";
 import { rayHeading, rayDirections } from "./energy.js";
@@ -35,7 +35,7 @@ export function transportRigid(solver, body, pose, hit) {
   if (
     hit.internal ||
     hit.j < 0 ||
-    w.cells[hit.j] !== M.Portal ||
+    !materials[w.cells[hit.j]].portal ||
     w.portalCooldown[solver.locations.get(body.ids[0])]
   )
     return false;
@@ -84,7 +84,7 @@ export function portalContact(w, x, y, vx, vy, radius = 0) {
       Math.floor(x + (vx * n) / 3 + dx * radius),
       Math.floor(y + (vy * n) / 3 + dy * radius),
     );
-    if (i >= 0 && w.cells[i] === M.Portal) return i;
+    if (i >= 0 && materials[w.cells[i]].portal) return i;
   }
   return -1;
 }

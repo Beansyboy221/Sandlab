@@ -1,5 +1,5 @@
 import { conducts } from "./oxidation.js";
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 // Output follows the Facing control. A is behind, B is on the left of that heading.
 const directions = [
   [1, 0],
@@ -44,7 +44,7 @@ export class Circuits {
       j = w.index(x, y);
     if (j < 0) return false;
     const m = materials[w.cells[j]];
-    if (m.id === M.Spark) return true;
+    if (m.electricalArc) return true;
     if (!m.circuit) return conducts(w, j) && Boolean(this.signals[j]);
     const [dx, dy] = circuitDirection(w.heading[j]);
     return (

@@ -1,5 +1,5 @@
 import { distanceRatio } from "./world-units.js";
-import { materials, M } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 import { portalContact, transportMissile } from "./portal-transport.js";
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const obstacles = Uint8Array.from(materials, (m) =>
@@ -29,7 +29,7 @@ function wreck(w, a) {
       Math.floor(a.y - w.gravityX * d),
     );
     if (j >= 0 && !w.cells[j])
-      w.set(j, d === 0 ? M.Spark : materials[M.Steel].fragmentTo);
+      w.set(j, d === 0 ? solverProducts.spark : materials[a.material].debrisTo);
   }
   w.sound.emit("impact", a.x, a.y, 0.35);
 }
@@ -51,7 +51,7 @@ export function stepMachine(w, a) {
     if (w.cells[center])
       a.temperature += (w.temp[center] - a.temperature) * 0.05;
     if (materials[w.cells[center]].acidic) a.health -= 1;
-    if (w.cells[center] === M.Void) a.health = 0;
+    if (materials[w.cells[center]].deviceRule === "sink") a.health = 0;
   }
   if (a.temperature > 180)
     a.health -= Math.min(3, (a.temperature - 180) * 0.004);

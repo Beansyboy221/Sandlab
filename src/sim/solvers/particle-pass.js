@@ -1,4 +1,4 @@
-import { materials, M } from "../materials.js";
+import { materials } from "../materials.js";
 import { react } from "../reactions.js";
 import { exchangeParticleHeat } from "./thermodynamics.js";
 
@@ -30,15 +30,22 @@ export function stepParticles(world) {
         exchangeParticleHeat(world, i, x, y);
         react(world, i, x, y);
         if (
-          world.cells[i] === M.Fan &&
+          materials[world.cells[i]].airSourceRange &&
           world.mechanics.pressureSimulation !== false
         ) {
-          for (let d = 2; d < 15; d++) {
+          for (let d = 2; d <= materials[world.cells[i]].airSourceRange; d++) {
             const nx = x + d;
             const j = world.index(nx, y);
             if (j < 0) break;
             if (world.fields.blocks(world.cells[j])) break;
-            world.fields.airflow.impulse(world.fields, nx, y, 1, 0, 0.4);
+            world.fields.airflow.impulse(
+              world.fields,
+              nx,
+              y,
+              1,
+              0,
+              materials[world.cells[i]].airSourceStrength,
+            );
           }
         } else if (world.cells[i]) {
           // Only movement sleeps. Heat and chemistry continue in settled chunks.

@@ -1,5 +1,5 @@
 import { MAX_DISSOLVED } from "./mixtures.js";
-import { M, materials } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 
 export const absorbable = (id) => !!materials[id]?.absorbable;
 export const acceptsLiquid = (host, type) =>
@@ -8,7 +8,8 @@ export const acceptsLiquid = (host, type) =>
   (!materials[host].waterOnly || !!materials[type].waterLike);
 const compatible = (a, b) =>
   !a || a === b || (materials[a].waterLike && materials[b].waterLike);
-const mixed = (a, b) => (a === M.Brine || b === M.Brine ? M.Brine : b);
+const mixed = (a, b) =>
+  (materials[a].mixPriority || 0) > (materials[b].mixPriority || 0) ? a : b;
 const offsets = [
   [0, 1],
   [-1, 0],
@@ -52,9 +53,9 @@ export function absorb(w, i, x, y) {
       boiling
         ? fluid.dryTo !== undefined || w.nutrition[i]
           ? type
-          : M.Steam
+          : (fluid.boilTo ?? solverProducts.vapor)
         : burning
-          ? M.Fire
+          ? solverProducts.flame
           : type,
     );
     if (boiling && w.storedAmount[i]) w.temp[i] = Math.min(w.temp[i], 100);
@@ -217,23 +218,22 @@ function transfer(w, i, j, units) {
   w.wake(j);
 }
 function hydrate(w, i) {
-  const id = w.cells[i];
-  if (id !== M.Dirt && id !== M.Mud && id !== M.Clay && id !== M["Wet Clay"])
-    return;
+  const m = materials[w.cells[i]];
+  if (!m.poreHydration) return;
   const amount = materials[w.storedLiquid[i]].waterLike ? w.storedAmount[i] : 0;
-  w.moisture[i] = Math.min(255, amount * 80);
+  w.moisture[i] = Math.min(255, amount * m.poreHydration);
 }
 
-export function consumeWater(w, i) {
-  if (!w.storedAmount[i] || !materials[w.storedLiquid[i]].waterLike)
+export function consumeWater(w, i, registry = materials, hydrationYield = 80) {
+  if (!w.storedAmount[i] || !registry[w.storedLiquid[i]].waterLike)
     return false;
-  w.moisture[i] = Math.min(255, w.moisture[i] + 80);
+  w.moisture[i] = Math.min(255, w.moisture[i] + hydrationYield);
   if (!--w.storedAmount[i]) w.storedLiquid[i] = 0;
   w.wake(i);
   return true;
 }
 function release(w, i, x, y, output, downwardOnly = false) {
-  const hot = output === M.Steam || output === M.Fire;
+  const hot = materials[output].gas && !materials[output].waterLike;
   for (let side = 0; side < (downwardOnly ? 1 : 4); side++) {
     const [dx, dy] = offsets[hot ? 3 - side : side],
       j = w.relativeIndex(x, y, dx, dy);
@@ -244,7 +244,11 @@ function release(w, i, x, y, output, downwardOnly = false) {
       w.transform(
         j,
         output,
-        output === M.Steam ? 120 : output === M.Fire ? 680 : w.temp[i],
+        materials[output].flame
+          ? materials[output].temperature
+          : hot
+            ? Math.max(materials[output].temperature, w.temp[i])
+            : w.temp[i],
       );
       w.nutrition[j] = food;
       if (!hot) {

@@ -8,7 +8,7 @@ import {
   segmentHitsBrush,
   pointInTriangle,
 } from "./elastic-geometry.js";
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 import { cellMass } from "./mechanical-mass.js";
 import { transportElastics } from "./portal-elastics.js";
 
@@ -95,7 +95,7 @@ export class Elasticity {
   }
   support(i) {
     const m = materials[this.world.cells[i]];
-    return m.id && m.id !== M.Portal && !m.movable && !m.elasticity && !m.gas;
+    return m.id && !m.portal && !m.movable && !m.elasticity && !m.gas;
   }
   rebuild(world = this.world) {
     this.world = world;

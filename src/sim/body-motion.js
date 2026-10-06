@@ -1,6 +1,6 @@
 import { airStress } from "./body-stress.js";
 import { collisionLimits } from "./collision-limits.js";
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 import { collide, fracture } from "./body-collisions.js";
 import { transportRigid } from "./portal-transport.js";
 const clamp = (v, max) => Math.max(-max, Math.min(max, v));
@@ -119,8 +119,7 @@ export function stepBodies(solver) {
         contacts++;
         if (materials[w.cells[j]].category === "liquid")
           liquid += materials[w.cells[j]].density;
-        if (m.rooted && (w.cells[j] === M.Dirt || w.cells[j] === M.Mud))
-          rooted = true;
+        if (m.rooted && materials[w.cells[j]].growthSubstrate) rooted = true;
       }
     }
     if (rooted) {

@@ -234,9 +234,7 @@ export function validateSnapshot(data) {
       (quantity &&
         (!dissolvable[solute] ||
           !(
-            carrier === M.Water ||
-            carrier === M.Ice ||
-            materials[carrier]?.porosity
+            materials[carrier]?.retainsDissolved || materials[carrier]?.porosity
           ) ||
           quantity >
             MAX_DISSOLVED * Math.max(1, materials[carrier]?.porosity || 0))) ||

@@ -1,5 +1,15 @@
 export const changelog = [
   {
+    version: "1.30.0",
+    date: "2026-10-06",
+    title: "Materials as data",
+    changes: [
+      "Growth, infection, weather and material interactions now use reusable components and shared solvers without material-name rules.",
+      "Biology shares a 32-birth tick budget, and authored chemistry recipes configure products, conditions, heat and pressure.",
+      "Isolated 24,000-cell updates improve from 3.01 to 1.52 ms for dormant plants and 3.02 to 1.37 ms for soil reservoirs.",
+    ],
+  },
+  {
     version: "1.29.0",
     date: "2026-10-05",
     title: "Adaptive viewports",

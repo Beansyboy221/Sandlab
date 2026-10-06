@@ -2,7 +2,7 @@ import { LightRecast } from "./light-recast.js";
 import { spectrum } from "./optical-transport.js";
 import { traceParticles } from "./light-visibility.js";
 import { LightShadows } from "./light-shadows.js";
-import { materials, M } from "./sim/materials.js";
+import { materials } from "./sim/materials.js";
 export const LIGHT_CELL = 2;
 const MAX_SOURCES = 24;
 const hues = materials.map((m) => {
@@ -19,13 +19,6 @@ const opticalIds = Uint8Array.from(materials, (m) =>
 export function emissionStrength(m, temperature, life, charge) {
   return Math.max(
     m.circuit === "lamp" && !life ? 0 : m.lightEmission || 0,
-    m.id === M.Fire
-      ? 1
-      : m.id === M.Lightning
-        ? 1.6
-        : m.id === M.Spark
-          ? 1.1
-          : 0,
     m.circuit === "lamp" && !life ? 0 : m.glow || 0,
     m.burn && life ? 0.65 : 0,
     charge ? 0.9 : 0,
@@ -174,8 +167,8 @@ export class Lighting {
         Math.floor(y / this.cellSize) * this.width +
         Math.floor(x / this.cellSize);
       const opaque = 1 - transparency[id];
-      if (id === M.Smoke)
-        this.scatter[t] += 1 / (this.cellSize * this.cellSize);
+      if (m.lightScatter)
+        this.scatter[t] += m.lightScatter / (this.cellSize * this.cellSize);
       if (opaque === 1) this.opaqueIndices[this.opaqueCount++] = i;
       else if (opaque > 0) this.hasFilters = true;
       this.opacity[t] = Math.min(
@@ -198,7 +191,7 @@ export class Lighting {
       this.particleEmission[i] = energy;
       // A bolt is one scene-wide flash, not a shadow-casting source per segment.
       // Its existing lifetime supplies the fade; no extra saved particle state.
-      if (id === M.Lightning) {
+      if (m.discharge) {
         this.flash = Math.max(this.flash, Math.min(1, (w.life[i] || 8) / 8));
         this.addEmitter(
           x,

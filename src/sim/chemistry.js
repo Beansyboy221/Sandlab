@@ -7,8 +7,8 @@ import {
 import { releaseForChange } from "./absorption.js";
 import { addOxide } from "./oxidation.js";
 import { compileContactReactions } from "./reaction-registry.js";
-import { M, materials } from "./materials.js";
-const contacts = compileContactReactions(materials, M);
+import { materials } from "./materials.js";
+const contacts = compileContactReactions(materials);
 // Count each registered unordered reactant pair once, independent of direction.
 export const interactionCount = contacts.reduce(
   (count, row, a) =>
@@ -25,7 +25,8 @@ function contact(w, i, j, row, x, y) {
     !rule ||
     materials[w.cells[i]].static ||
     materials[w.cells[j]].static ||
-    Math.max(w.temp[i], w.temp[j]) < (rule.minimumTemperature || -273) ||
+    Math.max(w.temp[i], w.temp[j]) < (rule.minimumTemperature ?? -273) ||
+    Math.max(w.temp[i], w.temp[j]) > (rule.maximumTemperature ?? 6000) ||
     (rule.chance < 1 && w.random() >= rule.chance)
   )
     return false;
@@ -124,8 +125,8 @@ function contact(w, i, j, row, x, y) {
   );
   return true;
 }
-export function reactContact(w, i, x, y) {
-  const row = contacts[w.cells[i]];
+export function reactContact(w, i, x, y, registry = contacts) {
+  const row = registry[w.cells[i]];
   if (!row) return false;
   const left = w.index(x - 1, y),
     right = w.index(x + 1, y),
@@ -146,8 +147,12 @@ export function oxidize(w, i, x, y, material) {
   w.eachNeighbor(x, y, (j) => {
     const id = w.cells[j];
     if (materials[id].waterLike) wet = true;
-    if (!id || id === M.Oxygen) oxygen = true;
-    if (id === M.Salt || w.dissolvedId[j] === M.Salt) salty = true;
+    if (materials[id].oxidizer) oxygen = true;
+    if (
+      materials[id].oxidationCatalyst ||
+      materials[w.dissolvedId[j]].oxidationCatalyst
+    )
+      salty = true;
   });
   const passivation =
     material.oxidizeTo === undefined

@@ -1,4 +1,4 @@
-import { materials, M } from "../sim/materials.js";
+import { materials } from "../sim/materials.js";
 import { oxideColors } from "../sim/oxidation.js";
 import { flowColor } from "../airflow-view.js";
 import { portalColor } from "../portal-renderer.js";
@@ -54,7 +54,7 @@ export function writeMaterialPixels(renderer) {
     if (id) {
       const base = thermal
         ? heatColors[Math.max(0, Math.min(1600, Math.round(temp[i]) + 100))]
-        : id === M.Portal
+        : materials[id].portal
           ? portalColor(renderer.world.portals, renderer.world.portalId[i])
           : colors[id];
       const shade = (variant[i] / 255 - 0.5) * 22;
@@ -76,9 +76,9 @@ export function writeMaterialPixels(renderer) {
           b = b * (1 - opacity) + ((pigment & 255) + shade) * opacity;
         }
         if (
-          id === M.Fire ||
-          id === M.Spark ||
-          id === M.Lightning ||
+          materials[id].flame ||
+          materials[id].electricalArc ||
+          materials[id].discharge ||
           (materials[id].glow && (materials[id].circuit !== "lamp" || life[i]))
         ) {
           const flicker =
@@ -91,19 +91,12 @@ export function writeMaterialPixels(renderer) {
           r = r * (1 - glow) + 255 * glow;
           g = g * (1 - glow) + 100 * glow;
         }
-        if (
-          id === M.Steam ||
-          id === M.Smoke ||
-          materials[id].category === "gas"
-        ) {
+        if (materials[id].category === "gas") {
           r = r * 0.67 + cellBgR * 0.33;
           g = g * 0.67 + cellBgG * 0.33;
           b = b * 0.67 + cellBgB * 0.33;
         }
-        if (
-          (id === M.Dirt || id === M.Mud || id === M.Plant) &&
-          renderer.world.nutrition[i]
-        ) {
+        if (materials[id].nutrientTint && renderer.world.nutrition[i]) {
           const nutrition = renderer.world.nutrition[i] / 255;
           g += nutrition * 28;
           r -= nutrition * 12;
@@ -115,7 +108,7 @@ export function writeMaterialPixels(renderer) {
           r = r * (1 - amount * 0.65) + liquid[0] * amount * 0.65;
           g = g * (1 - amount * 0.65) + liquid[1] * amount * 0.65;
           b = b * (1 - amount * 0.65) + liquid[2] * amount * 0.65;
-          if (id === M.Sponge && variant[i] < 60) {
+          if (materials[id].surfacePattern === "pores" && variant[i] < 60) {
             r *= 0.75;
             g *= 0.75;
             b *= 0.75;
@@ -128,7 +121,7 @@ export function writeMaterialPixels(renderer) {
           g += (additive[1] - g) * blend;
           b += (additive[2] - b) * blend;
         }
-        if (id === M.Glass) {
+        if (materials[id].renderStyle === "glass") {
           r *= 0.66;
           g *= 0.76;
           b *= 0.79;

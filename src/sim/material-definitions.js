@@ -1,3 +1,4 @@
+import { configureComponents } from "./material-components.js";
 import {
   defineMaterial,
   defineMaterialState,
@@ -1140,3 +1141,5 @@ materialDefinitions.push(
   }),
 );
 registerMaterialStates(materialDefinitions);
+
+configureComponents(materialDefinitions);

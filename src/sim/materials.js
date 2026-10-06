@@ -1,3 +1,7 @@
+import {
+  stockSolverProducts,
+  resolveSolverProducts,
+} from "./material-components.js";
 import { materialDefinitions } from "./material-definitions.js";
 import { compileMaterials } from "./material-registry.js";
 import { applyMaterialProfiles } from "./material-profiles.js";
@@ -49,3 +53,5 @@ export const categoryLabels = {
   energy: "Energy",
   devices: "Devices",
 };
+
+export const solverProducts = resolveSolverProducts(stockSolverProducts, M);

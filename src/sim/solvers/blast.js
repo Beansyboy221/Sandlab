@@ -1,4 +1,4 @@
-import { materials, M } from "../materials.js";
+import { materials, solverProducts } from "../materials.js";
 
 // Keep blast products, pressure, heat and sound coupled in one bounded local
 // transaction; this preserves the existing gameplay blast law and seeded order.
@@ -43,11 +43,11 @@ export function explode(w, x, y, radius, product = 0) {
         !["solid", "elastic"].includes(m.category) ||
         w.random() > (m.resistance || 0.6)
       ) {
-        w.transform(i, M.Fire, 850, 15 + w.random() * 30);
+        w.transform(i, solverProducts.flame, 850, 15 + w.random() * 30);
         if (product) w.residue[i] = product;
       } else w.temp[i] += 500 * (1 - d2 / r2);
     }
   const center = w.index(x, y);
-  if (w.transform(center, M.Fire, 1100, 50) && product)
+  if (w.transform(center, solverProducts.flame, 1100, 50) && product)
     w.residue[center] = product;
 }

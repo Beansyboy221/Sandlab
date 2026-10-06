@@ -1,6 +1,6 @@
 // Expand component matching to direct ID-pair lookup once at startup. There is
 // no rule search, tag matching or allocation for individual reacting particles.
-export function compileContactReactions(materials, M) {
+export function compileContactReactions(materials) {
   const contacts = [];
   function pair(a, b, resultA, resultB, options = {}) {
     for (const id of [a, b, resultA, resultB])
@@ -27,7 +27,9 @@ export function compileContactReactions(materials, M) {
           acid.id,
           target.id,
           acid.neutralizedTo,
-          target.carbonate ? M.CO2 : target.neutralizationProduct,
+          target.carbonate
+            ? target.neutralizationGas
+            : target.neutralizationProduct,
           {
             chance: Math.min(1, acid.acidity * target.alkalinity * 2),
             heat: target.carbonate ? 0 : 35,
@@ -38,7 +40,7 @@ export function compileContactReactions(materials, M) {
           },
         );
       } else if (target.acidMetalReactivity > 0) {
-        pair(acid.id, target.id, target.acidProduct, M.Hydrogen, {
+        pair(acid.id, target.id, target.acidProduct, target.acidGas, {
           chance: Math.min(
             1,
             acid.acidity * target.acidMetalReactivity * target.surfaceArea,
@@ -62,10 +64,16 @@ export function compileContactReactions(materials, M) {
   }
   for (const metal of active.filter((m) => m.reactsWithWater))
     for (const water of active.filter((m) => m.aqueous))
-      pair(metal.id, water.id, metal.waterReactionProduct, M.Hydrogen, {
-        heat: 600,
-        pressure: 2,
-      });
+      pair(
+        metal.id,
+        water.id,
+        metal.waterReactionProduct,
+        metal.waterReactionGas,
+        {
+          heat: 600,
+          pressure: 2,
+        },
+      );
   for (const oxidant of active.filter((m) => m.oxidizingStrength > 0))
     for (const metal of active.filter((m) => m.halideTo !== undefined))
       pair(oxidant.id, metal.id, 0, metal.halideTo, {
@@ -96,5 +104,19 @@ export function compileContactReactions(materials, M) {
       (m) => m.waterLike && m.materialState === "bulk",
     ))
       pair(water.id, m.id, water.id, 0, { dissolve: m.id });
+  // Explicit recipes override inferred component pairs, but two authored recipes
+  // cannot claim the same unordered pair with ambiguous products or conditions.
+  const explicitPairs = new Set();
+  for (const m of active)
+    for (const recipe of m.contactReactions || []) {
+      const key =
+        Math.min(m.id, recipe.with) * materials.length +
+        Math.max(m.id, recipe.with);
+      if (explicitPairs.has(key))
+        throw Error("Conflicting authored contact pair");
+      explicitPairs.add(key);
+      const { with: partner, selfTo, otherTo, ...conditions } = recipe;
+      pair(m.id, partner, selfTo, otherTo, conditions);
+    }
   return contacts;
 }

@@ -1,7 +1,7 @@
 import { wavelengths } from "./optical-transport.js";
 import { circuitDirection, circuitOutput } from "./sim/circuits.js";
 import { actorProfile } from "./sim/creature-profiles.js";
-import { materials, M } from "./sim/materials.js";
+import { materials } from "./sim/materials.js";
 import {
   effectiveDensity,
   effectiveViscosity,
@@ -150,7 +150,7 @@ export function cellProperties(world, point) {
       ],
     };
   }
-  if (m.id === M.Portal) {
+  if (m.portal) {
     world.portals.ensure();
     const portal = world.portals.shapes.get(world.portalId[i]);
     return {
@@ -270,11 +270,12 @@ export function cellProperties(world, point) {
       ["Sound Transmission", `${Math.round(m.soundTransmission * 100)}%`],
     );
   if (world.cooldown[i]) rows.push(["Cooldown", `${world.cooldown[i]} ticks`]);
-  if (world.moisture[i] || [M.Plant, M.Seed, M.Dirt, M.Mud].includes(m.id))
+  if (world.moisture[i] || m.biology)
     rows.push(["Moisture", `${Math.round((world.moisture[i] / 255) * 100)}%`]);
   if (world.nutrition[i])
     rows.push(["Nutrients", `${world.nutrition[i]} / 255`]);
-  if (m.id === M.Plant) rows.push(["Growth depth", String(world.growth[i])]);
+  if (m.biology?.mode === "shoot")
+    rows.push(["Growth depth", String(world.growth[i])]);
   if (m.porosity)
     rows.push([
       "Absorbed",
@@ -329,9 +330,9 @@ export function cellProperties(world, point) {
       ],
     );
   }
-  if (world.clone[i] && m.id === M.Clone)
+  if (world.clone[i] && m.deviceRule === "replicate")
     rows.push(["Clones", materials[world.clone[i]].name]);
-  if (m.id === M.Ice && world.residue[i])
+  if (m.restoresLiquid && world.residue[i])
     rows.push(["Frozen from", materials[world.residue[i]].name]);
   return { ...cell, rows };
 }

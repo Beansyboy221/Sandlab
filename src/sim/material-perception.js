@@ -1,41 +1,20 @@
 // Compile optical and acoustic traits once, keeping transport loops data-only.
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-export function applyPerceptionProfiles(materials, M) {
+export function applyPerceptionProfiles(materials) {
   for (const m of materials) {
     const liquid = m.category === "liquid";
-    const opaque = Boolean(
-      m.id &&
-      !m.gas &&
-      m.id !== M.Glass &&
-      m.id !== M.Lamp &&
-      m.circuit !== "lamp" &&
-      (!liquid || m.id === M.Mercury || m.id === M.Lava),
-    );
+    const opaque = Boolean(m.id && !m.gas && !liquid && m.circuit !== "lamp");
     m.lightReflectivity ??=
-      m.id === M.Mirror
-        ? 0.96
-        : m.id === M.Glass
-          ? 0.04
-          : !m.id || m.gas || m.id === M.Lamp || m.circuit === "lamp"
-            ? 0
-            : liquid
-              ? 0.02
-              : m.conductive
-                ? 0.25
-                : 0.12;
-    m.lightAbsorption ??= opaque
-      ? 1 - m.lightReflectivity
-      : m.id === M.Smoke
-        ? 0.03
-        : m.id === M.Glass
-          ? 0.015
-          : liquid
-            ? 0.01
-            : 0;
-    m.refractiveIndex ??=
-      m.id === M.Glass ? 1.52 : liquid && !opaque ? 1.33 : 1;
-    m.opticalDispersion ??=
-      m.id === M.Glass ? 0.025 : liquid && !opaque ? 0.008 : 0;
+      !m.id || m.gas || m.circuit === "lamp"
+        ? 0
+        : liquid
+          ? 0.02
+          : m.conductive
+            ? 0.25
+            : 0.12;
+    m.lightAbsorption ??= opaque ? 1 - m.lightReflectivity : liquid ? 0.01 : 0;
+    m.refractiveIndex ??= liquid ? 1.33 : 1;
+    m.opticalDispersion ??= liquid ? 0.008 : 0;
     m.lightTransmission = Math.max(
       0,
       1 - m.lightAbsorption - m.lightReflectivity,
@@ -53,32 +32,26 @@ export function applyPerceptionProfiles(materials, M) {
     m.soundDispersion ??=
       !m.id || m.gas
         ? 0
-        : m.id === M.Sponge
-          ? 0.7
-          : m.id === M.Mirror
-            ? 0.02
-            : m.category === "powder"
-              ? 0.35
-              : m.elasticity
-                ? 0.25
-                : m.static
-                  ? 0.02
-                  : liquid
-                    ? 0.04
-                    : 0.12;
+        : m.category === "powder"
+          ? 0.35
+          : m.elasticity
+            ? 0.25
+            : m.static
+              ? 0.02
+              : liquid
+                ? 0.04
+                : 0.12;
     m.soundTransmission ??=
-      m.id === M.Glass
-        ? 0.18
-        : !m.id || m.gas
-          ? 1
-          : m.static
-            ? m.airPermeability || 0
-            : liquid
-              ? 0.35
-              : clamp(
-                  0.035 / Math.sqrt(m.density) + pores * m.permeability,
-                  0.005,
-                  0.8,
-                );
+      !m.id || m.gas
+        ? 1
+        : m.static
+          ? m.airPermeability || 0
+          : liquid
+            ? 0.35
+            : clamp(
+                0.035 / Math.sqrt(m.density) + pores * m.permeability,
+                0.005,
+                0.8,
+              );
   }
 }

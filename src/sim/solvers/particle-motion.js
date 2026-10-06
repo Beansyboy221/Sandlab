@@ -1,4 +1,4 @@
-import { materials, M } from "../materials.js";
+import { materials } from "../materials.js";
 import { effectiveViscosity } from "../mixtures.js";
 import { moveKinetic } from "../particle-kinetics.js";
 import { moveOpticalRay as moveRay } from "./optics.js";
@@ -29,7 +29,11 @@ export function moveParticle(w, i, x, y) {
     windY = w.fields.airflow.y;
   const windSpeed = Math.max(Math.abs(windX), Math.abs(windY));
   // Surface contact retains weak plumes; a strong vent jet can lift them away.
-  if (w.cells[i] === M.Fire && windSpeed < 0.35 && moveSurfaceFlame(w, i, x, y))
+  if (
+    materials[w.cells[i]].flame &&
+    windSpeed < 0.35 &&
+    moveSurfaceFlame(w, i, x, y)
+  )
     return;
   const drag = gas ? 1 : cat === "powder" ? 0.08 / Math.sqrt(m.density) : 0.03;
   if (windSpeed > 0.01 && w.random() < Math.min(1, windSpeed * drag)) {
@@ -51,7 +55,7 @@ export function moveParticle(w, i, x, y) {
   )
     return;
   if (
-    w.cells[i] === M.Fire &&
+    materials[w.cells[i]].flame &&
     windSpeed >= 0.35 &&
     moveSurfaceFlame(w, i, x, y)
   )
@@ -61,7 +65,7 @@ export function moveParticle(w, i, x, y) {
   if (gas && fall === 0 && w.random() > (m.dispersion ?? 1)) return;
   // Buoyant plumes spread while rising even when the cell directly above is
   // empty; diagonal motion used to occur only after that straight move failed.
-  if (w.cells[i] === M.Fire && w.random() < 0.55 / (1 + windSpeed * 3)) {
+  if (materials[w.cells[i]].flame && w.random() < 0.55 / (1 + windSpeed * 3)) {
     const side = w.index(x + acrossX * direction, y + acrossY * direction),
       up = w.index(x + downX * fall, y + downY * fall);
     const openUp = up >= 0 ? w.canMove(i, up, fall) : w.border === "void",
@@ -89,7 +93,7 @@ export function moveParticle(w, i, x, y) {
     return;
   for (let side = 0; side < 2; side++) {
     const sign = side ? -direction : direction;
-    if (w.cells[i] === M.Fire) {
+    if (materials[w.cells[i]].flame) {
       const up = w.index(nx, ny),
         beside = w.index(x + acrossX * sign, y + acrossY * sign);
       if (
@@ -140,7 +144,7 @@ export function moveParticle(w, i, x, y) {
           }
           break;
         }
-        if (w.cells[j] === M.Portal) {
+        if (materials[w.cells[j]].portal) {
           if (w.tryMove(i, nx, ny, 0)) return;
           break;
         }

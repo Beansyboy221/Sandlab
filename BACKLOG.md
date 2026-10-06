@@ -1,6 +1,6 @@
 # Sandlab backlog
 
-- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.18.0 establishes traits, registry validation and opt-in stage timings. v1.19.0 adds contained-fluid mass without topology rebuilds. Next, calibrate thermal capacity/conductivity and phase accounting, then extend finite reagent capacity and concentration before an editor or new modes.
+- Follow the [engine evolution plan](ENGINE_PLAN.md): v1.30.0 replaces material-name rules with reusable components, shared biology and authored contact recipes. Next, calibrate thermal capacity/conductivity and phase accounting, then extend finite reagent capacity and concentration before an editor or new modes.
 
 - Refine concave rigid contact manifolds and sustained load damage. Dense tumbling piles remain more expensive than the earlier sliding-only solver; keep optimizing contact/motion work without removing rotation, torque, friction or fracture.
 - Refine coarse atmospheric boundaries for walls that divide a single air tile, including diagonal microchannels. The air solver now retains confined pressure and momentum; finite oxidizer and calibrated gas expansion remain future work.

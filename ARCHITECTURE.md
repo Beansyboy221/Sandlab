@@ -91,7 +91,8 @@ Property-based voices / pan / muffling / echoes]
 ## Configuration and state
 
 - `sim/material-definitions.js`, `material-states.js` and `material-profiles.js`
-  configure base families, states and components; `material-authoring.js` and
+  configure base families, states and components; `material-components.js` owns
+  stock capability/product data; `material-authoring.js` and
   `material-registry.js` compile immutable definitions and numeric lookup tables.
   Known chemical products belong to data, not guesses based on color or names.
 - `sim/entity-definitions.js` owns joint geometry, locomotion parameters and
@@ -117,7 +118,7 @@ Property-based voices / pan / muffling / echoes]
 | Chemistry and transport    | `sim/chemistry.js`, `sim/reaction-registry.js`, `sim/mixtures.js`, `sim/absorption.js`, `sim/oxidation.js`         | Compiled contact rules, finite reagents/ingredients, pores, temperature and pressure |
 | Combustion and energy      | `sim/combustion.js`, `sim/ignition.js`, `sim/energy.js`, `sim/weather.js`                                          | Fuel, ignition/exposure, lifetime, heat and atmospheric impulses                     |
 | Bodies and elastics        | `sim/rigid-bodies.js`, `sim/body-*.js`, `sim/elasticity.js`, `sim/elastic-momentum.js`                             | Continuous poses/joints, mass, contacts, bonds, stress and occupied cells            |
-| Biology and agents         | `sim/biology.js`, `sim/microbiology.js`, `sim/stickmen.js`, `sim/creature-*.js`, `sim/boids.js`, `sim/missiles.js` | Compiled behavior/anatomy profiles, paths, habitat, targets and body state           |
+| Biology and agents         | `sim/solvers/biology.js`, `sim/stickmen.js`, `sim/creature-*.js`, `sim/boids.js`, `sim/missiles.js` | Compiled behavior/anatomy profiles, paths, habitat, targets and body state           |
 | Acoustics                  | `sim/solvers/acoustics.js`, `sim/acoustics.js`, `sim/acoustic-*.js`                                                                            | Bounded events, material barriers, damped wave field and listener sampling           |
 | Optics                     | `sim/solvers/optics.js`; read-only visual radiance in `lighting.js`, `light-*.js`                                                                 | Absorption/reflection/refraction, geometric rays, cached radiance and shadows        |
 
@@ -173,6 +174,24 @@ the current game and its inexpensive grid queries.
 `sim/viewport-cache.js` stores sparse unresolved detail with an explicit LRU byte budget; `viewport-overview.js` retains a fixed coarse reconstruction source, not a live world. `hidden-entities.js` predicts finite poses against coarse obstacles and destructive-event history. `world-units.js` defines distance/area units, and `mechanical-mass.js` combines density, fractional quantity and contents. `persistence.js` includes world rules, physical origin and the compressed overview but excludes ephemeral detail references/cache. See `PHYSICS_MODEL.md` for the deliberate fidelity losses.
 
 `setting-controls.js` supplies shared form widgets; `world-rules-panel.js` edits a world-local draft committed by `level-editor.js`. Browser preferences contain presentation/input/cache limits, not simulation rules.
+
+## Material solver contract
+
+Runtime simulation rules never select behavior by a stock material name or ID.
+`solvers/biology.js` receives a validated `biology` component: germination, budding,
+photosynthesis, decomposition and infection share resource conditions and local
+queries. The old biology entry points are compatibility re-exports. `reactions.js`
+dispatches by compiled capabilities in the existing fused pass; it does not add a
+second full-grid traversal. Stock calibration in `material-profiles.js` is plain
+named data applied once during registry compilation.
+
+Optical/acoustic defaults derive from physical traits; authored overrides select
+particular appearances or calibrated coefficients. Portal, discharge, flame,
+oxidizer, solvent, substrate, host and device capabilities also drive tools,
+inspection and presentation. Product identities live in material or environment
+configuration, rather than comparisons inside a solver. Chemical recipes compile
+to the same symmetric pair table as component-generated reactions. See
+[MATERIALS.md](MATERIALS.md) for the supported data interface and budgets.
 
 ## Extension and verification
 

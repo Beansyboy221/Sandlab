@@ -123,5 +123,20 @@ export const base = (
   neutralizationProduct = "Salt",
   carbonate = 0,
 ) => ({
-  properties: { alkalinity, neutralizationProduct, carbonate },
+  properties: {
+    alkalinity,
+    neutralizationProduct,
+    carbonate,
+    ...(carbonate ? { neutralizationGas: "CO2" } : {}),
+  },
+});
+
+/** Resource-based growth, germination, decomposition or infection. */
+export const biological = (mode, properties = {}) => ({
+  properties: { biology: { mode, ...properties } },
+});
+
+/** Known contact products complement inferred chemical component reactions. */
+export const reactive = (...recipes) => ({
+  properties: { contactReactions: recipes },
 });

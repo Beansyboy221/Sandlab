@@ -26,7 +26,7 @@ import { Elasticity, elasticFields, elasticFloatFields } from "./elasticity.js";
 import { rayHeading } from "./energy.js";
 import { defaultLevel } from "../level-properties.js";
 import { particleStateFields } from "./particle-state.js";
-import { materials, M, canonicalMaterial } from "./materials.js";
+import { materials, canonicalMaterial } from "./materials.js";
 import { Fields } from "./fields.js";
 import {
   moveParticle,
@@ -229,13 +229,13 @@ export class World {
             ),
           )
         : lifetime;
-    this.moisture[i] = id === M.Mud ? 220 : id === M.Plant ? 80 : 0;
+    this.moisture[i] = materials[id].initialMoisture || 0;
     this.nutrition[i] = materials[id].nutrition || 0;
     this.growth[i] = 0;
     this.oxidationLevel[i] =
       oldId === 54 || materials[id].materialState === "oxide" ? 255 : 0;
-    const water = id === M.Mud ? 2 : id === M["Wet Clay"] ? 1 : 0;
-    this.storedLiquid[i] = water ? M.Water : 0;
+    const water = materials[id].initialLiquidAmount || 0;
+    this.storedLiquid[i] = water ? materials[id].initialLiquid : 0;
     this.storedAmount[i] = water;
     this.dissolvedId[i] = 0;
     this.dissolvedAmount[i] = 0;
@@ -248,7 +248,7 @@ export class World {
     this.residue[i] = 0;
     this.variant[i] = this.random() * 255;
     this.heading[i] = materials[id].ray ? this.variant[i] >> 5 : 0;
-    if (id === M.Portal) this.portals.add(i);
+    if (materials[id].portal) this.portals.add(i);
     if (materials[id].elasticity) {
       this.elastic.world = this;
       this.elastic.add(i, connectElastic);
@@ -581,7 +581,7 @@ export class World {
       this.elastic.world = this;
       this.elastic.cutBrush(x, y, radius, shape);
     }
-    if (id === M.Lightning || materials[id].directed) radius = 0;
+    if (materials[id].discharge || materials[id].directed) radius = 0;
     const footprint = brushFootprint(radius);
     for (let dy = footprint.low; dy <= footprint.high; dy++)
       for (let dx = footprint.low; dx <= footprint.high; dx++) {
@@ -598,7 +598,9 @@ export class World {
           !id ||
           replace ||
           !this.cells[i] ||
-          (id === M.Lightning && this.cells[i] === M.Lightning && this.clone[i])
+          (materials[id].discharge &&
+            materials[this.cells[i]].discharge &&
+            this.clone[i])
         ) {
           this.set(i, id, temperature);
           if (materials[id].directed)

@@ -1,4 +1,4 @@
-import { M, materials } from "../materials.js";
+import { materials, solverProducts } from "../materials.js";
 import {
   bendLight,
   reflectedLight,
@@ -67,7 +67,7 @@ function spawnPacket(w, i, band, energy, dx, dy, life) {
       !materials[w.cells[between]].occludesLight
     ) {
       if (!births(w)) return false;
-      w.set(j, M.Photon, 20, Math.min(120, life));
+      w.set(j, solverProducts.photon, 20, Math.min(120, life));
       markBand(w, j, band, energy);
       setDirection(w, j, dx, dy);
       return true;
@@ -147,12 +147,12 @@ export function moveOpticalRay(w, i, x, y, m) {
         j = a;
     }
     const target = materials[w.cells[j]];
-    if (target.id === M.Portal) {
+    if (target.portal) {
       setDirection(w, i, dx, dy);
       w.teleport(i, j, dx, dy);
       return;
     }
-    if (target.absorbMatter || target.id === M.Void) {
+    if (target.absorbMatter || target.deviceRule === "sink") {
       w.transform(i, 0);
       return;
     }
@@ -187,7 +187,8 @@ export function moveOpticalRay(w, i, x, y, m) {
             Math.atan2(dy, dx) + (w.random() - 0.5) * target.friction * Math.PI;
           dx = Math.cos(angle);
           dy = Math.sin(angle);
-          if (m.ray === "laser") w.transform(i, M.Photon, 20, w.life[i]);
+          if (m.ray === "laser")
+            w.transform(i, solverProducts.photon, 20, w.life[i]);
         }
         markBand(w, i, band, reflected);
         setDirection(w, i, dx, dy);

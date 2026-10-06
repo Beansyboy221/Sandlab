@@ -1,11 +1,13 @@
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 
 // Cloud pixels represent suspended condensate, not a source of infinite water.
 // Stagger one 5×5 sample per particle every 16 ticks; no global cloud searches.
 export function cloudWeather(w, i, x, y, discharge) {
-  const temperature = w.temp[i];
+  const temperature = w.temp[i],
+    m = materials[w.cells[i]],
+    rain = materials[m.rainTo];
   if (temperature > 100) {
-    w.transform(i, M.Steam, temperature);
+    w.transform(i, m.vaporTo, temperature);
     w.fields.add(x, y, 0.15);
     return;
   }
@@ -20,19 +22,26 @@ export function cloudWeather(w, i, x, y, discharge) {
       if (j < 0) continue;
       available++;
       const id = w.cells[j];
-      if (id === M.Cloud) {
+      if (materials[id].weather) {
         clouds++;
         if (w.temp[j] < -8) frozen++;
         else if (w.temp[j] > -3) droplets++;
-      } else if (id === M.Ice || id === M.Snow) frozen++;
-      else if (id === M.Water && w.temp[j] < 30) droplets++;
+      } else if (
+        materials[id].baseMaterial === rain.baseMaterial &&
+        materials[id].materialState !== "liquid" &&
+        !materials[id].gas
+      )
+        frozen++;
+      else if (
+        materials[id].baseMaterial === rain.baseMaterial &&
+        materials[id].category === "liquid" &&
+        w.temp[j] < 30
+      )
+        droplets++;
     }
   const saturation = Math.max(
     0.25,
-    Math.min(
-      0.8,
-      materials[M.Cloud].rainThreshold + (temperature - 10) * 0.008,
-    ),
+    Math.min(0.8, m.rainThreshold + (temperature - 10) * 0.008),
   );
   const dense = clouds >= 6 && clouds / available >= saturation;
   // Mixed ice/droplet collisions in rising air separate charge; warm rain clouds
@@ -52,7 +61,7 @@ export function cloudWeather(w, i, x, y, discharge) {
     if (w.growth[i] >= 120 && w.lastStrikeTick !== w.tick) {
       w.growth[i] = 0;
       // One discharge per world tick is enforced by the shared lightning tracer.
-      discharge(w, x + w.gravityX, y + w.gravityY);
+      discharge(w, x + w.gravityX, y + w.gravityY, m.dischargeTo);
       return;
     }
   } else w.growth[i] = Math.max(0, w.growth[i] - 3);
@@ -64,7 +73,7 @@ export function cloudWeather(w, i, x, y, discharge) {
       : Math.max(0, w.moisture[i] - 4);
   const below = w.relativeIndex(x, y, 0, 1);
   if (w.moisture[i] >= 96 && below >= 0 && !w.cells[below]) {
-    w.transform(i, temperature < -5 ? M.Snow : M.Water, temperature);
+    w.transform(i, temperature < -5 ? m.frozenRainTo : m.rainTo, temperature);
     w.fields.add(x, y, -0.15);
     const tile = w.fields.index(x, y);
     if (w.fields.temperatureEnabled) w.fields.temperature[tile] += 0.5;

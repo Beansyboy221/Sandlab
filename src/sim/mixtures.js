@@ -1,4 +1,4 @@
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 
 // One carrier plus one dissolved ingredient per cell. Amounts count whole
 // source pixels, so mixing, pore transfer and separation conserve ingredients.
@@ -10,35 +10,33 @@ export const soluble = Uint8Array.from(materials, (m) => Number(!!m.soluble));
 export const dissolvable = Uint8Array.from(materials, (m) =>
   Number(!!m.soluble || m.acidSolubility > 0 || m.alkaliSolubility > 0),
 );
-export const mixtureBase = Uint8Array.from(materials, (m) =>
-  m.id === M.Brine || m.id === M["Soapy Water"]
-    ? M.Water
-    : m.id === M.Mud
-      ? M.Dirt
-      : m.id === M["Wet Clay"]
-        ? M.Clay
-        : m.id,
+export const mixtureBase = Uint8Array.from(
+  materials,
+  (m) => m.mixtureCarrier ?? m.id,
 );
+// Retired combined presets carry migration data; the solver has no named cases.
 export function migrateMixture(w, i, old = w.cells[i]) {
+  const m = materials[old];
   w.cells[i] = mixtureBase[w.cells[i]];
-  if (old === M.Brine || old === M["Soapy Water"]) {
-    w.dissolvedId[i] = old === M.Brine ? M.Salt : M.Soap;
+  if (m.initialDissolved !== undefined) {
+    w.dissolvedId[i] = m.initialDissolved;
     w.dissolvedAmount[i] ||= 1;
   }
-  if ((old === M.Mud || old === M["Wet Clay"]) && !w.storedAmount[i]) {
-    w.storedLiquid[i] = M.Water;
-    w.storedAmount[i] = old === M.Mud ? 2 : 1;
-    w.moisture[i] = Math.min(255, w.storedAmount[i] * 80);
+  if (m.initialLiquidAmount && !w.storedAmount[i]) {
+    w.storedLiquid[i] = m.initialLiquid;
+    w.storedAmount[i] = m.initialLiquidAmount;
+    w.moisture[i] = Math.min(255, w.storedAmount[i] * (m.poreHydration || 0));
   }
-  if (w.storedLiquid[i] === M.Brine || w.storedLiquid[i] === M["Soapy Water"]) {
-    w.dissolvedId[i] = w.storedLiquid[i] === M.Brine ? M.Salt : M.Soap;
+  const fluid = materials[w.storedLiquid[i]];
+  if (fluid.initialDissolved !== undefined) {
+    w.dissolvedId[i] = fluid.initialDissolved;
     w.dissolvedAmount[i] ||= w.storedAmount[i];
-    w.storedLiquid[i] = M.Water;
+    w.storedLiquid[i] = fluid.mixtureCarrier;
   }
 }
 export function canDissolve(w, i, additive) {
   return (
-    w.cells[i] === M.Water &&
+    materials[w.cells[i]].solvent &&
     soluble[additive] &&
     (!w.dissolvedId[i] || w.dissolvedId[i] === additive) &&
     w.dissolvedAmount[i] < MAX_DISSOLVED
@@ -60,8 +58,8 @@ export function mixContact(w, i, x, y) {
       d === 2 ? -1 : d === 3 ? 1 : 0,
     );
     if (j < 0) continue;
-    const host = id === M.Water ? i : j,
-      source = id === M.Water ? j : i;
+    const host = materials[id].solvent ? i : j,
+      source = materials[id].solvent ? j : i;
     if (!canDissolve(w, host, w.cells[source])) continue;
     const ingredient = w.cells[source],
       heat = w.temp[source];
@@ -73,7 +71,7 @@ export function mixContact(w, i, x, y) {
   return false;
 }
 export function retainsMixture(id) {
-  return id === M.Water || id === M.Ice || !!materials[id].porosity;
+  return materials[id].retainsDissolved || !!materials[id].porosity;
 }
 export function releaseDissolved(w, i) {
   if (!w.dissolvedAmount[i]) return true;
@@ -131,7 +129,11 @@ export function dissolvedMass(w, i) {
 }
 
 export function diffuseDissolved(w, i, x, y) {
-  if (w.cells[i] !== M.Water || w.dissolvedAmount[i] < 2 || (i + w.tick) % 6)
+  if (
+    !materials[w.cells[i]].solvent ||
+    w.dissolvedAmount[i] < 2 ||
+    (i + w.tick) % 6
+  )
     return;
   const d = (w.tick / 6 + w.variant[i]) & 3;
   const j = w.relativeIndex(

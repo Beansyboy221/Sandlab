@@ -1,9 +1,26 @@
+import { compileContactComponent } from "./contact-components.js";
+import { compileBiology } from "./biological-components.js";
 import {
   compileStateProfiles,
   validatePhysicalTransitions,
 } from "./material-states.js";
 import { applyPerceptionProfiles } from "./material-perception.js";
 const referenceFields = [
+  "initialLiquid",
+  "mixtureCarrier",
+  "initialDissolved",
+  "debrisTo",
+  "dryHostTo",
+  "nutritionResidue",
+  "foamTo",
+  "rainTo",
+  "frozenRainTo",
+  "vaporTo",
+  "dischargeTo",
+  "acidGas",
+  "neutralizationGas",
+  "waterReactionGas",
+  "annihilationTo",
   "baseMaterial",
   "neutralizedTo",
   "neutralizationProduct",
@@ -42,6 +59,8 @@ const fractions = [
   "resistance",
   "airPermeability",
   "sparkChance",
+  "emissionChance",
+  "rainThreshold",
   "oxidationRate",
   "lifetimeVariation",
   "damping",
@@ -64,6 +83,7 @@ const positive = [
   "burn",
   "lifetime",
   "lightEmission",
+  "lightScatter",
   "glow",
   "refractiveIndex",
 ];
@@ -105,7 +125,27 @@ function validate(m) {
     ].includes(m.materialState)
   )
     throw Error(`Unknown material state for ${m.name}`);
-  for (const key of ["occludesLight", "reflectsLight", "refractsLight"])
+  for (const key of [
+    "biologicalHost",
+    "decomposable",
+    "growthSubstrate",
+    "solvent",
+    "retainsDissolved",
+    "restoresLiquid",
+    "oxidizer",
+    "oxidationCatalyst",
+    "flame",
+    "plumePassage",
+    "smokeCarrier",
+    "cloneable",
+    "nutrientTint",
+    "electricalArc",
+    "portal",
+    "discharge",
+    "occludesLight",
+    "reflectsLight",
+    "refractsLight",
+  ])
     if (m[key] !== undefined && typeof m[key] !== "boolean")
       throw Error(`Invalid ${key} for ${m.name}`);
   if ((m.lightAbsorption ?? 0) + (m.lightReflectivity ?? 0) > 1 + 1e-8)
@@ -140,10 +180,90 @@ function validate(m) {
     throw Error(`Conflicting representations for ${m.name}`);
   if (m.category === "elastic" && !(m.elasticity > 0 && m.tearAt > 1))
     throw Error(`Missing elastic properties for ${m.name}`);
+  for (const key of [
+    "initialMoisture",
+    "initialLiquidAmount",
+    "poreHydration",
+    "nutrientValue",
+  ])
+    if (
+      m[key] !== undefined &&
+      (!Number.isInteger(m[key]) || m[key] < 0 || m[key] > 255)
+    )
+      throw Error(`Invalid ${key} for ${m.name}`);
+  if (
+    m.initialLiquidAmount &&
+    (m.initialLiquid === undefined || m.initialLiquidAmount > m.porosity)
+  )
+    throw Error(`Invalid initial contents for ${m.name}`);
+  if (
+    m.deviceRule !== undefined &&
+    !["sink", "replicate"].includes(m.deviceRule)
+  )
+    throw Error(`Unknown device process for ${m.name}`);
+  if (
+    m.spawnChance !== undefined &&
+    (!Number.isFinite(m.spawnChance) || m.spawnChance < 0 || m.spawnChance > 1)
+  )
+    throw Error(`Invalid spawn chance for ${m.name}`);
+  if (
+    m.weather &&
+    ["rainTo", "frozenRainTo", "vaporTo", "dischargeTo"].some(
+      (k) => m[k] === undefined,
+    )
+  )
+    throw Error(`Missing weather products for ${m.name}`);
+  if (m.airSourceRange && m.airSourceStrength === undefined)
+    throw Error(`Missing air source strength for ${m.name}`);
+  if (
+    m.energyRule === "decay" &&
+    ["emissionChance", "emissionHeat", "emissionAirHeat"].some(
+      (k) => m[k] === undefined,
+    )
+  )
+    throw Error(`Missing decay emission for ${m.name}`);
+  if (
+    m.energyRule === "antimatter" &&
+    [
+      "annihilationTo",
+      "annihilationRadius",
+      "annihilationTemperature",
+      "annihilationLifetime",
+    ].some((k) => m[k] === undefined)
+  )
+    throw Error(`Missing annihilation products for ${m.name}`);
+  if (m.vehicle && m.debrisTo === undefined)
+    throw Error(`Missing vehicle debris for ${m.name}`);
+  if (
+    m.energyRule !== undefined &&
+    !["decay", "ray", "gravity", "antimatter"].includes(m.energyRule)
+  )
+    throw Error(`Unknown energy process for ${m.name}`);
+  for (const [key, maximum, integer] of [
+    ["airSourceRange", 64, true],
+    ["annihilationRadius", 8, true],
+    ["mixPriority", 255, true],
+    ["airSourceStrength", 1, false],
+    ["emissionHeat", 10000, false],
+    ["emissionAirHeat", 1000, false],
+    ["annihilationTemperature", 10000, false],
+    ["annihilationLifetime", 255, true],
+  ])
+    if (
+      m[key] !== undefined &&
+      (!Number.isFinite(m[key]) ||
+        m[key] < 0 ||
+        m[key] > maximum ||
+        (integer && !Number.isInteger(m[key])))
+    )
+      throw Error(`Invalid ${key} for ${m.name}`);
   for (const [key, value] of Object.entries(m)) {
     if (
       typeof value === "function" ||
-      (typeof value === "object" && value !== null)
+      (typeof value === "object" &&
+        value !== null &&
+        key !== "biology" &&
+        key !== "contactReactions")
     )
       throw Error(`${m.name}.${key} must be scalar data`);
     if (
@@ -155,6 +275,15 @@ function validate(m) {
   }
 }
 function resolve(m, M, materials) {
+  if (m.contactReactions !== undefined)
+    m.contactReactions = compileContactComponent(
+      m.contactReactions,
+      M,
+      materials,
+      m.id,
+    );
+  if (m.biology !== undefined)
+    m.biology = compileBiology(m.biology, M, materials, m.id);
   for (const key of referenceFields) {
     const value = m[key];
     if (value === undefined) continue;
@@ -231,6 +360,7 @@ export function compileMaterials(
         viscosity: 1,
         temperature: 20,
         movable: !["static", "special"].includes(category),
+        cloneable: ["powder", "liquid", "gas"].includes(category),
         rigid: category === "solid",
         compressiveStrength: category === "solid" ? 12 : 0,
         friction: 0.4,

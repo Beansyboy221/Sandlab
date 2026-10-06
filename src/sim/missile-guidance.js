@@ -1,4 +1,4 @@
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 
 const gap = (v, lo, hi) => Math.max(lo - v, 0, v - hi);
 const axisDistance = (v, lo, hi, size, loop) =>
@@ -41,7 +41,7 @@ export class LaserGuidance {
     this.heads.fill(-1);
     const w = this.world;
     for (let i = 0; i < w.length; i++)
-      if (w.cells[i] === M.Laser && w.life[i] > 0) {
+      if (materials[w.cells[i]].ray === "laser" && w.life[i] > 0) {
         this.count++;
         const bin =
           Math.floor((i % w.width) / this.binSize) +
@@ -60,8 +60,7 @@ export class LaserGuidance {
       );
       if (i < 0) return false;
       const m = materials[w.cells[i]];
-      if (m.id && !m.gas && !m.waterLike && !m.ray && m.id !== M.Glass)
-        return false;
+      if (m.occludesLight && !m.ray) return false;
     }
     return true;
   }
@@ -92,7 +91,7 @@ export class LaserGuidance {
       );
     if (dx * dx + dy * dy > this.distance) return;
     for (let i = this.heads[bin]; i >= 0; i = this.next[i]) {
-      if (w.cells[i] !== M.Laser || !w.life[i]) continue;
+      if (materials[w.cells[i]].ray !== "laser" || !w.life[i]) continue;
       const dx = wrappedDelta((i % w.width) + 0.5 - a.x, w.width, loop),
         dy = wrappedDelta(Math.floor(i / w.width) + 0.5 - a.y, w.height, loop),
         d = dx * dx + dy * dy;

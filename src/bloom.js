@@ -1,4 +1,4 @@
-import { M, materials } from "./sim/materials.js";
+import { materials } from "./sim/materials.js";
 export class Bloom {
   constructor() {
     this.canvas = document.createElement("canvas");
@@ -23,9 +23,9 @@ export class Bloom {
       const id = world.cells[i];
       if (!id) continue;
       const energy =
-        id === M.Fire ||
-        id === M.Lightning ||
-        id === M.Spark ||
+        materials[id].flame ||
+        materials[id].discharge ||
+        materials[id].electricalArc ||
         world.charge[i];
       const strength =
         (materials[id].circuit === "lamp" && !world.life[i]

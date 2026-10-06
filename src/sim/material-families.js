@@ -1,5 +1,5 @@
 import { isEntity, entityCategory } from "./entity-kinds.js";
-import { M, materials, canonicalMaterial } from "./materials.js";
+import { materials, canonicalMaterial } from "./materials.js";
 
 // The registry owns substance families; the palette is only a projection of them.
 export const paletteBase = Uint8Array.from(materials, (m) =>

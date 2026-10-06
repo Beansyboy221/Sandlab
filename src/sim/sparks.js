@@ -1,5 +1,5 @@
 import { conducts } from "./oxidation.js";
-import { M, materials } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 
 export function emitSpark(world, i, x, y, residue = 0) {
   // Choose one free upper/side vent, without overwriting flames or other matter.
@@ -14,7 +14,7 @@ export function emitSpark(world, i, x, y, residue = 0) {
   if (world.cells[j]) return false;
   world.transform(
     j,
-    M.Spark,
+    solverProducts.spark,
     Math.max(700, world.temp[i]),
     6 + Math.floor(world.random() * 8),
   );
@@ -35,7 +35,7 @@ export function arcGap(world, i, x, y) {
       conducts(world, target) &&
       !world.cooldown[target]
     ) {
-      world.transform(gap, M.Spark, 1200, 20);
+      world.transform(gap, solverProducts.spark, 1200, 20);
       return;
     }
   }

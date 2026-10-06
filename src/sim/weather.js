@@ -1,11 +1,11 @@
 import { cloudWeather } from "./cloud-weather.js";
 import { conducts } from "./oxidation.js";
-import { M, materials } from "./materials.js";
-export function strike(w, x, y) {
+import { materials, solverProducts } from "./materials.js";
+export function strike(w, x, y, dischargeId = solverProducts.discharge) {
   // Trace once per tick; painted lightning cannot multiply into an unbounded storm.
   if (w.lastStrikeTick === w.tick) return;
   w.lastStrikeTick = w.tick;
-  w.sound.emit("explosion", x, y, 1.2, 12, M.Lightning, {
+  w.sound.emit("explosion", x, y, 1.2, 12, dischargeId, {
     pressure: 4,
     heat: 2500,
   });
@@ -62,7 +62,7 @@ export function strike(w, x, y) {
         m = materials[id];
       if (
         id &&
-        id !== M.Lightning &&
+        !m.discharge &&
         m.category !== "gas" &&
         m.category !== "energy"
       ) {
@@ -75,7 +75,7 @@ export function strike(w, x, y) {
         w.fields.add(bx, by, 4);
         return;
       }
-      w.transform(i, M.Lightning, 1800, 6 + Math.floor(w.random() * 6));
+      w.transform(i, dischargeId, 1800, 6 + Math.floor(w.random() * 6));
       w.clone[i] = 1;
     }
     x = nx + gx;
@@ -83,9 +83,10 @@ export function strike(w, x, y) {
   }
 }
 export function weather(w, i, x, y) {
-  if (w.cells[i] === M.Lightning) {
-    if (!w.clone[i]) strike(w, x, y);
-    if (w.cells[i] === M.Lightning && (!w.life[i] || --w.life[i] === 0))
+  const dischargeId = w.cells[i];
+  if (materials[dischargeId].discharge) {
+    if (!w.clone[i]) strike(w, x, y, dischargeId);
+    if (w.cells[i] === dischargeId && (!w.life[i] || --w.life[i] === 0))
       w.transform(i, 0);
   } else cloudWeather(w, i, x, y, strike);
 }

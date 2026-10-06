@@ -92,7 +92,25 @@ claiming quantitative conservation or laboratory accuracy.
 | Electricity       | Conductivity, insulation/oxidation, transported pulses, sparks and gates                            | Digital pulse propagation and heating; not a calibrated voltage/current network                |
 | Light             | Shared absorption, reflection, refraction, shadows and mechanical ray transport                     | Bounded geometric rays, coarse radiance, finite bounces and cosmetic interior glow             |
 | Sound             | Shared material barriers, absorption, dispersion, wave propagation and listener occlusion           | Damped coarse wave field, procedural foley and three finite reflection taps                    |
-| Biology / devices | Configured behavior kind and bounded specialized solver                                             | Growth, navigation, portals and fictional modes are explicitly authored gameplay models        |
+| Biology | Resource-based germination, shoots, light/temperature-dependent photosynthesis, decomposition and finite infection | Four-neighbor rules and 32 births/tick; biomass yields, nutrient types and metabolism remain qualitative |
+| Weather | Local condensate density, mixed frozen/liquid charge separation, updraft and finite precipitation | Staggered 25-cell samples; no full humidity/microphysical droplet distribution |
+| Radiation / devices | Configured decay emission, ray packets, circuits, force sources, sinks, replicators and portals | Decay is stochastic heat deposition, not isotope chains or nuclear physics; fictional devices remain explicit mechanisms |
+
+These are the macroscopic systems this sandbox supports, not a claim to simulate
+all natural phenomena. Cellular geometry, qualitative coefficients and work limits
+are deliberate. Quantum dynamics, molecular collisions, relativistic effects and
+full continuum mechanics would add substantial cost without matching the current
+pixel-scale gameplay. Thermal capacity/latent heat, chemical equivalents and finite
+ambient oxygen are the next measurable accuracy increments.
+
+Materials now supply capabilities and configured products to these shared solvers;
+no runtime material name selects an ordinary physical rule. Biology uses finite
+hydration and optional nutrition, configured growing ranges/products, incubation
+and replication caps. Ambient/daylight and adjacent emitters give a cheap headless
+photosynthesis light estimate; it does not reuse the renderer or compute canopy
+radiometry. New cell growth remains a gameplay biomass proxy, not calibrated carbon
+stoichiometry. Authored contact recipes provide explicit chemical identity with
+bounded, symmetric indexed execution; see [MATERIALS.md](MATERIALS.md).
 
 A realistic ordinary material should be added through data and existing components.
 A new solver is justified only for a missing reusable mechanism with a regression

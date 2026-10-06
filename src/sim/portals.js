@@ -1,4 +1,4 @@
-import { M } from "./materials.js";
+import { materials } from "./materials.js";
 import { portalRoute } from "./portal-geometry.js";
 
 export const portalFields = ["portalId", "portalLink", "portalCooldown"];
@@ -37,7 +37,7 @@ export class Portals {
     let neighbor = -1;
     if (!id) {
       w.eachNeighbor(i % w.width, Math.floor(i / w.width), (j) => {
-        if (!id && w.cells[j] === M.Portal) {
+        if (!id && materials[w.cells[j]].portal) {
           id = w.portalId[j];
           neighbor = j;
         }
@@ -69,7 +69,7 @@ export class Portals {
     this.locations.clear();
     this.strokeId = 0;
     for (let i = 0; i < world.length; i++)
-      if (world.cells[i] === M.Portal) this.locations.add(i);
+      if (materials[world.cells[i]].portal) this.locations.add(i);
     this.dirty = true;
     this.ensure();
     this.pruneLinks();
@@ -80,7 +80,7 @@ export class Portals {
     this.shapes.clear();
     for (const i of this.locations) {
       const id = w.portalId[i];
-      if (!id || w.cells[i] !== M.Portal) continue;
+      if (!id || !materials[w.cells[i]].portal) continue;
       let shape = this.shapes.get(id);
       if (!shape) {
         shape = {
@@ -167,7 +167,7 @@ export class Portals {
     )
       return 0;
     const i = Math.floor(point.y) * w.width + Math.floor(point.x);
-    return w.cells[i] === M.Portal ? w.portalId[i] : 0;
+    return materials[w.cells[i]].portal ? w.portalId[i] : 0;
   }
   route(i, x, y, vx, vy, clearance = 0.5) {
     this.ensure();

@@ -94,7 +94,8 @@ const state = {
     if (renderer.cursor)
       renderer.cursor.radius =
         this.tool === "paint" &&
-        (this.material === M.Lightning || materials[this.material].directed)
+        (materials[this.material].discharge ||
+          materials[this.material].directed)
           ? 0
           : this.radius;
     if (selection.brushing) selection.radius = this.radius;
@@ -177,7 +178,8 @@ function setPaused(value, fromDrawing = false) {
     : "#a6d5bd";
 }
 function syncBrushControl() {
-  const frequency = state.tool === "paint" && state.material === M.Lightning;
+  const frequency =
+    state.tool === "paint" && materials[state.material].discharge;
   $("brush-label").textContent = frequency ? "Rate" : "Size";
   $("brush-value").value = frequency
     ? `${(1000 / lightningInterval(state.radius)).toFixed(1)}/s`
@@ -200,7 +202,7 @@ function updateToolProperties() {
   syncBrushControl();
   if (selection.dragging && !state.paused) setPaused(true);
   const tool = state.tool;
-  const portal = tool === "paint" && state.material === M.Portal;
+  const portal = tool === "paint" && materials[state.material].portal;
   $("portal-properties").hidden = !portal;
   renderer.showPortalLinks = portal;
   for (const mode of ["link", "unlink"]) {

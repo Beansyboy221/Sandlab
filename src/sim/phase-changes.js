@@ -1,14 +1,15 @@
 import { freezingPoint } from "./mixtures.js";
-import { M, materials } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 export function changePhase(w, i, x, y, m) {
   const temperature = w.temp[i];
   // Wet hosts vent through the shared pore model; do not manufacture another
   // water pixel when the final stored unit has already boiled away.
-  if ((m.id === M.Mud || m.id === M["Wet Clay"]) && temperature > 100) {
+  if (m.dryHostTo !== undefined && temperature > 100) {
     if (w.storedAmount[i]) return false;
-    return w.transform(i, m.id === M.Mud ? M.Dirt : M.Clay, temperature);
+    return w.transform(i, m.dryHostTo, temperature);
   }
-  const dissolved = m.id === M.Water && w.nutrition[i] && temperature > m.boil;
+  const dissolved =
+    m.nutritionResidue !== undefined && w.nutrition[i] && temperature > m.boil;
   if (dissolved || (m.dry !== undefined && temperature > m.dry)) {
     // The dissolved/wet particle separates into vapor and dry material only when
     // vapor has space to escape; sealed vessels retain their contents.
@@ -24,9 +25,14 @@ export function changePhase(w, i, x, y, m) {
     }
     if (open) {
       const nutrition = w.nutrition[i];
-      w.transform(i, dissolved ? M.Fertilizer : m.dryTo, temperature);
+      w.transform(i, dissolved ? m.nutritionResidue : m.dryTo, temperature);
       if (dissolved) w.nutrition[i] = nutrition;
-      if (vent >= 0) w.transform(vent, M.Steam, Math.max(120, temperature));
+      if (vent >= 0)
+        w.transform(
+          vent,
+          m.boilTo ?? solverProducts.vapor,
+          Math.max(120, temperature),
+        );
       w.fields.add(x, y, 1.5);
       w.sound.emit("boil", x, y, 0.18, m.density, m.id, {
         pressure: 1.5,
@@ -45,7 +51,7 @@ export function changePhase(w, i, x, y, m) {
     w.fields.add(x, y, 1.5);
   } else if (
     m.freeze !== undefined &&
-    temperature < (m.id === M.Water ? freezingPoint(w, i) : m.freeze)
+    temperature < (m.solvent ? freezingPoint(w, i) : m.freeze)
   )
     target = m.freezeTo;
   else if (m.condense !== undefined && temperature < m.condense)
@@ -57,8 +63,8 @@ export function changePhase(w, i, x, y, m) {
     frozenLiquid = w.residue[i];
   // Ice retains dissolved material through freezing, using its otherwise unused residue slot.
   if (
-    m.id === M.Ice &&
-    target === M.Water &&
+    m.restoresLiquid &&
+    materials[target]?.solvent &&
     materials[frozenLiquid]?.waterLike
   )
     target = frozenLiquid;
@@ -78,7 +84,8 @@ export function changePhase(w, i, x, y, m) {
     });
   if (!w.transform(i, target, temperature)) return false;
   w.nutrition[i] = nutrition;
-  if (target === M.Ice && m.waterLike && m.id !== M.Water) w.residue[i] = m.id;
+  if (materials[target].restoresLiquid && m.waterLike && !m.solvent)
+    w.residue[i] = m.id;
   return true;
 }
 

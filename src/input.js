@@ -4,7 +4,7 @@ import { TouchNavigation } from "./touch-navigation.js";
 import { fillRegion } from "./sim/fill.js";
 import { paintBrush, beginColorStroke } from "./sim/paint.js";
 import { stampGesture } from "./drawing-gesture.js";
-import { M, materials } from "./sim/materials.js";
+import { materials } from "./sim/materials.js";
 import { applyTool, dragBrush, blowBrush } from "./sim/tools.js";
 const readTools = new Set(["inspect", "eyedropper", "guide"]);
 export function lightningInterval(radius) {
@@ -71,7 +71,7 @@ export class Input {
       )
         return;
       const portalDrawing =
-        state.tool === "paint" && state.material === M.Portal;
+        state.tool === "paint" && materials[state.material].portal;
       if (portalDrawing && this.pointers.size) return;
       if (
         this.portalInput.begin(
@@ -257,7 +257,7 @@ export class Input {
             dy = gesture.end.y - gesture.start.y;
           if (
             state.tool === "paint" &&
-            state.material === M.Lightning &&
+            materials[state.material].discharge &&
             !gesture.erase
           )
             this.paint(gesture.end, gesture.end, false, dx, dy, true);
@@ -435,7 +435,7 @@ export class Input {
       ...point,
       radius:
         this.state.tool === "paint" &&
-        (this.state.material === M.Lightning ||
+        (materials[this.state.material].discharge ||
           materials[this.state.material].directed)
           ? 0
           : this.state.radius,
@@ -453,7 +453,7 @@ export class Input {
     if (tool === "paint" && materials[this.state.material].circuit) {
       [dx, dy] = circuitDirection(this.state.deviceFacing ?? 0);
     }
-    if (tool === "paint" && this.state.material === M.Lightning) {
+    if (tool === "paint" && materials[this.state.material].discharge) {
       const now = performance.now();
       if (
         !immediate &&
@@ -465,7 +465,7 @@ export class Input {
         b.x,
         b.y,
         0,
-        M.Lightning,
+        this.state.material,
         this.state.shape,
         this.state.replace,
         1,

@@ -1,5 +1,5 @@
 import { moveOpticalRay } from "./solvers/optics.js";
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 
 export const rayDirections = [
   [1, 0],
@@ -34,10 +34,10 @@ export function reactEnergy(w, i, x, y, m) {
       w.eachNeighbor(x, y, (j) => {
         if (materials[w.cells[j]].movable) w.transform(j, 0);
       });
-  } else if (m.energyRule === "uranium") {
+  } else if (m.energyRule === "decay") {
     if (w.random() < m.emissionChance) {
-      w.temp[i] = Math.min(6000, w.temp[i] + 8);
-      w.fields.heat(x, y, 0.5);
+      w.temp[i] = Math.min(6000, w.temp[i] + m.emissionHeat);
+      w.fields.heat(x, y, m.emissionAirHeat);
     }
   } else if (m.energyRule === "antimatter") {
     let target = -1;
@@ -55,8 +55,13 @@ export function reactEnergy(w, i, x, y, m) {
     if (target >= 0 && budget(w, "energyReactions", 32)) {
       w.transform(target, 0);
       w.transform(i, 0);
-      w.explode(x, y, 5);
-      w.transform(i, M.Fire, 2500, 14);
+      w.explode(x, y, m.annihilationRadius);
+      w.transform(
+        i,
+        m.annihilationTo,
+        m.annihilationTemperature,
+        m.annihilationLifetime,
+      );
     }
   }
 }

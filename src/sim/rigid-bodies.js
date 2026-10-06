@@ -1,6 +1,6 @@
 import { CELL_METERS } from "./world-units.js";
 import { collisionLimits } from "./collision-limits.js";
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 import {
   containedFluidMass,
   cellMass,

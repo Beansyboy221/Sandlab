@@ -1,5 +1,5 @@
 import { impactStress, fractureLimits } from "./body-stress.js";
-import { materials, M } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 import { emitSpark } from "./sparks.js";
 import { yieldContact } from "./contact-yield.js";
 import { fractureFraction, cuttingFraction } from "./fracture-energy.js";
@@ -49,7 +49,8 @@ export function fracture(solver, i, energy, cutting = false) {
 }
 function contactOccupancy(solver, owner, material, i) {
   const w = solver.world;
-  if (i < 0) return Number(w.border === "solid" && material === M.Wall);
+  if (i < 0)
+    return Number(w.border === "solid" && material === solverProducts.boundary);
   return owner
     ? Number(solver.bodyOf.get(w.elasticId[i]) === owner)
     : Number(w.cells[i] === material);
@@ -198,7 +199,8 @@ export function collide(solver, body, p, hit, dx, dy, effects = true) {
     1 / body.mass +
     (lever * lever) / body.inertia +
     (op ? 1 / other.mass + (otherLever * otherLever) / other.inertia : 0);
-  const surface = j >= 0 ? materials[w.cells[j]] : materials[M.Wall];
+  const surface =
+    j >= 0 ? materials[w.cells[j]] : materials[solverProducts.boundary];
   const restitution =
     closing > 0.5
       ? Math.min(

@@ -1,4 +1,4 @@
-import { M } from "./materials.js";
+import { materials } from "./materials.js";
 
 // Check relationships before restore allocates or changes the live world.
 export function validatePortalState(data) {
@@ -7,7 +7,7 @@ export function validatePortalState(data) {
   for (let i = 0; i < cells.length; i++) {
     const id = portalId?.[i] || 0,
       link = portalLink?.[i] || 0;
-    if (cells[i] !== M.Portal) {
+    if (!materials[cells[i]].portal) {
       if (id || link) throw Error("Invalid portal data on a non-portal cell.");
       continue;
     }

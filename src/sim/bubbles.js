@@ -1,7 +1,7 @@
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 
 export function reactBubbles(w, i, x, y) {
-  if (w.cells[i] === M.Bubble) {
+  if (materials[w.cells[i]].bubble) {
     const pressure = Math.abs(w.fields.pressure[w.fields.index(x, y)]);
     if (
       w.temp[i] > 90 ||
@@ -22,8 +22,8 @@ export function reactBubbles(w, i, x, y) {
     return true;
   }
   if (
-    w.cells[i] === M.Water &&
-    w.dissolvedId[i] === M.Soap &&
+    materials[w.cells[i]].solvent &&
+    materials[w.dissolvedId[i]].foamTo !== undefined &&
     w.tick % 6 === 0
   ) {
     const pressure = Math.abs(w.fields.pressure[w.fields.index(x, y)]);
@@ -31,11 +31,15 @@ export function reactBubbles(w, i, x, y) {
       // Replace a liquid cell rather than creating unlimited free particles.
       const j = w.relativeIndex(x, y, 0, -1);
       if (j >= 0 && !w.cells[j] && w.life[i] === 0) {
-        w.transform(j, M.Bubble, Math.min(85, w.temp[i]));
+        w.transform(
+          j,
+          materials[w.dissolvedId[i]].foamTo,
+          Math.min(85, w.temp[i]),
+        );
         w.life[i] = 60;
       }
     }
   }
-  if (w.cells[i] === M.Water && w.life[i]) w.life[i]--;
+  if (materials[w.cells[i]].solvent && w.life[i]) w.life[i]--;
   return false;
 }

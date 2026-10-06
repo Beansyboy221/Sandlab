@@ -17,6 +17,7 @@ import {
 } from "../src/sim/material-authoring.js";
 import { compileMaterials } from "../src/sim/material-registry.js";
 import { compileContactReactions } from "../src/sim/reaction-registry.js";
+import { fractureWork } from "../src/sim/fracture-energy.js";
 import { fracture } from "../src/sim/body-collisions.js";
 import { changePhase } from "../src/sim/phase-changes.js";
 import { reactContact, etch } from "../src/sim/chemistry.js";
@@ -129,8 +130,9 @@ test("breaking distinct solids preserves their family, density, pigment and moti
     w.velocityX[200] = 0.4;
     w.offsetX[200] = 0.2;
     const before = materials[M[name]];
-    fracture(w.rigid, 200, 1000);
+    fracture(w.rigid, 200, fractureWork(w, 200) * 1.1);
     const after = materials[w.cells[200]];
+    assert.equal(after.materialState, "fragment", name);
     assert.equal(after.baseMaterial, before.baseMaterial, name);
     assert.equal(after.density, before.density, name);
     assert.equal(w.pigment[200], 0xffabcdef, name);

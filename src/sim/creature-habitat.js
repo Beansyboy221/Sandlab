@@ -1,13 +1,9 @@
-import { materials, M } from "./materials.js";
+import { materials } from "./materials.js";
 import { blocked } from "./stickman-body.js";
 
 export function breathableWater(w, x, y) {
   const i = w.index(Math.floor(x), Math.floor(y));
-  return (
-    i >= 0 &&
-    (w.cells[i] === M.Water || w.cells[i] === M.Brine) &&
-    w.temp[i] < 45
-  );
+  return i >= 0 && materials[w.cells[i]].aqueous && w.temp[i] < 45;
 }
 
 export function clearHabitatPath(w, ax, ay, bx, by, mode) {

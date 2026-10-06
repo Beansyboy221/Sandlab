@@ -1,15 +1,13 @@
 # Sandlab engine evolution
 
-Status: staged roadmap. v1.28.0 adds bounded grain force chains, contact-area impact
-work, ductility-aware cracking and timed Grab throws. v1.27.0 separates solver ownership from world state, compiles
-actor/projectile configuration and unifies body/entity rendering with material
-pixels; see [ARCHITECTURE.md](ARCHITECTURE.md). v1.26.0 unifies base/state authoring, validates physical
-transition identities, preserves fracture/corrosion components and compiles common
-chemical contact rules from material data. See [PHYSICS_MODEL.md](PHYSICS_MODEL.md)
-for the explicit abstraction contract and implemented limits. v1.19.0 added
-contained-fluid mechanical mass; v1.18.0 established traits, registry validation,
-profiling and rigid textures. Quantitative amounts, thermal energy, editable
-material packs and game modes remain staged work.
+Status: v1.30.0 removes stock-name dispatch from runtime material rules and adds
+validated biological components and authored contact recipes. Definitions and stock
+calibration are plain data; shared solvers calculate growth, decomposition,
+infection, chemistry, weather, transport and energy alongside the existing field
+and mechanical solvers. See [MATERIALS.md](MATERIALS.md),
+[ARCHITECTURE.md](ARCHITECTURE.md) and [PHYSICS_MODEL.md](PHYSICS_MODEL.md).
+Quantitative thermal/reagent accounting, runtime material packs and game modes
+remain staged work. Preserve existing gameplay while calibrating one system at a time.
 
 ## Target
 
@@ -44,20 +42,11 @@ Keep these concepts separate:
 - **Behaviors:** combustion, phase transitions, dissolution, corrosion, growth, source/device behavior and declared exceptions.
 - **State:** temperature, stored fluid, strain, damage, charge and other changing data. Allocate additional state only when justified by measured memory/performance needs.
 
-Example proposed authoring syntax (not a new public API yet):
-
-```js
-const conductiveFoam = defineMaterial({
-  key: "conductive-foam",
-  name: "Conductive Foam",
-  representation: "elastic",
-  traits: [porous(8, 0.35, 0.8), springy(0.3, 0.12), conductive(0.6)],
-  properties: { density: 0.45, friction: 0.6, thermalConductivity: 0.04 },
-  reactions: [{ with: "acid", rate: 0.02, products: ["residue"], heat: 0 }],
-});
-```
-
-Numbers are illustrative game coefficients until units and calibration are defined. Composition must have explicit precedence: base traits, then named overrides. Reject conflicting carriers, unknown references, invalid ranges and ambiguous behavior ordering. A porous metal or burnable elastic combines shared properties without copying their handlers. Impossible combinations should produce authoring errors rather than surprise runtime behavior.
+The current authoring API is documented with working examples in
+[MATERIALS.md](MATERIALS.md). Traits compose left-to-right, followed by explicit
+property overrides. The compiler rejects invalid carriers, unknown products,
+callback code, invalid ranges and ambiguous explicit contact pairs. Physical family
+transitions remain validated; preset/state definitions preserve stable saved IDs.
 
 Keep material keys stable across saves and custom definitions. Preserve the current numeric IDs and legacy aliases during migration. Version custom definition packs and store the required pack definitions/identity with an exported world so it remains portable. Imported material/mode packs should be bounded declarative data; trusted development code can supply a separately registered custom handler. Do not evaluate JavaScript strings from save files.
 
@@ -65,7 +54,7 @@ Keep material keys stable across saves and custom definitions. Preserve the curr
 
 Use bounded systems for contact reactions, atmosphere interactions, phase changes and optional scripted behaviors. Define ordering explicitly: sample the current state, resolve contact candidates, apply budgeted changes, then invalidate affected motion/render/field regions. Preserve local temperature/pressure effects and container barriers.
 
-Common reactions should describe reactants, conditions, rate, products/yields, energy release/absorption and gas production. Compile exact pairs and tags to indexed dispatch; do not search every reaction for every cell. Multi-product rules must handle insufficient space by retaining pending reactant/product amounts instead of silently deleting them. Complex biology, portals and devices can remain small named handlers with bounded work. A mutation/result interface should preserve pore contents, body topology, pigment and saveable state consistently.
+Common reactions should describe reactants, conditions, rate, products/yields, energy release/absorption and gas production. Compile exact pairs and tags to indexed dispatch; do not search every reaction for every cell. Multi-product rules must handle insufficient space by retaining pending reactant/product amounts instead of silently deleting them. Biology, portals and devices use configured mechanism kinds in shared solvers with bounded work. A mutation/result interface should preserve pore contents, body topology, pigment and saveable state consistently.
 
 Choose a documented quantity model before promising conservation: fixed cell occupancy is not automatically equal mass when materials have different densities, gas phases expand, or a host stores many liquid pixels. Start with normalized substance amounts and explicit source/sink accounting; add state fields only when a concrete reaction or phase transition requires them. Track matter lost through void boundaries and editor deletion separately from accidental loss. Digital electrical signals can coexist with a simplified physical conduction model; they should have distinct meanings.
 
@@ -128,3 +117,22 @@ v1.19.1 fire-lighting comparison (`npm run bench:fire`, 320×200 world, 1,000×6
 Use focused checks for each increment and the full suite for shared rule/state migrations. Benchmark one changed subsystem at a time. Preserve a working playable release between stages; do not bundle a registry rewrite, physics rewrite, new renderer and editor into one change.
 
 Next increment: calibrate heat capacity and conductivity before latent heat, with closed thermal-equilibrium and phase-cycle fixtures. Contained-fluid mass now refreshes within existing pose scans; intake/outflow momentum, gas density/buoyancy separation and explicit physical units remain future calibration work. Keep expanded reaction authoring as a separate change. The editor and game modes build on that tested foundation.
+
+## Next calibration increments
+
+1. Add thermal capacity and latent-energy accounting with two-material exchange,
+   sealed boiling and freeze/thaw fixtures; preserve existing temperature displays
+   and scale behavior before changing thresholds or units.
+2. Add finite reagent equivalents/concentrations using the existing mixture/pore
+   transport; validate partial neutralization and product amounts before deriving pH.
+3. Add finite ambient oxidizer to the existing atmosphere field and test sealed
+   combustion, vents and reaction pressure without another particle traversal.
+4. Calibrate biology resource yields and radiation emission against bounded fixtures;
+   keep field sampling independent of graphics and retain finite population budgets.
+5. Add versioned declarative material packs after amount accounting stabilizes, then
+   compose puzzle/platformer mode rules outside the material/field solvers.
+
+For each increment, capture a failing or inaccurate scene, define conservation and
+operation-count bounds, measure the affected stage, migrate saves if needed, and
+compare the existing desktop/touch game before broadening scope. Do not add empty
+solver stubs for phenomena the game does not use.

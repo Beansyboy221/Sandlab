@@ -8,7 +8,7 @@ import {
 import { reactBubbles } from "./bubbles.js";
 import { reactEnergy } from "./energy.js";
 import { reactExplosive } from "./ignition.js";
-import { M, materials } from "./materials.js";
+import { materials } from "./materials.js";
 import {
   reactContact,
   oxidize,
@@ -18,8 +18,8 @@ import {
 import { changePhase } from "./phase-changes.js";
 import { absorb, absorbFromLiquid } from "./absorption.js";
 import { conductCharge, reactSpark } from "./solvers/electrodynamics.js";
-import { growMicrobe } from "./microbiology.js";
-import { grow } from "./biology.js";
+import { solveMaterialDevice } from "./solvers/material-devices.js";
+import { solveBiology } from "./solvers/biology.js";
 import { weather } from "./weather.js";
 import { burnFuel, reactFire } from "./combustion.js";
 
@@ -30,29 +30,18 @@ const continuousRules = Uint8Array.from(materials, (m) =>
       contactParticipants[m.id] ||
       m.energyRule ||
       m.oxidationRate ||
-      m.flora ||
       m.acidity ||
       m.alkalinity ||
       m.explosive ||
       m.heatSource ||
       m.weather ||
-      [
-        M.Soap,
-        M.Bubble,
-        M["Soapy Water"],
-        M.Sponge,
-        M.Lightning,
-        M.Cloud,
-        M.Plant,
-        M.Seed,
-        M.Dirt,
-        M.Mud,
-        M.Fire,
-        M.Spark,
-        M.Acid,
-        M.Void,
-        M.Clone,
-      ].includes(m.id),
+      m.soluble ||
+      m.bubble ||
+      m.biology ||
+      m.flame ||
+      m.electricalArc ||
+      m.discharge ||
+      m.deviceRule,
     ),
   ),
 );
@@ -83,7 +72,7 @@ export function react(world, i, x, y) {
     return;
   }
   if (
-    (id === M.Bubble || (id === M.Water && world.dissolvedId[i] === M.Soap)) &&
+    (m.bubble || (m.solvent && materials[world.dissolvedId[i]].foamTo)) &&
     reactBubbles(world, i, x, y)
   )
     return;
@@ -101,9 +90,7 @@ export function react(world, i, x, y) {
   }
   if (
     (t[i] > m.phaseMaximum || t[i] < m.phaseMinimum) &&
-    (id !== M.Water ||
-      t[i] < freezingPoint(world, i) ||
-      t[i] > m.phaseMaximum) &&
+    (!m.solvent || t[i] < freezingPoint(world, i) || t[i] > m.phaseMaximum) &&
     changePhase(world, i, x, y, m)
   )
     return;
@@ -116,46 +103,27 @@ export function react(world, i, x, y) {
     burnFuel(world, i, x, y, m);
     if (c[i] !== id || l[i] || t[i] >= m.ignite) return;
   }
-  if (id === M.Lightning || m.weather) {
+  if (m.discharge || m.weather) {
     weather(world, i, x, y);
     return;
   }
-  if (m.flora) {
-    growMicrobe(world, i, x, y, m);
-    return;
+  if (m.biology) {
+    solveBiology(world, i, x, y, m);
+    if (
+      c[i] !== id ||
+      m.biology.mode === "infect" ||
+      m.biology.mode === "colonize"
+    )
+      return;
   }
-  if (id === M.Plant || id === M.Seed || id === M.Dirt || id === M.Mud)
-    grow(world, i, x, y);
-  if (id === M.Fire) {
+  if (m.flame) {
     reactFire(world, i, x, y);
     return;
   }
-  if (id === M.Spark) {
+  if (m.electricalArc) {
     if (reactSpark(world, i, x, y)) return;
   } else if (m.lifetime && l[i] && --l[i] === 0) world.transform(i, 0);
   if (m.heatSource) applyHeatSource(world, i, x, y, m);
   else if (m.acidity || m.alkalinity) etch(world, i, x, y, m);
-  else if (id === M.Void || id === M.Clone) device(world, i, x, y, id);
-}
-
-// Keep neighbor callbacks in the uncommon handlers. The main dispatcher then
-// avoids allocating a closure context for every grain of settled sand or water.
-function device(world, i, x, y, id) {
-  const c = world.cells;
-  if (id === M.Void)
-    world.eachNeighbor(x, y, (j) => {
-      if (c[j] && c[j] !== M.Void) world.transform(j, 0);
-    });
-  else if (id === M.Clone) {
-    world.eachNeighbor(x, y, (j) => {
-      if (
-        !world.clone[i] &&
-        c[j] &&
-        ["powder", "liquid", "gas"].includes(materials[c[j]].category)
-      )
-        world.clone[i] = c[j];
-      if (!c[j] && world.clone[i] && world.random() < 0.3)
-        world.transform(j, world.clone[i]);
-    });
-  }
+  else if (m.deviceRule) solveMaterialDevice(world, i, x, y, m);
 }

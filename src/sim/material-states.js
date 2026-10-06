@@ -57,6 +57,9 @@ const chemistry = [
   "carbonate",
   "neutralizationProduct",
   "neutralizedTo",
+  "acidGas",
+  "waterReactionGas",
+  "neutralizationGas",
   "acidMetalReactivity",
   "acidSolubility",
   "alkaliSolubility",
@@ -74,6 +77,11 @@ const chemistry = [
   "freezeDepression",
   "viscosityIncrease",
   "surfactant",
+  "solvent",
+  "retainsDissolved",
+  "oxidizer",
+  "oxidationCatalyst",
+  "decomposable",
   "organic",
   "requiresOxygen",
   "oxidationRate",
@@ -141,6 +149,8 @@ export function compileStateProfiles(materials, definitions) {
       m.absorbable = false;
       m.aqueous = false;
       m.waterLike = false;
+      m.solvent = false;
+      if (m.gas) m.retainsDissolved = false;
     }
     if (m.materialState === "fragment") {
       // Grain density is the same substance; voids between grains are empty cells.

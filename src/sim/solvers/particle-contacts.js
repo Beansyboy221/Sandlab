@@ -1,4 +1,4 @@
-import { materials, M } from "../materials.js";
+import { materials } from "../materials.js";
 import { effectiveDensity } from "../mixtures.js";
 import { poreExchange } from "../porous-flow.js";
 
@@ -37,7 +37,7 @@ export function tryMove(w, i, x, y, vertical) {
     }
     return false;
   }
-  if (w.cells[j] === M.Portal)
+  if (materials[w.cells[j]].portal)
     return w.teleport(i, j, x - (i % w.width), y - Math.floor(i / w.width));
   if (j === i || !w.canMove(i, j, vertical) || !poreExchange(w, i, j))
     return false;

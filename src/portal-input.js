@@ -1,4 +1,4 @@
-import { M } from "./sim/materials.js";
+import { materials } from "./sim/materials.js";
 import { portalHandleRadius } from "./portal-renderer.js";
 
 // Existing portal shapes are link handles; empty space remains ordinary drawing.
@@ -24,7 +24,7 @@ export class PortalInput {
     if (
       erase ||
       this.state.tool !== "paint" ||
-      this.state.material !== M.Portal
+      !materials[this.state.material].portal
     )
       return false;
     const mode = this.state.portalMode || "draw",

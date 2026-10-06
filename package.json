@@ -1,6 +1,6 @@
 {
   "name": "sandlab",
-  "version": "1.29.0",
+  "version": "1.30.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -44,6 +44,7 @@
     "bench:fire": "python3 tests/fire-render-benchmark.py",
     "bench:viewport": "node tests/viewport-benchmark.js",
     "test:viewport": "python3 tests/world_scale_check.py",
+    "bench:materials": "node tests/material-benchmark.js",
     "bench:audio": "node tests/acoustics-benchmark.js"
   },
   "devDependencies": {

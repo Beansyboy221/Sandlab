@@ -1,5 +1,5 @@
 import { distanceRatio } from "./world-units.js";
-import { materials, M } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 
 import { actorProfile, humanProfile } from "./creature-profiles.js";
 import { transportActor } from "./portal-transport.js";
@@ -176,7 +176,7 @@ export function integrateBody(
         ((m.id ? w.temp[i] : air) - a.heat[n]) * (m.id ? 0.07 : 0.004);
       for (const [dx, dy] of heatDirections) {
         const j = w.index(Math.floor(a.x[n]) + dx, Math.floor(a.y[n]) + dy);
-        if (j >= 0 && (w.cells[j] === M.Fire || w.temp[j] > 160))
+        if (j >= 0 && (materials[w.cells[j]].flame || w.temp[j] > 160))
           a.heat[n] += (w.temp[j] - a.heat[n]) * 0.04;
       }
       if (m.acidic) {
@@ -193,7 +193,8 @@ export function integrateBody(
       a.health -= 0.4;
       if ((w.tick + n) % 12 === 0) {
         const j = w.index(Math.floor(a.x[n]) - gx, Math.floor(a.y[n]) - gy);
-        if (j >= 0 && !w.cells[j]) w.set(j, w.tick % 24 ? M.Fire : M.Smoke);
+        if (j >= 0 && !w.cells[j])
+          w.set(j, w.tick % 24 ? solverProducts.flame : solverProducts.smoke);
         w.fields.add(a.x[n], a.y[n], 0.1);
       }
     } else if (a.heat[n] > 70) a.health -= (a.heat[n] - 70) * 0.0007;

@@ -2,7 +2,7 @@ import { distanceRatio } from "./world-units.js";
 import { projectileProfiles } from "./creature-profiles.js";
 import { LaserGuidance, wrappedDelta } from "./missile-guidance.js";
 import { stepMachine, machineFits } from "./machine-motion.js";
-import { materials, M } from "./materials.js";
+import { materials, solverProducts } from "./materials.js";
 import { clearSight } from "./predation.js";
 import { transportMissile } from "./portal-transport.js";
 import { entityCanSpawn } from "./entity-metrics.js";
@@ -23,7 +23,7 @@ export class Missiles {
     this.scanTick = -100;
     this.heatThreshold = 0;
   }
-  spawn(x, y, dx = 1, dy = 0, material = M["Heat-Seeking Missile"]) {
+  spawn(x, y, dx = 1, dy = 0, material = solverProducts.defaultProjectile) {
     const w = this.world;
     if (
       !materials[material]?.projectile ||
@@ -240,12 +240,11 @@ export class Missiles {
           Math.floor(a.x + Math.cos(a.angle) * 2),
           Math.floor(a.y + Math.sin(a.angle) * 2),
         );
-        const portal =
-          w.cells[i] === M.Portal
-            ? i
-            : nose >= 0 && w.cells[nose] === M.Portal
-              ? nose
-              : -1;
+        const portal = materials[w.cells[i]].portal
+          ? i
+          : nose >= 0 && materials[w.cells[nose]].portal
+            ? nose
+            : -1;
         if (portal >= 0 && transportMissile(w, a, portal)) break;
         if (surfaces[w.cells[i]] || (nose >= 0 && surfaces[w.cells[nose]])) {
           this.detonate(a);
@@ -264,7 +263,7 @@ export class Missiles {
         const x = a.x - Math.cos(a.angle) * 3,
           y = a.y - Math.sin(a.angle) * 3,
           j = w.index(Math.floor(x), Math.floor(y));
-        if (j >= 0 && !w.cells[j]) w.set(j, M.Smoke, 100, 30);
+        if (j >= 0 && !w.cells[j]) w.set(j, solverProducts.smoke, 100, 30);
       }
     }
     this.items = this.items.filter((a) => !a.remove);
